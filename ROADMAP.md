@@ -216,8 +216,11 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
   comparisons before claiming reproducibility.
 - Deploy kernel updates as complete versioned generations: matching Image,
   DTB, initramfs and module tree, with a tested previous-generation entry.
-- Establish correct timezone, network time and validated persistent-clock
-  behaviour without assuming that PMIC RTC writes survive reboot.
+- **[COMPLETE]** Set `Asia/Kolkata`, retain `systemd-timesyncd`, and install
+  `archpad-clock` 1.0.1. Its bounded early-boot service explicitly loads the
+  PMIC RTC module, restores wall time from a Linux-owned offset without writing
+  PMIC/EFI state, and passed a cold userspace reboot: 1972 at RTC probe was
+  corrected to 2026 in about 50 ms, with multi-user reached in 18 seconds.
 - Capture a sanitized manifest of the exact 326-package console baseline.
 - Verify bounded front/rear camera streams and suspend/resume on native Arch.
 - Classify the real Awinic/ASoC failures and the remaining DSI PLL, GPU cooling,

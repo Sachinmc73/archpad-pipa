@@ -1,0 +1,7 @@
+[Unit]
+Description=Save ArchPad wall-clock offset from the PMIC counter
+After=time-set.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/archpad/archpad-clock-save

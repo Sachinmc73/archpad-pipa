@@ -1,6 +1,6 @@
 # ArchPad Handoff to Antigravity
 
-Updated: **2026-09-08 19:55 IST**
+Updated: **2026-09-08 21:12 IST**
 
 Read `ROADMAP.md` for the single project-level source of truth.
 
@@ -38,6 +38,11 @@ The tablet has successfully migrated from postmarketOS to **pure native Arch Lin
 | **Phase 3: Functional Hardware Base** | **COMPLETE** | Display, GPU, basic audio, wireless and input smoke tests passed; both cameras enumerate. Native-Arch camera streaming, suspend/resume and deeper reliability remain in Phase 3.5. |
 | **Rollback & Cleanup** | **COMPLETE** | Purged temporary GUI prototypes (Phosh, Plasma), vacuumed 311 MB journal logs, and reclaimed 31 GB on host workspace. |
 | **Phase 3.5: Baseline Hardening** | **IN PROGRESS** | Versioning, reproducible image construction, complete kernel generations, clock persistence and bounded native-Arch validation. |
+
+Phase 3.5 clock hardening is complete. Package `archpad-clock` 1.0.1 restores
+time from a Linux-owned PMIC-counter offset and never writes PMIC registers or
+EFI variables. A reboot verified correction from the RTC's 1972 base to 2026
+in roughly 50 ms; multi-user was reached in 18 seconds with no failed units.
 
 ---
 

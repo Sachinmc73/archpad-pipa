@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Restore wall-clock time from the always-running PMIC counter plus a saved
+# offset. This deliberately does not write the PMIC RTC or EFI variables.
+
+set -euo pipefail
+
+readonly rtc_epoch_path=/sys/class/rtc/rtc0/since_epoch
+readonly offset_path=/var/lib/archpad-clock/rtc-offset
+readonly earliest_valid_epoch=1735689600 # 2025-01-01T00:00:00Z
+readonly latest_valid_epoch=4102444800   # 2100-01-01T00:00:00Z
+
+for ((attempt = 0; attempt < 100; attempt++)); do
+  [[ -r $rtc_epoch_path ]] && break
+  sleep 0.1
+done
+[[ -r $rtc_epoch_path ]] || {
+  printf 'archpad-clock: PMIC RTC did not appear within 10 seconds\n' >&2
+  exit 1
+}
+[[ -r $offset_path ]] || exit 0
+
+read -r rtc_epoch < "$rtc_epoch_path"
+read -r offset < "$offset_path"
+[[ $rtc_epoch =~ ^[0-9]+$ ]] || exit 1
+[[ $offset =~ ^-?[0-9]+$ ]] || exit 1
+
+restored_epoch=$((rtc_epoch + offset))
+if ((restored_epoch < earliest_valid_epoch || restored_epoch > latest_valid_epoch)); then
+  printf 'archpad-clock: refusing implausible restored epoch %s\n' \
+    "$restored_epoch" >&2
+  exit 1
+fi
+
+date -u --set="@$restored_epoch" >/dev/null
+printf 'archpad-clock: restored %s from PMIC counter plus saved offset\n' \
+  "$(date -u -Ins)"

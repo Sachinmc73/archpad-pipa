@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Save the difference between valid system time and the PMIC RTC counter.
+
+set -euo pipefail
+
+readonly rtc_epoch_path=/sys/class/rtc/rtc0/since_epoch
+readonly state_dir=/var/lib/archpad-clock
+readonly offset_path=$state_dir/rtc-offset
+readonly earliest_valid_epoch=1735689600 # 2025-01-01T00:00:00Z
+
+[[ -r $rtc_epoch_path ]] || exit 0
+
+system_epoch=$(date -u +%s)
+read -r rtc_epoch < "$rtc_epoch_path"
+[[ $system_epoch =~ ^[0-9]+$ ]] || exit 1
+[[ $rtc_epoch =~ ^[0-9]+$ ]] || exit 1
+
+if ((system_epoch < earliest_valid_epoch)); then
+  printf 'archpad-clock: system time is not trustworthy; offset not saved\n' >&2
+  exit 0
+fi
+
+offset=$((system_epoch - rtc_epoch))
+if [[ -r $offset_path ]]; then
+  read -r previous < "$offset_path" || previous=''
+  if [[ $previous =~ ^-?[0-9]+$ ]] && ((offset >= previous - 2 && offset <= previous + 2)); then
+    exit 0
+  fi
+fi
+
+install -d -m 0755 "$state_dir"
+tmp_path=$(mktemp "$state_dir/.rtc-offset.XXXXXX")
+trap 'rm -f -- "$tmp_path"' EXIT
+printf '%s\n' "$offset" > "$tmp_path"
+chmod 0644 "$tmp_path"
+sync "$tmp_path"
+mv -f "$tmp_path" "$offset_path"
+trap - EXIT
+printf 'archpad-clock: saved PMIC counter offset %s seconds\n' "$offset"

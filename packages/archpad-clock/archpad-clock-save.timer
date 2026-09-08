@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodically persist the ArchPad wall-clock offset
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+AccuracySec=1min
+Persistent=true
+Unit=archpad-clock-save.service
+
+[Install]
+WantedBy=timers.target

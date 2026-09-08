@@ -1,0 +1,15 @@
+[Unit]
+Description=Restore ArchPad wall clock from the PMIC counter
+Documentation=file:///usr/share/doc/archpad-clock/README.md
+DefaultDependencies=no
+After=systemd-modules-load.service
+Before=sysinit.target systemd-timesyncd.service time-set.target
+ConditionPathExists=/var/lib/archpad-clock/rtc-offset
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/modprobe rtc-pm8xxx
+ExecStart=/usr/lib/archpad/archpad-clock-restore
+
+[Install]
+WantedBy=sysinit.target

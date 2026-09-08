@@ -1,0 +1,41 @@
+# Maintainer: ArchPad project
+
+pkgname=archpad-clock
+pkgver=1.0.1
+pkgrel=1
+pkgdesc='Persistent software-clock support for the Xiaomi Pad 6 PMIC RTC'
+arch=('any')
+license=('GPL-2.0-only')
+depends=('coreutils' 'kmod' 'systemd')
+source=(
+  'archpad-clock-restore'
+  'archpad-clock-save'
+  'archpad-clock-restore.service'
+  'archpad-clock-save.service'
+  'archpad-clock-save.timer'
+  'README.md'
+)
+sha512sums=(
+  'bfb64e8e94fbf7a6d19e3efc9c7216b9bed234a477cb22068366592d5e775826bca4348d1e598bc09479f10c3b76a6df09cf6607c9f89bb33d05173348a082af'
+  '17d1908a67d910ec9f045383fe4f1b33aaf7f4a75b62a146ddeefe7f871f541a7572784020bbd557778c7bb8df742140b85a1db67d6c5c88f828765d481cae69'
+  '34e5c0d706d52c353046f5b3a2126b0c45c31e0634bb709bc6f3828a784e86c78e5129aa17b73d70efae08685497837881cb722ad2fff39fcaf053f64dff508d'
+  '578358ef50cc268ef9405ce2533548b3c2615996cd95646554ea266e8b3e02a465a8f7d0ece50b3254178e60495524e093f3d1ecb760e41eb516130664ca1ca5'
+  'a27ea97598e328bf64a87e5f7467decd3b633a7f13f53d556511a02b984c6232fdb2ba891cabf10800a6e319cc485accccccea7a062c125626414e02d9983bb3'
+  '976163ad50c28e64c3cfe58d9c1cee1f851eb7e9a210f11559d82055d00fc22e7996d31bbae8128b26203c5abebc987a0d31c39fa9cf8754a1e921f7037fdf19'
+)
+
+package() {
+  install -Dm755 archpad-clock-restore \
+    "$pkgdir/usr/lib/archpad/archpad-clock-restore"
+  install -Dm755 archpad-clock-save \
+    "$pkgdir/usr/lib/archpad/archpad-clock-save"
+
+  local unit
+  for unit in archpad-clock-restore.service archpad-clock-save.service \
+    archpad-clock-save.timer; do
+    install -Dm644 "$unit" "$pkgdir/usr/lib/systemd/system/$unit"
+  done
+
+  install -Dm644 README.md \
+    "$pkgdir/usr/share/doc/archpad-clock/README.md"
+}
