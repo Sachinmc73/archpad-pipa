@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+
+build() {
+    add_module 'loop'
+    add_binary 'losetup'
+    add_runscript
+}
+
+help() {
+    cat <<HELPEOF
+This hook attaches the nested GPT disk inside Android userdata
+(/dev/disk/by-partlabel/userdata) on Xiaomi Pad 6 (pipa) using 4K sector size.
+HELPEOF
+}

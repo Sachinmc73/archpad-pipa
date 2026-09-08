@@ -1,0 +1,22 @@
+# Maintainer: ArchPad Project <https://github.com/pipa-mainline>
+pkgname=archpad-pipa-firmware
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Firmware and Hexagon sensor calibration files for Xiaomi Pad 6 (pipa)"
+arch=('any')
+url="https://github.com/pipa-mainline"
+license=('proprietary')
+options=('!strip')
+source=("archpad-pipa-firmware-${pkgver}.tar.xz")
+sha512sums=('e81ddecf618e5b7b2c65177c7f9dd581ad6d6ebc57f71e89bda4052d8ca43f4e260e4f06dc46ed97f17d73d561e495fd39e6e917589b8a045ca1b64179b1e54f')
+
+package() {
+  mkdir -p "${pkgdir}/usr/lib/firmware"
+  cp -r "${srcdir}/lib/firmware/"* "${pkgdir}/usr/lib/firmware/"
+
+  mkdir -p "${pkgdir}/usr/share/qcom"
+  cp -r "${srcdir}/usr/share/qcom/"* "${pkgdir}/usr/share/qcom/"
+
+  find "${pkgdir}/usr" -type d -exec chmod 0755 {} +
+  find "${pkgdir}/usr" -type f -exec chmod 0644 {} +
+}

@@ -1,0 +1,23 @@
+# Private Telegram authentication material. Never commit these files.
+telegram/.env
+telegram/*.session
+telegram/*.session-journal
+telegram/session.txt
+device/temporary-validation/access.env
+
+# Local Python state.
+.venv/
+__pycache__/
+*.py[cod]
+
+# Device-derived or downloaded binary artifacts. Keep manifests and hashes only.
+artifacts/private/
+artifacts/downloads/
+.cache/
+work/
+
+# Locally compiled diagnostic binaries; keep their C/Python sources.
+tools/compare-csiphy
+tools/front-camera-debug
+tools/front-camera-pipeline
+tools/rear-camera-test

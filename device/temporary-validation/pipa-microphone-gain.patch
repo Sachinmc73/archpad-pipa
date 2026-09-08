@@ -1,0 +1,14 @@
+diff --git a/device/testing/device-xiaomi-pipa/HiFi.conf b/device/testing/device-xiaomi-pipa/HiFi.conf
+--- a/device/testing/device-xiaomi-pipa/HiFi.conf
++++ b/device/testing/device-xiaomi-pipa/HiFi.conf
+@@ -69,8 +69,8 @@ SectionDevice."Mic" {
+ 		cset "name='TX_AIF3_CAP Mixer DEC6' 1"
+ 		cset "name='TX_AIF3_CAP Mixer DEC7' 1"
+ 
+-		cset "name='TX_DEC0 Volume' 124"
+-		cset "name='TX_DEC1 Volume' 124"
++		cset "name='TX_DEC0 Volume' 112"
++		cset "name='TX_DEC1 Volume' 112"
+ 	]
+ 
+ 	DisableSequence [

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Temporary recovery for the Xiaomi Pad 6 Linux 7.1.4 validation image.
+# The VA macro can fail its first probe with -EINVAL, leaving the dependent
+# LPASS macros, SoundWire controllers, and ALSA card deferred indefinitely.
+
+set -eu
+
+card_name='Xiaomi Pad 6'
+attempt=1
+
+while [ "$attempt" -le 3 ]; do
+	if grep -Fq "$card_name" /proc/asound/cards 2>/dev/null; then
+		echo "ArchPad audio: ALSA card is available"
+		exit 0
+	fi
+
+	echo "ArchPad audio: ALSA card absent; reprobe attempt $attempt of 3"
+	modprobe -r snd_soc_lpass_va_macro 2>/dev/null || true
+	modprobe snd_soc_lpass_va_macro
+	udevadm settle --timeout=5 || true
+	sleep 1
+	attempt=$((attempt + 1))
+done
+
+echo "ArchPad audio: Xiaomi Pad 6 ALSA card did not appear" >&2
+exit 1

@@ -1,0 +1,145 @@
+# Maintainer: ArchPad project
+
+pkgname=linux-archpad-pipa
+pkgver=7.1.4
+pkgrel=7
+pkgdesc='Linux kernel for the Xiaomi Pad 6 (pipa), Tianma panel'
+arch=('aarch64')
+url='https://github.com/pipa-mainline'
+license=('GPL-2.0-only')
+depends=('coreutils' 'kmod')
+makedepends=(
+  'bc'
+  'bison'
+  'clang>=22.1.8'
+  'cpio'
+  'elfutils'
+  'flex'
+  'kmod'
+  'lld>=22.1.8'
+  'llvm>=22.1.8'
+  'openssl'
+  'pahole>=1:1.31'
+  'perl'
+  'python'
+  'rust>=1:1.97.0'
+  'rust-bindgen>=0.72.1'
+  'rust-src>=1:1.97.0'
+  'xz'
+  'zstd'
+)
+provides=("linux=${pkgver}")
+conflicts=('linux-aarch64')
+options=('!strip')
+
+_flavor='pipa'
+_build_epoch='1970-01-01T00:00:00Z'
+_patches=(
+  '0001-arm64-dts-qcom-sm8250-xiaomi-pipa-Add-device-tree-fo.patch'
+  '0002-power-supply-Add-driver-for-Qualcomm-PMIC-fuel-gauge.patch'
+  '0003-Input-Add-nt36523-touchscreen-driver.patch'
+  '0004-drm-msm-dsi-change-sync-mode-to-sync-on-DSI0-rather-.patch'
+  '0005-drm-msm-dsi-support-DSC-configurations-with-slice_pe.patch'
+  '0006-drm-panel-Add-support-for-Novatek-NT36532-panel.patch'
+  '0007-drivers-media-i2c-ov13b10-add-device-tree-support-an.patch'
+  '0008-ASoC-qcom-sm8250-add-tertiary-tdm-support.patch'
+  '0010-HACK-ASoC-codecs-aw88261-add-xiaomi-pipa-hacks.patch'
+  '0011-FROMLIST-ASoC-qcom-qdsp6-q6afe-fix-clk-vote-response.patch'
+  '0012-HACK-ASoC-qcom-qdsp6-q6afe-pretend-the-AFE-vote-didn.patch'
+  '0013-Input-keyboard-add-Xiaomi-Nanosic-803-keyboard.patch'
+  '0014-UPSTREAM-libbpf-Fix-UAF-in-strset__add_str.patch'
+  '0016-power-supply-add-nuvolta-rx1665-wireless-charger.patch'
+  '0017-media-hi846-fix-write-reg-16.patch'
+  '0018-media-hi846-fix-link-frequency.patch'
+  '0019-media-hi846-fix-modes-by-lanes.patch'
+  '0020-media-hi846-add-6mp-8mp-modes.patch'
+  '0021-arm64-dts-qcom-sm8250-xiaomi-pipa-add-front-camera.patch'
+  '0022-media-hi846-assert-reset-before-power-on.patch'
+  '0023-media-hi846-wait-for-power-on.patch'
+  '0024-media-hi846-pipa-timing-and-pll.patch'
+  '0025-media-hi846-hide-unverified-2lane-full-resolution-modes.patch'
+)
+
+source=(
+  "https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/linux-${pkgver}.tar.xz"
+  'config-xiaomi-pipa.aarch64'
+  "${_patches[@]}"
+)
+
+sha512sums=(
+  '753b53b3f9a240b5838fe1156ad61f2356e2042941e571450492b5c8c46fd32140aede34fd4b074705650bac503deccec20ad9b8caee9d4c5fdc575401c76cc4'
+  '73fa3eab2ab9e420cd0eb8a366dd928e58ce17fc7c05a2a531b28cca8c0eb6fa0fd0b0708a74d2171e758f7c257095996875f14ea2f2a6fba68b22074fff2765'
+  'ae45edd80a6df1807b242c9733092c4ca3f6fb316db1f42ba57ec9fc4bd94b2cfdb40dd467d725aaea5023364fdec4c4ec71ee535fdee93166d590887b13d800'
+  '34eab30dde870322ad10ab7babee8acf7c5da2b2d5d38d5e4f67fad87be4e7d1426950b46c7d7344627ba034643f030b8f4656cbf941bb2f04b1d649530842d3'
+  'c3ca3b80e9a1d367572818afc45e6c19ca54ab5da03e615f3e537957bcac75a40171ee895f32e6141111702dea63ce4af6427333412d0f6eaa63506916c5d391'
+  '6db0ea6e585e50054457b0d959efe691c7fcb6d68dc7144b456f7f04f140bd02a422008bfe40680d3d7b799d7192b007d94df97c7288644f2ffd321221d1a881'
+  '9ac34413200b8bcb4e8d72441fff9161d0966081e817700127dc607ffcea215a689f4a482663d422b06b4e3e40aa0e11a607efad3310a31a3e81299390e83dc3'
+  'cb6265f0dbb4f35753c6cda74a78bebea6aa18294175498556d2cb089ac6c5da26563bd47a50ea531a643cf967dc5bcefe341a951f7af9e2d74f5b832430b242'
+  'd0344457908fd9626b1d5036eb096ed89c5acf2a8faed23bcbfe0af80148ce8991508dec128094e957dbc7d1d2b2701e8883912fc90b9c1fdfce398388a36008'
+  'c829c3b074391276d37fd738614385763b0814bde9fbc0c292eca5d2b6bf6b45e2ebfe4bf6bfad79b2e8ae532600fbeacdcb0e8777151cd5aed96a7c5f5f33c4'
+  'f98be67fa1826cc7f29a5ab07ff6457701701a13fd563bdae1b3eac47c32e74a08be18faeae7a57d326901f4c10d98f96fc87b2db094235efdefbcd74fc58692'
+  '5968f28d1f67a89e58c37e532ceaf400b2fbf368f495a95b12550e15e272dab5939c1bc5e3fab2d0d358792a1e8a90303970bda625ffe3026002f65b7c35dea6'
+  'c6683c513af7a98269a7a686c6ba24ff9387c4e50968bf0de64c1f4eaa9a01b65e17318a2b9cae52085b3e4afabf47aacc4f6fa5bb1a5d12d92cff1eab7bdd65'
+  '2d0c15af501037c65700a3101148519630a9f4ef5fb67df358a465592d6f338fc30527fc3d762071a46b7ea41b5901ab2d235f6e3b17be2a96dc0c2f606fa321'
+  'b4fa58b77ea1cf16e594efaaee800ee8790cad4fbe3662bd22d5be71d8cb6fd4fe95f8c9184c0c53c42a46aa3e2999e1053f8e8b532ac1e9c7b9b0fcb674dba9'
+  '8589f3100677b35e0af9d72d4c44c399248df0dbaec4a9654e2c4eab65acafa1b1f1c52a47ed9df2d3f3dc6f8687c3cee82047ec6e1ebcad9d0e7731608c0688'
+  '17e7f320f115982374249eca41c49a556bde09879ac7930da397427297c396de798035dc366cc6de4a1a69a1b5b5a08dccb5e8a0e39d6b098c5af68e773584f8'
+  '09a2664657007370163828bb7a7860dac4d7d9d9207ef307ea1210f4e50ccadb662bc44cd0d2c17a429d574333eb880ff7a89a4f7d5205461a3b150320247120'
+  '31bdd359de7451e12fc8bac2816aaab5e6cc4068ea54403566686d5ec773ae98d1027856828bfbe696035b79113688625955e123f4ab06693c5983d00d27793d'
+  '749eab23dd648ea6586fe5c4b3ee3977681f49e14b893f0003d25f9eb97b6cba40da52e3e822cef1063e78a33dae14ef4e563171d45be5d85b125d1d7940b4a0'
+  '7ca399e9dc1b362d990243b13a1b6d8f23499afb12a623eff3b6f645501f7edcf800d987281437a12b5d0dc5ba824287b06e7a5bde23fb498e99dadde09ef8e1'
+  '8bbee1f119ab313727fd6c158684d7a7064feaa2520a85b3cecf9f42f97ae14ec7921e4f833fa07f7fc5f3aa4cba49c168d578ad07214e8f48f6ab2cb5bcb763'
+  '411467753af4e30730a43ef4809943562a021a17d7526b6a398d44e4bae29f2e05996d974962ee492e6502ede8e70d6bf4ccfe2fa37f55b99ccd0c199e728496'
+  'dcac85972fdcef175d23df3f05a16236b713986de6b99fc39a08693b226764e358258496e83825318972a12d274a28c335ce7c388cf06fa7589cb50d1755e149'
+  'bbd9e60a60a970c94bf4c01bbd21893c90f99253a9ce0a6447524a8712b6407e28a89da334a08a50ff3180acba378e9cacfcf92b0fd8098e351329e30068d5c6'
+)
+
+prepare() {
+  cd "linux-${pkgver}"
+
+  local patch
+  for patch in "${_patches[@]}"; do
+    patch -Np1 < "${srcdir}/${patch}"
+  done
+
+  cp "${srcdir}/config-xiaomi-pipa.aarch64" .config
+  make ARCH=arm64 LLVM=1 olddefconfig
+}
+
+build() {
+  cd "linux-${pkgver}"
+
+  make \
+    ARCH=arm64 \
+    LLVM=1 \
+    KBUILD_BUILD_TIMESTAMP="${_build_epoch}" \
+    KBUILD_BUILD_USER='archpad' \
+    KBUILD_BUILD_HOST='builder' \
+    KBUILD_BUILD_VERSION="${pkgrel}-archpad-${_flavor}"
+}
+
+package() {
+  cd "linux-${pkgver}"
+
+  local kernelrelease
+  kernelrelease="$(make -s ARCH=arm64 LLVM=1 kernelrelease)"
+
+  make \
+    ARCH=arm64 \
+    LLVM=1 \
+    INSTALL_MOD_PATH="${pkgdir}/usr" \
+    INSTALL_MOD_STRIP=1 \
+    modules_install
+
+  rm -f "${pkgdir}/usr/lib/modules/${kernelrelease}/build"
+  rm -f "${pkgdir}/usr/lib/modules/${kernelrelease}/source"
+
+  install -Dm644 arch/arm64/boot/Image "${pkgdir}/boot/Image"
+  install -Dm644 \
+    arch/arm64/boot/dts/qcom/sm8250-xiaomi-pipa-tianma.dtb \
+    "${pkgdir}/boot/dtbs/qcom/sm8250-xiaomi-pipa-tianma.dtb"
+  install -Dm644 System.map "${pkgdir}/boot/System.map-${kernelrelease}"
+  install -Dm644 .config "${pkgdir}/boot/config-${kernelrelease}"
+  install -Dm644 include/config/kernel.release \
+    "${pkgdir}/usr/share/kernel/archpad-pipa/kernel.release"
+}

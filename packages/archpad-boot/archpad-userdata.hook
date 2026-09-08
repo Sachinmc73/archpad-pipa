@@ -1,0 +1,45 @@
+#!/usr/bin/ash
+# SPDX-License-Identifier: GPL-2.0-only
+
+run_hook() {
+    local target="/dev/disk/by-partlabel/userdata"
+    local count=0
+
+    # Ensure loop module is loaded
+    modprobe -q loop 2>/dev/null || true
+
+    # Wait for UFS userdata partition to appear
+    echo "ArchPad: Waiting for userdata partition ($target)..."
+    while [ ! -b "$target" ] && [ "$count" -lt 20 ]; do
+        sleep 0.5
+        count=$((count + 1))
+    done
+
+    if [ ! -b "$target" ]; then
+        echo "ArchPad ERROR: $target did not appear in time!" >&2
+        return 1
+    fi
+
+    # Check if a loop device is already attached to userdata
+    local existing_loop
+    existing_loop="$(losetup -j "$target" 2>/dev/null | cut -d: -f1 | head -n 1)"
+
+    if [ -n "$existing_loop" ]; then
+        echo "ArchPad: Userdata already mapped to $existing_loop"
+    else
+        echo "ArchPad: Mapping $target with 4K sector size and direct I/O..."
+        local loop_dev
+        loop_dev="$(losetup --show -Pf --direct-io=on --sector-size 4096 "$target")"
+        if [ -z "$loop_dev" ]; then
+            echo "ArchPad ERROR: Failed to map $target via losetup!" >&2
+            return 1
+        fi
+        echo "ArchPad: Userdata mapped to $loop_dev"
+    fi
+
+    # Trigger udev to populate partition symlinks
+    if [ -x /usr/bin/udevadm ]; then
+        udevadm trigger --subsystem-match=block --action=add
+        udevadm settle --timeout=5 || true
+    fi
+}
