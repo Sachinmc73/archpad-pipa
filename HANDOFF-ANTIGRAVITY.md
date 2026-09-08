@@ -1,6 +1,6 @@
 # ArchPad Handoff to Antigravity
 
-Updated: **2026-09-08 22:40 IST**
+Updated: **2026-09-08 22:48 IST**
 
 Read `ROADMAP.md` for the single project-level source of truth.
 
@@ -63,6 +63,17 @@ hashes and had zero failed units. The system then booted back to r8. Automatic
 in-tree module signing with a different generated key on every build was
 disabled; Secure Boot and signature enforcement are not active.
 
+Native-Arch hardware gates now closed on r8:
+
+- Rear OV13B10 and front HI846 each completed 30/30 frames at 1280x720 through
+  libcamera's Simple/software-ISP path. The rear sensor's default full-resolution
+  software-ISP allocation still exceeds the bounded 128 MiB CMA pool; normal
+  preview resolutions work.
+- A single `rtcwake -m mem -s 10` test entered `s2idle` and resumed with the
+  same boot ID after about 14 seconds. No units failed, battery remained at
+  99%, and touch, GPU, two cameras, audio, Wi-Fi and Bluetooth remained
+  enumerated after resume.
+
 ---
 
 ## 3. Strict Operating Standards (User-Mandated)
@@ -80,11 +91,9 @@ Do not install the final GUI yet. The former blockers—Git versioning, image
 builder, baseline manifest, persistent clock, atomic kernel update and complete
 rollback generation—are resolved. Complete the remaining bounded checks:
 
-1. stream a short frame sequence from both cameras on native Arch;
-2. perform one controlled suspend/resume cycle and capture before/after state;
-3. classify the current non-fatal kernel warnings (fast-charge probe, top CPU
+1. classify the current non-fatal kernel warnings (fast-charge probe, top CPU
    voltage, SoundWire ports and pen-charging chatter);
-4. regenerate the release manifest and perform two clean-build comparisons.
+2. regenerate the release manifest and perform two clean-build comparisons.
 
 The Arch Linux ARM `[aur]` entry is a curated binary repository and is not the
 same service as `aur.archlinux.org`; retain or remove it only through an

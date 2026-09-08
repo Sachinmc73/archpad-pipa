@@ -1,6 +1,6 @@
 # ArchPad roadmap and current state
 
-Updated: **2026-09-08 22:40 IST**
+Updated: **2026-09-08 22:48 IST**
 Device: **Xiaomi Pad 6 (`pipa`), Snapdragon 870, 6/128 GB, Tianma panel**
 
 This is the single project-level source of truth. It records the milestone we
@@ -81,6 +81,9 @@ start the Arch system; it is not a claim of perfect tuning or endurance.
   address `0x20`, connected through CSIPHY4 with **two CSI-2 data lanes**.
 - Front probe, raw capture, libcamera processing and Plasma Camera preview all
   work at 1632x1224 and 1280x720.
+- Native Arch on kernel `7.1.4-pipa-r8` completed bounded 1280x720
+  software-ISP viewfinder streams: 30/30 rear frames and 30/30 front frames.
+  No frames were saved locally during this gate.
 - The experimental 3264x1836 and 3264x2448 two-lane modes accepted STREAMON but
   returned no buffers. Kernel patch `0025` correctly hides them until their
   timings are solved.
@@ -234,7 +237,11 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
 - **[COMPLETE]** Capture a sanitized manifest of the exact 326-package console
   baseline at
   `artifacts/manifests/archpad-console-pre-hardening-2026-09-08.txt`.
-- Verify bounded front/rear camera streams and suspend/resume on native Arch.
+- **[COMPLETE]** Verify bounded front/rear camera streams and suspend/resume on
+  native Arch. Both cameras completed 30-frame 1280x720 streams. One
+  RTC-alarm-controlled `s2idle` cycle resumed with the same boot ID after about
+  14 seconds; zero units failed and touch, GPU, cameras, audio, Wi-Fi,
+  Bluetooth and battery reporting remained present.
 - Classify the real Awinic/ASoC failures and the remaining DSI PLL, GPU cooling,
   charger, remoteproc, keyboard-I2C and BPF messages.
 - Regenerate or supersede the stale release manifest after the builder is
@@ -259,8 +266,7 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
 
 ## Immediate next action
 
-Finish the remaining bounded Phase 3.5 validation: front/rear native-Arch
-camera streams, one controlled suspend/resume cycle, kernel-warning
+Finish the remaining bounded Phase 3.5 validation: kernel-warning
 classification, a fresh release manifest, and two clean build comparisons.
 The former GUI blockers—source versioning, clock persistence, console
 manifest, atomic kernel generations and a tested rollback—are now resolved.
