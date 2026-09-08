@@ -1,0 +1,39 @@
+# Maintainer: ArchPad project
+
+pkgname=linux-archpad-pipa-fallback
+pkgver=7.1.4
+pkgrel=7
+pkgdesc='Known-good ArchPad pipa kernel generation retained for rollback'
+arch=('aarch64')
+license=('GPL-2.0-only')
+depends=('archpad-boot>=1.1.0' 'kmod')
+makedepends=('libarchive')
+options=('!strip')
+
+_release='7.1.4-pipa'
+_artifact="linux-archpad-pipa-${pkgver}-${pkgrel}-aarch64.pkg.tar.xz"
+source=("$_artifact")
+noextract=("$_artifact")
+sha512sums=('43547808c6bea02e4edc88e4b34cd3238ddbf6abaebe4e09f7e7e90fa2ed21cbacb68dafe79e31cca8798c23c80f8803586cb54ddd6a8bbfcc64b2fc1083bc7a')
+
+package() {
+  local generation="$pkgdir/usr/lib/archpad/kernel-generations/$_release"
+  local extracted="$srcdir/extracted"
+  mkdir -p "$generation" "$extracted"
+  bsdtar -xf "$srcdir/$_artifact" -C "$extracted"
+
+  install -Dm644 "$extracted/boot/Image" "$generation/Image"
+  install -Dm644 \
+    "$extracted/boot/dtbs/qcom/sm8250-xiaomi-pipa-tianma.dtb" \
+    "$generation/device.dtb"
+  install -Dm644 "$extracted/boot/config-$_release" \
+    "$generation/config"
+  install -Dm644 "$extracted/boot/System.map-$_release" \
+    "$generation/System.map"
+  cp -a "$extracted/usr/lib/modules/$_release" "$generation/modules"
+
+  printf '%s\n' "$_release" > "$generation/kernel.release"
+  printf '%s  %s\n' \
+    '971815f161448ac192182a4e50407b08c9812dd2af7b21ed4bbbf89a8960bf9b' \
+    "$_artifact" > "$generation/SOURCE-SHA256"
+}

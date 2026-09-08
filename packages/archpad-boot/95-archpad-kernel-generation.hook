@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = linux-archpad-pipa
+
+[Action]
+Description = Creating a complete ArchPad kernel boot generation...
+When = PostTransaction
+Exec = /usr/lib/archpad/archpad-kernel-post-transaction

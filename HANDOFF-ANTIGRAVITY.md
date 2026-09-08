@@ -1,6 +1,6 @@
 # ArchPad Handoff to Antigravity
 
-Updated: **2026-09-08 21:12 IST**
+Updated: **2026-09-08 22:40 IST**
 
 Read `ROADMAP.md` for the single project-level source of truth.
 
@@ -12,11 +12,11 @@ The tablet has successfully migrated from postmarketOS to **pure native Arch Lin
 
 - **Device:** Xiaomi Pad 6 (`pipa`), Snapdragon 870 (sm8250), 6/128 GB, Tianma LCD.
 - **Active Slot:** Slot A (`boot_a`).
-- **OS & Kernel:** Arch Linux ARM (aarch64), Linux `7.1.4-pipa`, package `linux-archpad-pipa-7.1.4-7`.
+- **OS & Kernel:** Arch Linux ARM (aarch64), Linux `7.1.4-pipa-r8`, package `linux-archpad-pipa-7.1.4-8`.
 - **Runlevel:** `multi-user.target` (pure console, zero desktop/GUI daemons active).
 - **Physical Display:** Tianma DSI-1 (1800×2880 @ 120 Hz) with crisp 32px HiDPI font (`ter-v32b`).
-- **Package Count:** **326 packages** (`pacman -Q`).
-- **Resource Usage:** **477 MiB RAM** idle (9%), **2.60 GiB disk usage** (2% of 105 GB ext4 root on `/dev/loop0p2`).
+- **Package Count:** **328 packages** (`pacman -Q`).
+- **Resource Usage:** **421 MiB RAM** at the latest check, **2.8 GiB disk usage** (3% of 105 GB ext4 root on `/dev/loop0p2`).
 - **Compressed Swap:** 2.7 GiB dynamic zram swap active (`zram-generator`).
 - **Build Toolchain:** `git`, `fakeroot`, `binutils`, and `yay-bin` (13.0.1) are installed and ready.
 
@@ -44,6 +44,25 @@ time from a Linux-owned PMIC-counter offset and never writes PMIC registers or
 EFI variables. A reboot verified correction from the RTC's 1972 base to 2026
 in roughly 50 ms; multi-user was reached in 18 seconds with no failed units.
 
+Phase 3.5 kernel-update hardening is also complete. `archpad-boot` 1.1.3
+creates a versioned boot generation only after checking the kernel, Tianma DTB,
+matching module vermagic and generated initramfs, then changes the persistent
+systemd-boot default only after hash validation. EFI variables are read-only in
+this U-Boot environment, so the manager updates `loader.conf` atomically.
+
+Current boot generations:
+
+- `7.1.4-pipa-r8`: current/default, from `linux-archpad-pipa 7.1.4-8`.
+- `7.1.4-pipa`: known-good r7 fallback, owned by
+  `linux-archpad-pipa-fallback 7.1.4-7` with its complete Image, DTB,
+  initramfs and module tree.
+
+Rollback was tested end-to-end after upgrading the active package: r7 booted,
+loaded `nt36523_ts` from the separately retained module tree, passed all boot
+hashes and had zero failed units. The system then booted back to r8. Automatic
+in-tree module signing with a different generated key on every build was
+disabled; Secure Boot and signature enforcement are not active.
+
 ---
 
 ## 3. Strict Operating Standards (User-Mandated)
@@ -55,13 +74,17 @@ in roughly 50 ms; multi-user was reached in 18 seconds with no failed units.
 
 ---
 
-## 4. Immediate Next Step: Phase 3.5 (Baseline Hardening)
+## 4. Immediate Next Step: Finish Phase 3.5 Validation
 
-Do not install the final GUI yet. Reconcile `AUDIT-2026-09-08.md` and
-`AUDIT-RESPONSE-2026-09-08.md`, then complete the Phase 3.5 gate in
-`ROADMAP.md`. In particular, do not implement an `Image.old`-only fallback:
-rollback must retain matching kernel, DTB, initramfs and modules as one
-bootable generation.
+Do not install the final GUI yet. The former blockers—Git versioning, image
+builder, baseline manifest, persistent clock, atomic kernel update and complete
+rollback generation—are resolved. Complete the remaining bounded checks:
+
+1. stream a short frame sequence from both cameras on native Arch;
+2. perform one controlled suspend/resume cycle and capture before/after state;
+3. classify the current non-fatal kernel warnings (fast-charge probe, top CPU
+   voltage, SoundWire ports and pen-charging chatter);
+4. regenerate the release manifest and perform two clean-build comparisons.
 
 The Arch Linux ARM `[aur]` entry is a curated binary repository and is not the
 same service as `aur.archlinux.org`; retain or remove it only through an

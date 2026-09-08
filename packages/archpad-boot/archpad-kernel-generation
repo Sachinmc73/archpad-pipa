@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Install and validate complete ArchPad boot generations.
+
+set -euo pipefail
+
+readonly boot_root=/boot/archpad
+readonly entries=/boot/loader/entries
+readonly default_entry=/boot/loader/entries/archpad.conf
+
+die() { printf 'archpad-kernel-generation: %s\n' "$*" >&2; exit 1; }
+
+validate_release() {
+  [[ $1 =~ ^[0-9A-Za-z._+-]+$ ]] || die "invalid kernel release: $1"
+}
+
+ensure_modules() {
+  local staged release target
+  shopt -s nullglob
+  for staged in /usr/lib/archpad/kernel-generations/*; do
+    [[ -d $staged/modules && -r $staged/kernel.release ]] || continue
+    read -r release < "$staged/kernel.release"
+    validate_release "$release"
+    target="/usr/lib/modules/$release"
+    if [[ ! -e $target && ! -L $target ]]; then
+      ln -s "../archpad/kernel-generations/$release/modules" "$target"
+    fi
+  done
+}
+
+install_generation() {
+  local release=$1 source=$2 title=$3 module_root sample vermagic options
+  local tmp destination entry_tmp entry
+  validate_release "$release"
+  module_root="$source/modules"
+  [[ -f $source/Image ]] || die "$source/Image is missing"
+  [[ -f $source/device.dtb ]] || die "$source/device.dtb is missing"
+  [[ -d $module_root ]] || die "$module_root is missing"
+  # install-current deliberately supplies modules through a temporary symlink.
+  # Follow it while selecting a module for release/vermagic validation.
+  sample=$(find -L "$module_root" -type f -name '*.ko*' -print -quit)
+  [[ -n $sample ]] || die "no modules found for $release"
+  vermagic=$(modinfo -F vermagic "$sample" | awk '{print $1}')
+  [[ $vermagic == "$release" ]] || die "module vermagic $vermagic does not match $release"
+  [[ -d /usr/lib/modules/$release ]] || die "/usr/lib/modules/$release is unavailable"
+  options=$(sed -n 's/^options[[:space:]]\+//p' "$default_entry" | head -n1)
+  [[ -n $options ]] || die 'cannot read kernel options from archpad.conf'
+
+  install -d "$boot_root" "$entries"
+  destination="$boot_root/$release"
+  [[ ! -e $destination ]] || die "generation already exists: $release"
+  tmp=$(mktemp -d "$boot_root/.${release}.XXXXXX")
+  trap 'rm -rf -- "$tmp"' EXIT INT TERM
+  install -m 0644 "$source/Image" "$tmp/Image"
+  install -m 0644 "$source/device.dtb" "$tmp/device.dtb"
+  mkinitcpio -c /etc/mkinitcpio.conf.d/archpad.conf -k "$release" \
+    -g "$tmp/initramfs.img"
+  (cd "$tmp" && sha256sum Image device.dtb initramfs.img > SHA256SUMS)
+  mv "$tmp" "$destination"
+  trap - EXIT INT TERM
+
+  entry="$entries/archpad-$release.conf"
+  entry_tmp=$(mktemp "$entries/.archpad-entry.XXXXXX")
+  {
+    printf 'title %s\n' "$title"
+    printf 'sort-key archpad\n'
+    printf 'linux /archpad/%s/Image\n' "$release"
+    printf 'initrd /archpad/%s/initramfs.img\n' "$release"
+    printf 'devicetree /archpad/%s/device.dtb\n' "$release"
+    printf 'options %s\n' "$options"
+  } > "$entry_tmp"
+  mv "$entry_tmp" "$entry"
+  sync /boot
+  verify_generation "$release"
+}
+
+verify_generation() {
+  local release=$1 path entry
+  validate_release "$release"
+  path="$boot_root/$release"
+  entry="$entries/archpad-$release.conf"
+  [[ -d $path && -f $entry ]] || die "generation $release is incomplete"
+  (cd "$path" && sha256sum -c SHA256SUMS)
+  grep -Fq "linux /archpad/$release/Image" "$entry" || die 'entry Image mismatch'
+  grep -Fq "initrd /archpad/$release/initramfs.img" "$entry" || die 'entry initramfs mismatch'
+  grep -Fq "devicetree /archpad/$release/device.dtb" "$entry" || die 'entry DTB mismatch'
+  [[ -d /usr/lib/modules/$release ]] || die "matching modules unavailable for $release"
+}
+
+set_default() {
+  local requested=$1 id tmp
+  if [[ $requested == legacy ]]; then
+    id=archpad.conf
+  else
+    validate_release "$requested"
+    verify_generation "$requested" >/dev/null
+    id="archpad-$requested.conf"
+  fi
+  [[ -f $entries/$id ]] || die "boot entry does not exist: $id"
+  tmp=$(mktemp /boot/loader/.loader.conf.XXXXXX)
+  awk -v id="$id" '
+    /^default[[:space:]]/ { print "default " id; found=1; next }
+    { print }
+    END { if (!found) print "default " id }
+  ' /boot/loader/loader.conf > "$tmp"
+  mv "$tmp" /boot/loader/loader.conf
+  sync /boot/loader/loader.conf
+  grep -Fxq "default $id" /boot/loader/loader.conf || die 'default update failed'
+  printf 'ArchPad default boot entry: %s\n' "$id"
+}
+
+case ${1-} in
+  ensure-modules)
+    ensure_modules
+    ;;
+  install-staged)
+    (($# == 3)) || die 'usage: install-staged RELEASE TITLE'
+    ensure_modules
+    install_generation "$2" "/usr/lib/archpad/kernel-generations/$2" "$3"
+    ;;
+  install-current)
+    (($# == 2)) || die 'usage: install-current TITLE'
+    release=$(< /usr/share/kernel/archpad-pipa/kernel.release)
+    current=$(mktemp -d /tmp/archpad-current.XXXXXX)
+    trap 'rm -rf -- "$current"' EXIT
+    ln -s "/usr/lib/modules/$release" "$current/modules"
+    ln -s /boot/Image "$current/Image"
+    ln -s /boot/dtbs/qcom/sm8250-xiaomi-pipa-tianma.dtb "$current/device.dtb"
+    ensure_modules
+    install_generation "$release" "$current" "$2"
+    ;;
+  verify)
+    (($# == 2)) || die 'usage: verify RELEASE'
+    verify_generation "$2"
+    ;;
+  set-default)
+    (($# == 2)) || die 'usage: set-default {RELEASE|legacy}'
+    set_default "$2"
+    ;;
+  *)
+    die 'usage: {ensure-modules|install-staged RELEASE TITLE|install-current TITLE|verify RELEASE|set-default RELEASE|legacy}'
+    ;;
+esac

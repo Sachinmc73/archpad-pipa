@@ -10,8 +10,9 @@ initial hardware validation on the project's Tianma-panel tablet.
 - Device patch/config source: postmarketOS pmaports commit
   `c6f27d1b653491029311e5c2bd0a25c4a654d436`
 - Original pmaports package: `linux-xiaomi-pipa` `7.1.4-r1`
-- Expected kernel release: `7.1.4-pipa`
-- Current ArchPad package release: `pkgrel=7`, with the front-camera fixes
+- Preserved fallback kernel release: `7.1.4-pipa` (`pkgrel=7`)
+- Current ArchPad package release: `pkgrel=8`, with kernel release
+  `7.1.4-pipa-r8` and the front-camera fixes
   through patch `0025`
 - Toolchain mode: LLVM/Clang (`LLVM=1`), matching the validated build
 - Display tree installed by the package:
@@ -24,9 +25,11 @@ rechecked against the pmaports APKBUILD checksums.
 ## Scope
 
 The package installs the kernel image, Tianma DTB and modules. It does not yet
-generate the ArchPad initramfs or boot entry. Those belong to the separate
-device integration package so the kernel can be updated without silently
-changing the storage/boot policy.
+generate the ArchPad initramfs or boot entry directly. `archpad-boot` assembles
+those files into a complete, hashed generation after pacman installs all
+payload files, validates it, and only then changes the systemd-boot default.
+The package release is included in `uname -r`, keeping module trees distinct
+across upgrades.
 
 The first successful Arch boot must use this source-built package. The existing
 postmarketOS APK may be used as a comparison oracle, but must not be installed

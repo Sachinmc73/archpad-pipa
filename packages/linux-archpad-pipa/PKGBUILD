@@ -2,12 +2,12 @@
 
 pkgname=linux-archpad-pipa
 pkgver=7.1.4
-pkgrel=7
+pkgrel=8
 pkgdesc='Linux kernel for the Xiaomi Pad 6 (pipa), Tianma panel'
 arch=('aarch64')
 url='https://github.com/pipa-mainline'
 license=('GPL-2.0-only')
-depends=('coreutils' 'kmod')
+depends=('archpad-boot>=1.1.3' 'coreutils' 'kmod')
 makedepends=(
   'bc'
   'bison'
@@ -33,6 +33,7 @@ conflicts=('linux-aarch64')
 options=('!strip')
 
 _flavor='pipa'
+_localversion="-r${pkgrel}"
 _build_epoch='1970-01-01T00:00:00Z'
 _patches=(
   '0001-arm64-dts-qcom-sm8250-xiaomi-pipa-Add-device-tree-fo.patch'
@@ -103,7 +104,7 @@ prepare() {
   done
 
   cp "${srcdir}/config-xiaomi-pipa.aarch64" .config
-  make ARCH=arm64 LLVM=1 olddefconfig
+  make ARCH=arm64 LLVM=1 LOCALVERSION="${_localversion}" olddefconfig
 }
 
 build() {
@@ -112,6 +113,7 @@ build() {
   make \
     ARCH=arm64 \
     LLVM=1 \
+    LOCALVERSION="${_localversion}" \
     KBUILD_BUILD_TIMESTAMP="${_build_epoch}" \
     KBUILD_BUILD_USER='archpad' \
     KBUILD_BUILD_HOST='builder' \
@@ -122,11 +124,13 @@ package() {
   cd "linux-${pkgver}"
 
   local kernelrelease
-  kernelrelease="$(make -s ARCH=arm64 LLVM=1 kernelrelease)"
+  kernelrelease="$(make -s ARCH=arm64 LLVM=1 \
+    LOCALVERSION="${_localversion}" kernelrelease)"
 
   make \
     ARCH=arm64 \
     LLVM=1 \
+    LOCALVERSION="${_localversion}" \
     INSTALL_MOD_PATH="${pkgdir}/usr" \
     INSTALL_MOD_STRIP=1 \
     modules_install

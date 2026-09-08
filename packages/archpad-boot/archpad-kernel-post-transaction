@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+/usr/lib/archpad/archpad-kernel-generation ensure-modules
+release=$(< /usr/share/kernel/archpad-pipa/kernel.release)
+if [[ ! -d /boot/archpad/$release ]]; then
+  /usr/lib/archpad/archpad-kernel-generation install-current \
+    "ArchPad current ($release)"
+fi
+/usr/lib/archpad/archpad-kernel-generation verify "$release"
+/usr/lib/archpad/archpad-kernel-generation set-default "$release"

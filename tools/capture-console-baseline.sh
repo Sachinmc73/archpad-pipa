@@ -36,7 +36,7 @@ section SYSTEMD
 systemctl get-default
 systemctl --failed --no-pager
 systemctl is-enabled sshd systemd-networkd systemd-resolved systemd-timesyncd \
-  iwd bluetooth archpad-audio-reprobe.service 2>&1 || true
+  iwd bluetooth archpad-audio-reprobe.service archpad-clock-save.timer 2>&1 || true
 
 section TIME
 timedatectl
@@ -79,7 +79,8 @@ done
 
 section CUSTOM_PACKAGE_INTEGRITY
 pacman -Qkk linux-archpad-pipa archpad-pipa-firmware archpad-pipa-device \
-  archpad-pipa-audio archpad-pipa-camera archpad-boot 2>&1 || true
+  archpad-pipa-audio archpad-pipa-camera archpad-boot archpad-clock \
+  linux-archpad-pipa-fallback 2>&1 || true
 
 section KERNEL_ERROR_SUMMARY
 printf 'dsi_pll_lock_failures='
