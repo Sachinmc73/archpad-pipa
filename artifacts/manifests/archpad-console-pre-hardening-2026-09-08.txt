@@ -1,0 +1,768 @@
+
+=== IDENTITY ===
+1972-12-21T06:09:15,991851959+00:00
+Linux archpad 7.1.4-pipa #1 SMP PREEMPT Mon Sep  7 10:04:46 UTC 2026 aarch64 GNU/Linux
+NAME="Arch Linux ARM"
+PRETTY_NAME="Arch Linux ARM"
+ID=archarm
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;23;147;209"
+HOME_URL="https://archlinuxarm.org/"
+DOCUMENTATION_URL="https://archlinuxarm.org/wiki"
+SUPPORT_URL="https://archlinuxarm.org/forum"
+BUG_REPORT_URL="https://github.com/archlinuxarm/PKGBUILDs/issues"
+LOGO=archlinux-logo
+machine-id-sha256: 7deba95566adc6bb471f173b82b7eff17f16002d7259f786cb321ecec0b55a1c
+
+=== BOOT ===
+initrd=\initramfs-linux.img console=tty0 root=UUID=c6e69b4d-faec-48bf-9df7-6083807d27cb rw audit=0 loglevel=3 quiet cma=128M
+/dev/loop0p2 ext4 rw,relatime,errors=remount-ro
+/dev/loop0p1 vfat rw,relatime,fmask=0077,dmask=0077,codepage=437,iocharset=ascii,shortname=mixed,errors=remount-ro
+NAME        SIZE TYPE FSTYPE LABEL     PARTLABEL       MOUNTPOINTS
+loop0     106.6G loop
+|-loop0p1   480M part vfat   ARCH_BOOT primary         /boot
+`-loop0p2 106.1G part ext4   ARCH_ROOT primary         /
+sda       116.9G disk
+|-sda1        8K part                  switch
+|-sda2       32K part                  ssd
+|-sda3       32K part                  dbg
+|-sda4       32K part                  bk01
+|-sda5      128K part                  bk02
+|-sda6      256K part                  bk03
+|-sda7      512K part                  bk04
+|-sda8      512K part                  keystore
+|-sda9      512K part                  frp
+|-sda10       2M part                  countrycode
+|-sda11       4M part                  misc
+|-sda12       8M part                  bk06
+|-sda13       8M part vfat   LOGFS     logfs
+|-sda14       8M part                  ffu
+|-sda15      16M part                  oops
+|-sda16      16M part                  devinfo
+|-sda17       1M part                  oem_misc1
+|-sda18      64M part ext4             metadata
+|-sda19      15M part                  bk08
+|-sda20      32M part                  splash
+|-sda21      32M part                  bk09
+|-sda22      64M part ext4             persist
+|-sda23      64M part ext4             persistbak
+|-sda24      32M part                  mtdblk
+|-sda25      64M part                  logdump
+|-sda26      96M part                  minidump
+|-sda27     128M part                  rawdump
+|-sda28       1G part ext4   cust      cust
+|-sda29     8.5G part                  super
+|-sda30     128K part                  vbmeta_system_a
+|-sda31     128K part                  vbmeta_system_b
+|-sda32    31.8M part                  bk010
+|-sda33     128M part ext4   rescue    rescue
+`-sda34   106.6G part                  userdata
+sdb          16M disk
+|-sdb1        8M part                  xbl_a
+`-sdb2        8M part                  xbl_config_a
+sdc          16M disk
+|-sdc1        8M part                  xbl_b
+`-sdc2        8M part                  xbl_config_b
+sdd          32M disk
+|-sdd1      104K part                  ALIGN_TO_128K_1
+|-sdd2      128K part                  cdt
+|-sdd3        2M part                  ddr
+`-sdd4     29.7M part                  mdmddr
+sde         2.1G disk
+|-sde1      512K part                  aop_a
+|-sde2        2M part                  bk41_a
+|-sde3        4M part                  tz_a
+|-sde4        8M part                  hyp_a
+|-sde5      448M part vfat             modem_a
+|-sde6        1M part vfat             bluetooth_a
+|-sde7        4M part                  mdtpsecapp_a
+|-sde8       32M part                  mdtp_a
+|-sde9        2M part                  abl_a
+|-sde10      64M part ext4   dsp       dsp_a
+|-sde11       1M part                  keymaster_a
+|-sde12     192M part                  boot_a
+|-sde13       1M part                  cmnlib_a
+|-sde14       1M part                  cmnlib64_a
+|-sde15     256K part                  devcfg_a
+|-sde16     128K part                  qupfw_a
+|-sde17     128K part                  vbmeta_a
+|-sde18      32M part                  dtbo_a
+|-sde19       2M part                  uefisecapp_a
+|-sde20      32K part                  multiimgoem_a
+|-sde21      32K part                  multiimgqti_a
+|-sde22      32M part                  vm-linux_a
+|-sde23     128K part                  featenabler_a
+|-sde24      48M part                  imagefv_a
+|-sde25      96M part                  vendor_boot_a
+|-sde26     512K part                  aop_b
+|-sde27       2M part                  bk41_b
+|-sde28       4M part                  tz_b
+|-sde29       8M part                  hyp_b
+|-sde30     448M part vfat             modem_b
+|-sde31       1M part vfat             bluetooth_b
+|-sde32       4M part                  mdtpsecapp_b
+|-sde33      32M part                  mdtp_b
+|-sde34       2M part                  abl_b
+|-sde35      64M part ext4   dsp       dsp_b
+|-sde36       1M part                  keymaster_b
+|-sde37     192M part                  boot_b
+|-sde38       1M part                  cmnlib_b
+|-sde39       1M part                  cmnlib64_b
+|-sde40     256K part                  devcfg_b
+|-sde41     128K part                  qupfw_b
+|-sde42     128K part                  vbmeta_b
+|-sde43      32M part                  dtbo_b
+|-sde44       2M part                  uefisecapp_b
+|-sde45      32K part                  multiimgoem_b
+|-sde46      32K part                  multiimgqti_b
+|-sde47      32M part                  vm-linux_b
+|-sde48     128K part                  featenabler_b
+|-sde49      96M part                  vendor_boot_b
+|-sde50      48M part                  imagefv_b
+|-sde51     256K part                  bk42
+|-sde52     3.6M part                  bk43
+|-sde53      52M part                  bk44
+|-sde54       1M part                  dip
+|-sde55     256K part                  apdp
+|-sde56      16M part                  gsort
+|-sde57     256K part                  msadp
+|-sde58      32M part vfat             spunvm
+|-sde59      32K part                  limits
+|-sde60      32K part                  limits-cdsp
+|-sde61     128K part                  storsec
+|-sde62     512K part                  uefivarstore
+|-sde63      32K part                  secdata
+|-sde64     128K part                  vm-keystore
+`-sde65   127.4M part                  vm-data
+sdf          64M disk
+|-sdf1      104K part                  ALIGN_TO_128K_2
+|-sdf2        2M part                  modemst1
+|-sdf3        2M part                  modemst2
+|-sdf4        2M part                  fsg
+|-sdf5      128K part                  fsc
+|-sdf6      768K part                  bk51
+|-sdf7        8M part                  mdm1m9kefs3
+|-sdf8        8M part                  mdm1m9kefs1
+|-sdf9        8M part                  mdm1m9kefs2
+`-sdf10      33M part                  mdm1m9kefsc
+zram0       2.7G disk swap   zram0                     [SWAP]
+8356a149592f5807acf729eede6edbd2d903a5b8d84c6e0c02048a615aef0c8a  /boot/EFI/BOOT/BOOTAA64.EFI
+637c2941c54f3fc5308594979ce5215d4ddb9f47e9a3d8373f099e6c74e0d787  /boot/Image
+d946728eb9ee0ab42567f9f05d70ff24cb1e6cb2bd2ed075632a8a747478b456  /boot/System.map-7.1.4-pipa
+959dabfdfec05cd910ce76d96e0dce79e142bb1c00f092c9acad45772e093dca  /boot/config-7.1.4-pipa
+cfb55c6462b4664dc2f4342689d6c29c4ed7728e65df3f1837ce20108f8beff2  /boot/dtbs/qcom/sm8250-xiaomi-pipa-tianma.dtb
+a7b4a0d9a626cfe9f6882d5ccce26637a91eaf853c50fe1a76a190ac6cfbfe97  /boot/initramfs-linux.img
+4e06fa5d79a3d0257781733d87671a5d32377e497f5dc6f839630253f8bc773c  /boot/loader/entries/archpad.conf
+ac3c3a2030e622e981d4ea2ff4b5fe9205dbebc0f1249ed375084bc0c847fd4b  /boot/loader/loader.conf
+0d9cfe48c2a55871196dec446ea2c85e49d4f120253cf5c6b247ac13c77c2491  /boot/loader/random-seed
+cfb55c6462b4664dc2f4342689d6c29c4ed7728e65df3f1837ce20108f8beff2  /boot/sm8250-xiaomi-pipa-tianma.dtb
+ab36f9167358b23f1ac2d162bef10149551ededc0a3cd1af24bc4056fce6d180  /boot/ubootefi.var
+
+=== PACKAGES ===
+abseil-cpp 20260817.0-2
+acl 2.4.0-1
+alsa-card-profiles 1:1.6.8-1
+alsa-lib 1.2.16.1-1
+alsa-topology-conf 1.2.5.1-4
+alsa-ucm-conf 1.2.16.1-1
+alsa-utils 1.2.16-1
+archlinux-keyring 20260727-1
+archlinuxarm-keyring 20240419-2
+archpad-boot 1.0.0-1
+archpad-pipa-audio 1.0.0-1
+archpad-pipa-camera 1.0.0-1
+archpad-pipa-device 1.0.0-1
+archpad-pipa-firmware 1.0.0-1
+attr 2.6.0-1
+audit 4.2.1-1
+avahi 1:0.9rc5-1
+base 3-3
+bash 5.3.15-1
+binutils 2.46+r70+g155188ea10a7-1
+bluez 5.87-2
+bluez-deprecated-tools 5.87-2
+bluez-libs 5.87-2
+bluez-utils 5.87-2
+brightnessctl 0.5.1-3
+brotli 1.2.0-1
+bzip2 1.0.8-6
+ca-certificates 20240618-1
+ca-certificates-mozilla 3.126-1
+ca-certificates-utils 20240618-1
+cairo 1.18.4-1
+coreutils 9.11-2
+cryptsetup 2.8.7-1
+curl 8.21.0-1
+db5.3 5.3.28-7
+dbus 1.16.2-1
+dbus-broker 37-3
+dbus-broker-units 37-3
+dbus-units 37-3
+dconf 0.49.0-1
+default-cursors 3-1
+device-mapper 2.03.41-1
+dhcpcd 10.3.2-1
+diffutils 3.12-2
+double-conversion 3.4.0-1
+duktape 2.7.0-7
+e2fsprogs 1.47.4-1
+ell 0.83-1
+evtest 1.36-1
+ex-vi-compat 3-1
+expat 2.8.2-1
+fakeroot 1:1.37.2-3
+fastfetch 2.68.1-1
+fftw 3.3.11-1
+file 5.48-1
+filesystem 2025.10.12-1
+findutils 4.11.0-1
+flac 1.5.0-1
+fontconfig 2:2.18.3-2
+freetype2 2.14.3-1
+fribidi 1.0.16-2
+gawk 5.4.1-1
+gcc-libs 16.1.1+r12+g301eb08fa2c5-1
+gdbm 1.26-2
+gettext 1.0-2
+git 2.55.0-1
+glib2 2.88.3-1
+glibc 2.43+r22+g8362e8ce10b2-2
+gmp 6.3.0-3
+gnulib-l10n 20241231-1
+gnupg 2.4.9-2
+gnutls 3.8.13-2
+gpgme 2.1.2-1
+gpm 1.20.7.r38.ge82d1a6-6
+graphite 1:1.3.15-1
+grep 3.12-2
+gtest 1.18.0-1
+gzip 1.14-2
+harfbuzz 14.4.0-1
+hidapi 0.15.0-1
+htop 3.5.3-1
+hwdata 0.410-1
+iana-etc 20260530-1
+icu 78.3-1
+iproute2 7.1.0-1
+iptables 1:1.8.13-1
+iputils 20250605-1
+iw 6.17-1
+iwd 3.12-1.1
+jansson 2.15.0-1
+jbigkit 2.1-8
+json-c 0.19-1
+kbd 2.10.0-1
+keyutils 1.6.3-4
+kmod 34.2-1
+krb5 1.22.2-1
+lame 4.0-1
+leancrypto 1.8.0-1
+libarchive 3.8.9-1
+libasan 16.1.1+r12+g301eb08fa2c5-1
+libassuan 3.0.0-1
+libasyncns 1:0.8+r3+g68cd5af-3
+libatomic 16.1.1+r12+g301eb08fa2c5-1
+libb2 0.98.1-3
+libbpf 1.7.0-1
+libcamera 0.7.2-4
+libcamera-ipa 0.7.2-4
+libcamera-tools 0.7.2-4
+libcap 2.78-1
+libcap-ng 0.9.3-1
+libcups 2:2.4.19-1
+libdaemon 0.14-6
+libdatrie 0.2.14-1
+libdecor 0.2.5-1
+libdeflate 1.26-1
+libdisplay-info 0.3.0-1
+libdrm 2.4.134-1
+libebur128 1.2.6-2
+libedit 20260512_3.1-1
+libelf 0.196-1
+libevdev 1.13.7-1
+libevent 2.1.13-2
+libfdk-aac 2.0.3-2
+libffi 3.7.1-1
+libfreeaptx 0.2.2-1
+libgcc 16.1.1+r12+g301eb08fa2c5-1
+libgcrypt 1.12.2-1
+libgfortran 16.1.1+r12+g301eb08fa2c5-1
+libglvnd 1.7.0-3
+libgomp 16.1.1+r12+g301eb08fa2c5-1
+libgpg-error 1.61-1
+libgudev 238-3
+libice 1.1.2-1
+libidn2 2.3.8-1
+libinput 1.31.3-1
+libjpeg-turbo 3.2.0-2
+libksba 1.8.0-1
+liblc3 1.1.3-2
+libldac 2.0.2.6-1
+libldap 2.6.13-1
+liblsan 16.1.1+r12+g301eb08fa2c5-1
+libmakepkg-dropins 20-1
+libmnl 1.0.5-2
+libmysofa 1.3.5-1
+libnetfilter_conntrack 1.1.1-1
+libnfnetlink 1.0.2-2
+libnftnl 1.3.1-1
+libnghttp2 1.70.0-1
+libnghttp3 1.18.0-1
+libngtcp2 1.25.0-1
+libnl 3.12.0-1
+libnsl 2.0.1-2
+libobjc 16.1.1+r12+g301eb08fa2c5-1
+libogg 1.3.6-1
+libp11-kit 0.26.4-1
+libpcap 1.10.6-1
+libpciaccess 0.19-1
+libpipewire 1:1.6.8-1
+libpisp 1.5.0-1
+libpng 1.6.58-2
+libproxy 0.5.12-1
+libpsl 0.21.5-2
+libpulse 17.0+r98+gb096704c0-1
+libquadmath 16.1.1+r12+g301eb08fa2c5-1
+libsamplerate 0.2.2-3
+libsasl 2.1.28-5
+libseccomp 2.6.0-1
+libsecret 0.21.7-1
+libsm 1.2.6-1
+libsndfile 1.2.2-4
+libssh2 1.11.1-7
+libstdc++ 16.1.1+r12+g301eb08fa2c5-1
+libsysprof-capture 50.0-4
+libtasn1 4.21.0-1
+libthai 0.1.30-1
+libtiff 4.7.2-1
+libtirpc 1.3.7-1
+libtsan 16.1.1+r12+g301eb08fa2c5-1
+libubsan 16.1.1+r12+g301eb08fa2c5-1
+libunistring 1.4.2-1
+libunwind 1.8.3-1
+liburing 2.15-1
+libusb 1.0.30-1
+libverto 0.3.2-6
+libvorbis 1.3.7-4
+libwacom 2.19.1-1
+libwebp 1.6.0-2
+libwireplumber 0.5.17-1
+libx11 1.8.13-1
+libxau 1.0.12-1
+libxcb 1.17.0-1
+libxcrypt 4.5.2-1
+libxcursor 1.2.3-1
+libxdmcp 1.1.5-2
+libxext 1.3.7-1
+libxfixes 6.0.2-1
+libxft 2.3.9-1
+libxkbcommon 1.13.2-1
+libxkbcommon-x11 1.13.2-1
+libxml2 2.15.3-1
+libxrender 0.9.12-1
+libxshmfence 1.3.3-1
+libxxf86vm 1.1.7-1
+libyaml 0.2.5-3
+libyuv r2921+644251f25-1
+licenses 20240728-1
+lilv 0.28.0-1
+linux-api-headers 7.1-1
+linux-archpad-pipa 7.1.4-7
+linux-firmware 20260622-1
+linux-firmware-amdgpu 20260622-1
+linux-firmware-atheros 20260622-1
+linux-firmware-broadcom 20260622-1
+linux-firmware-cirrus 20260622-1
+linux-firmware-intel 20260622-1
+linux-firmware-mediatek 20260622-1
+linux-firmware-nvidia 20260622-1
+linux-firmware-other 20260622-1
+linux-firmware-radeon 20260622-1
+linux-firmware-realtek 20260622-1
+linux-firmware-whence 20260622-1
+llvm-libs 22.1.8-2
+lm_sensors 1:3.6.2-1
+lmdb 0.9.35-1
+lua 5.5.1-1
+lua54 5.4.9-1
+lv2 1.18.10-2
+lz4 1:1.10.0-2
+lzo 2.10-5
+md4c 0.5.3-1
+mesa 1:26.2.2-1
+mesa-utils 9.0.0-7
+mkinitcpio 41-4
+mkinitcpio-busybox 1.36.1-1
+mpfr 4.2.2-1
+mpg123 1.33.7-1
+mtdev 1.1.7-1
+nano 9.1-1
+ncurses 6.6-2
+net-tools 2.10-3
+netctl 1.29-2
+nettle 4.0-1
+nftables 1:1.1.6-3
+nlohmann-json 3.12.0-2
+npth 1.8-1
+openssh 10.4p1-3
+openssl 3.6.3-1
+opus 1.6.1-1
+p11-kit 0.26.4-1
+pacman 7.1.0.r9.g54d9411-2
+pacman-mirrorlist 20260411-2
+pam 1.7.2-2
+pambase 20260616-1
+pango 1:1.58.2-1
+pciutils 3.15.0-1
+pcre2 10.47-1
+perl 5.42.2-2
+perl-error 0.17030-3
+perl-mailtools 2.22-3
+perl-timedate 2.35-1
+pinentry 1.3.3-1
+pipewire 1:1.6.8-1
+pipewire-audio 1:1.6.8-1
+pipewire-pulse 1:1.6.8-1
+pixman 0.46.4-1.1
+popt 1.19-2
+procps-ng 4.0.6-3
+psmisc 23.7-2
+qt6-base 6.11.2-3
+qt6-translations 6.11.2-1
+readline 8.3.003-1
+sbc 2.2-1
+sdl2-compat 2.32.72-1
+sdl3 3.4.16-1
+sed 4.10-1
+serd 0.32.10-1
+shadow 4.20.0.arch1-1
+shared-mime-info 2.5.1-2
+sord 0.16.22-1
+spandsp 0.0.6-7
+spirv-tools 1:1.4.357.0-1
+sqlite 3.53.4-1
+sratom 0.6.22-1
+sudo 1.9.17.p2-6
+systemd 261.2-1
+systemd-libs 261.2-1
+systemd-resolvconf 261.2-1
+systemd-sysvcompat 261.2-1
+tar 1.35-2
+terminus-font 4.49.1-8
+tpm2-tss 4.1.3-1
+tslib 1.24-1
+tzdata 2026c-1
+unzip 6.0-23
+util-linux 2.42.2-1
+util-linux-libs 2.42.2-1
+vim 9.2.0849-1
+vim-runtime 9.2.0849-1
+vulkan-freedreno 1:26.2.2-1
+vulkan-icd-loader 1.4.357.0-1
+vulkan-mesa-implicit-layers 1:26.2.2-1
+vulkan-tools 1.4.357.0-1
+wayland 1.26.0-1
+wayland-protocols 1.49-1
+webrtc-audio-processing-1 1.3-5
+which 2.25-1
+wireless-regdb 2026.05.30-1
+wireplumber 0.5.17-1
+xcb-proto 1.17.0-4
+xcb-util 0.4.1-2
+xcb-util-cursor 0.1.6-1
+xcb-util-image 0.4.1-3
+xcb-util-keysyms 0.4.1-5
+xcb-util-renderutil 0.3.10-2
+xcb-util-wm 0.4.2-2
+xdg-utils 1.2.1-2
+xkeyboard-config 2.48-1
+xorgproto 2025.1-1
+xz 5.8.3-1
+yay-bin 13.0.1-1
+yyjson 0.12.0-1
+zix 0.8.2-1
+zlib 1:1.3.2-3
+zlib-ng 2.3.3-1
+zram-generator 1.2.1-1
+zstd 1.5.7-3
+
+=== CUSTOM_PACKAGES ===
+archpad-boot 1.0.0-1
+archpad-pipa-audio 1.0.0-1
+archpad-pipa-camera 1.0.0-1
+archpad-pipa-device 1.0.0-1
+archpad-pipa-firmware 1.0.0-1
+linux-archpad-pipa 7.1.4-7
+yay-bin 13.0.1-1
+
+=== REPOSITORIES ===
+core
+extra
+alarm
+aur
+
+=== SYSTEMD ===
+multi-user.target
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+enabled
+enabled
+enabled
+enabled
+enabled
+enabled
+enabled
+
+=== TIME ===
+               Local time: Thu 1972-12-21 06:09:17 UTC
+           Universal time: Thu 1972-12-21 06:09:17 UTC
+                 RTC time: Thu 1972-12-21 06:09:17
+                Time zone: UTC (UTC, +0000)
+System clock synchronized: no
+              NTP service: active
+          RTC in local TZ: no
+
+=== RESOURCES ===
+               total        used        free      shared  buff/cache   available
+Mem:           5.4Gi       468Mi       4.4Gi        37Mi       754Mi       4.9Gi
+Swap:          2.7Gi          0B       2.7Gi
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/loop0p2    105G  2.6G   98G   3% /
+/dev/loop0p1    479M   67M  413M  14% /boot
+NAME       TYPE      SIZE USED PRIO
+/dev/zram0 partition 2.7G   0B  100
+
+=== HARDWARE ===
+I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+N: Name="gpio-keys"
+P: Phys=gpio-keys/input0
+S: Sysfs=/devices/platform/gpio-keys/input/input0
+U: Uniq=
+H: Handlers=kbd event0
+B: PROP=0
+B: EV=23
+B: KEY=8000000000000 0
+B: SW=1
+
+I: Bus=001c Vendor=0000 Product=0000 Version=0000
+N: Name="NVTCapacitiveTouchScreen"
+P: Phys=input/ts
+S: Sysfs=/devices/virtual/input/input1
+U: Uniq=
+H: Handlers=event1
+B: PROP=2
+B: EV=b
+B: KEY=400 0 0 0 0 0
+B: ABS=661800000000000
+
+I: Bus=001c Vendor=0000 Product=0000 Version=0000
+N: Name="NVTCapacitivePen"
+P: Phys=input/pen
+S: Sysfs=/devices/virtual/input/input2
+U: Uniq=
+H: Handlers=event2
+B: PROP=2
+B: EV=b
+B: KEY=1c01 0 0 0 0 0
+B: ABS=f000003
+
+I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+N: Name="Nanosic 803 tablet mode"
+P: Phys=input/tablet-mode
+S: Sysfs=/devices/platform/soc@0/9c0000.geniqup/988000.i2c/i2c-2/2-004c/input/input3
+U: Uniq=
+H: Handlers=event3
+B: PROP=0
+B: EV=21
+B: SW=2
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="pm8941_pwrkey"
+P: Phys=pm8941_pwrkey/input0
+S: Sysfs=/devices/platform/soc@0/c440000.spmi/spmi-0/0-00/c440000.spmi:pmic@0:pon@800/c440000.spmi:pmic@0:pon@800:pwrkey/input/input4
+U: Uniq=
+H: Handlers=kbd event4
+B: PROP=0
+B: EV=3
+B: KEY=10000000000000 0
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="pm8941_resin"
+P: Phys=pm8941_resin/input0
+S: Sysfs=/devices/platform/soc@0/c440000.spmi/spmi-0/0-00/c440000.spmi:pmic@0:pon@800/c440000.spmi:pmic@0:pon@800:resin/input/input5
+U: Uniq=
+H: Handlers=kbd event5
+B: PROP=0
+B: EV=3
+B: KEY=4000000000000 0
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="Xiaomi Pad 6 Headset Jack"
+P: Phys=ALSA
+S: Sysfs=/devices/platform/sound/sound/card0/input6
+U: Uniq=
+H: Handlers=kbd event6
+B: PROP=0
+B: EV=23
+B: KEY=40 0 0 0 0 30 400000000 0 c000000000000 0
+B: SW=d4
+
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
+usb0             UP             b2:f4:7d:9a:ec:cb <BROADCAST,MULTICAST,UP,LOWER_UP>
+wlan0            DOWN           00:03:7f:12:f4:f4 <NO-CARRIER,BROADCAST,MULTICAST,UP>
+/sys/class/power_supply/nuvolta-1665
+/sys/class/power_supply/nuvolta-1665/type:Wireless
+/sys/class/power_supply/nuvolta-1665/capacity:100
+/sys/class/power_supply/nuvolta-1665/voltage_now:0
+/sys/class/power_supply/nuvolta-1665/current_now:0
+/sys/class/power_supply/pm8150b-charger
+/sys/class/power_supply/pm8150b-charger/type:USB
+/sys/class/power_supply/pm8150b-charger/status:Not charging
+/sys/class/power_supply/pm8150b-charger/voltage_now:0
+/sys/class/power_supply/pm8150b-charger/current_now:0
+/sys/class/power_supply/qcom-battery
+/sys/class/power_supply/qcom-battery/type:Battery
+/sys/class/power_supply/qcom-battery/status:Discharging
+/sys/class/power_supply/qcom-battery/capacity:99
+/sys/class/power_supply/qcom-battery/voltage_now:4525379
+/sys/class/power_supply/qcom-battery/current_now:-36621
+/sys/class/power_supply/tcpm-source-psy-c440000.spmi:pmic@2:typec@1500
+/sys/class/power_supply/tcpm-source-psy-c440000.spmi:pmic@2:typec@1500/type:USB
+/sys/class/power_supply/tcpm-source-psy-c440000.spmi:pmic@2:typec@1500/voltage_now:5000000
+/sys/class/power_supply/tcpm-source-psy-c440000.spmi:pmic@2:typec@1500/current_now:3000000
+[3:05:17.134493363] [14507]  INFO Camera camera_manager.cpp:340 libcamera v0.7.2
+[3:05:17.197825081] [14508] ERROR V4L2 v4l2_subdevice.cpp:1192 'ov13b10 20-0010': Unable to get rectangle 2 on pad 0/0: Inappropriate ioctl for device
+[3:05:17.197871331] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:402 'ov13b10 20-0010': The PixelArraySize property has been defaulted to 4208x3120
+[3:05:17.197884248] [14508] ERROR V4L2 v4l2_subdevice.cpp:1192 'ov13b10 20-0010': Unable to get rectangle 1 on pad 0/0: Inappropriate ioctl for device
+[3:05:17.197894560] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:413 'ov13b10 20-0010': The PixelArrayActiveAreas property has been defaulted to (0, 0)/4208x3120
+[3:05:17.197905654] [14508] ERROR V4L2 v4l2_subdevice.cpp:1192 'ov13b10 20-0010': Unable to get rectangle 0 on pad 0/0: Inappropriate ioctl for device
+[3:05:17.197914925] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:421 'ov13b10 20-0010': Failed to retrieve the sensor crop rectangle
+[3:05:17.197921956] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:427 'ov13b10 20-0010': The sensor kernel driver needs to be fixed
+[3:05:17.197928831] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:429 'ov13b10 20-0010': See Documentation/sensor_driver_requirements.rst in the libcamera sources for more information
+[3:05:17.198226435] [14508]  WARN CameraSensorProperties camera_sensor_properties.cpp:548 No static properties available for 'ov13b10'
+[3:05:17.198246331] [14508]  WARN CameraSensorProperties camera_sensor_properties.cpp:550 Please consider updating the camera sensor properties database
+[3:05:17.198261383] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:502 'ov13b10 20-0010': No sensor delays found in static properties. Assuming unverified defaults.
+[3:05:17.199768363] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:502 'hi846 23-0020': No sensor delays found in static properties. Assuming unverified defaults.
+[3:05:17.288273883] [14508]  WARN IPAProxy ipa_proxy.cpp:196 Configuration file 'ov13b10.yaml' not found for IPA module 'simple', falling back to '/usr/share/libcamera/ipa/simple/uncalibrated.yaml'
+[3:05:17.288324873] [14508] ERROR V4L2 v4l2_subdevice.cpp:1192 'ov13b10 20-0010': Unable to get rectangle 0 on pad 0/0: Inappropriate ioctl for device
+[3:05:17.288342321] [14508]  WARN CameraSensor camera_sensor_legacy.cpp:881 'ov13b10 20-0010': The analogue crop rectangle has been defaulted to the active area size
+[3:05:17.288385967] [14508]  WARN IPASoft soft_simple.cpp:104 IPASoft: Failed to create camera sensor helper for ov13b10
+[3:05:17.289157946] [14508]  INFO Camera camera_manager.cpp:223 Adding camera '/base/soc@0/cci@ac4f000/i2c-bus@0/camera@10' for pipeline handler simple
+[3:05:17.319993363] [14508]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /usr/share/libcamera/ipa/simple/hi846.yaml
+[3:05:17.320076279] [14508]  WARN IPASoft soft_simple.cpp:104 IPASoft: Failed to create camera sensor helper for hi846
+[3:05:17.320482842] [14508]  INFO Camera camera_manager.cpp:223 Adding camera '/base/soc@0/cci@ac50000/i2c-bus@1/camera@20' for pipeline handler simple
+Available cameras:
+1: Internal back camera (/base/soc@0/cci@ac4f000/i2c-bus@0/camera@10)
+2: Internal front camera (/base/soc@0/cci@ac50000/i2c-bus@1/camera@20)
+'DISPLAY' environment variable not set... skipping surface info
+==========
+VULKANINFO
+==========
+
+Vulkan Instance Version: 1.4.357
+
+
+Instance Extensions: count = 26
+-------------------------------
+VK_EXT_acquire_drm_display             : extension revision 1
+VK_EXT_acquire_xlib_display            : extension revision 1
+VK_EXT_debug_report                    : extension revision 10
+VK_EXT_debug_utils                     : extension revision 2
+VK_EXT_direct_mode_display             : extension revision 1
+VK_EXT_display_surface_counter         : extension revision 1
+VK_EXT_headless_surface                : extension revision 1
+VK_EXT_layer_settings                  : extension revision 2
+VK_EXT_surface_maintenance1            : extension revision 1
+VK_EXT_swapchain_colorspace            : extension revision 5
+VK_KHR_device_group_creation           : extension revision 1
+VK_KHR_display                         : extension revision 23
+VK_KHR_external_fence_capabilities     : extension revision 1
+VK_KHR_external_memory_capabilities    : extension revision 1
+VK_KHR_external_semaphore_capabilities : extension revision 1
+VK_KHR_get_display_properties2         : extension revision 1
+VK_KHR_get_physical_device_properties2 : extension revision 2
+VK_KHR_get_surface_capabilities2       : extension revision 1
+VK_KHR_portability_enumeration         : extension revision 1
+VK_KHR_surface                         : extension revision 25
+VK_KHR_surface_maintenance1            : extension revision 1
+VK_KHR_surface_protected_capabilities  : extension revision 1
+VK_KHR_wayland_surface                 : extension revision 6
+VK_KHR_xcb_surface                     : extension revision 6
+VK_KHR_xlib_surface                    : extension revision 6
+VK_LUNARG_direct_driver_loading        : extension revision 1
+
+Instance Layers: count = 2
+--------------------------
+VK_LAYER_MESA_anti_lag      Open-source implementation of the VK_AMD_anti_lag extension. 1.4.303  version 1
+VK_LAYER_MESA_device_select Linux device selection layer                                 1.4.303  version 1
+
+Devices:
+========
+GPU0:
+	apiVersion         = 1.3.354
+	driverVersion      = 26.2.2
+	vendorID           = 0x5143
+	deviceID           = 0x6050002
+	deviceType         = PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+	deviceName         = Turnip Adreno (TM) 650
+	driverID           = DRIVER_ID_MESA_TURNIP
+	driverName         = turnip Mesa driver
+	driverInfo         = Mesa 26.2.2-arch1.1
+	conformanceVersion = 1.2.7.1
+	deviceUUID         = 91d356f6-9667-d5ab-ba50-f1ef4a6826ce
+	driverUUID         = c655dc91-442e-d396-9e40-198ae76b3649
+
+=== TRACKED_CONFIGURATION_HASHES ===
+a311c5dee5f5d513223c3ea52acf905be6f43abd5e7df01d4e3691e52c7793cc  /etc/fstab
+ca8b38ddb687d98eec49a47bb5ee86c24e205d130b5d9840111b3e68ad75b08d  /etc/hostname
+609cf564df0200b3ce73aa5758083fe246078da4619dccad51e17c101f9d6853  /etc/issue
+MISSING  /etc/iwd/main.conf
+033252d5100cbb0028d7c15e075f63e4eb5ff7f1a923cd5cb547bcfd6b024f5b  /etc/locale.conf
+b12d6b1e26e42633b3053cbab472a75ac6dfdc47f01e9f8220fc6c5f848ddd11  /etc/mkinitcpio.conf
+ab226ce0d8e2d89ce1dffb0b7813b66d51dc13fa0b353de7462ad5cbdb958d46  /etc/mkinitcpio.conf.d/archpad.conf
+ee1a7eb4780ac97c721813468295e30dfa46e150036c1a76f5c4ed732fe4be6c  /etc/pacman.conf
+010ed0a9b44ad5e564f75488cce7b6838dd97c993d1052c3b33f314eb717f297  /etc/systemd/zram-generator.conf
+1e5763f2137f9018972fc63f694735d77cef7b908fcfd1940516b92bd89e1bec  /etc/vconsole.conf
+ac3c3a2030e622e981d4ea2ff4b5fe9205dbebc0f1249ed375084bc0c847fd4b  /boot/loader/loader.conf
+4e06fa5d79a3d0257781733d87671a5d32377e497f5dc6f839630253f8bc773c  /boot/loader/entries/archpad.conf
+
+=== CUSTOM_PACKAGE_INTEGRITY ===
+warning: linux-archpad-pipa: /boot (Permissions mismatch)
+warning: linux-archpad-pipa: /boot/Image (Permissions mismatch)
+warning: linux-archpad-pipa: /boot/Image (Modification time mismatch)
+warning: linux-archpad-pipa: /boot/System.map-7.1.4-pipa (Permissions mismatch)
+warning: linux-archpad-pipa: /boot/System.map-7.1.4-pipa (Modification time mismatch)
+warning: linux-archpad-pipa: /boot/config-7.1.4-pipa (Permissions mismatch)
+warning: linux-archpad-pipa: /boot/config-7.1.4-pipa (Modification time mismatch)
+warning: linux-archpad-pipa: /boot/dtbs (Permissions mismatch)
+warning: linux-archpad-pipa: /boot/dtbs/qcom (Permissions mismatch)
+warning: linux-archpad-pipa: /boot/dtbs/qcom/sm8250-xiaomi-pipa-tianma.dtb (Permissions mismatch)
+warning: linux-archpad-pipa: /boot/dtbs/qcom/sm8250-xiaomi-pipa-tianma.dtb (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.alias (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.alias.bin (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.builtin.alias.bin (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.builtin.bin (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.dep (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.dep.bin (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.devname (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.softdep (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.symbols (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.symbols.bin (Modification time mismatch)
+warning: linux-archpad-pipa: /usr/lib/modules/7.1.4-pipa/modules.weakdep (Modification time mismatch)
+linux-archpad-pipa: 819 total files, 18 altered files
+archpad-pipa-firmware: 293 total files, 0 altered files
+archpad-pipa-device: 17 total files, 0 altered files
+archpad-pipa-audio: 11 total files, 0 altered files
+archpad-pipa-camera: 6 total files, 0 altered files
+archpad-boot: 10 total files, 0 altered files
+
+=== KERNEL_ERROR_SUMMARY ===
+dsi_pll_lock_failures=4
+awinic_format_messages=380
+awinic_failure_messages=8793
+failed_driver_probes=1
+
+=== REDACTION_NOTICE ===
+Password hashes, SSH keys, authorized keys, Wi-Fi credentials and journal contents are intentionally excluded.
