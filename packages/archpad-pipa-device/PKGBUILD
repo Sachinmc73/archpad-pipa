@@ -1,7 +1,7 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Device integration, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
@@ -11,11 +11,13 @@ source=("81-libssc-xiaomi-pipa.rules"
         "local-overrides.quirks"
         "archpad-audio-reprobe"
         "archpad-audio-reprobe.service"
+        "audio-reprobe.txt"
         "archpad-pipa-modules.conf")
 sha512sums=('d0e8f2e378130130ac72703aed957f7638e2dd75acf4aa421e1b4592c6cb6d296b652db0d9c242be4e56326760ce18d28c1e36ae553d0b7a7f91e12ab0353f22'
             'bea1b1a792cb5d7d41b82551fb0da5a8380bf3fd4eb0e6392dac7c215a3661a4f6106444767a8c4e8609c6effb96228bb1d71f0d2f2ae9ad1e49553b83828e81'
             '4eba36422f3d3b0b4b49094b678cd2bfb7442228959a4ec55ba586a5bb7b1a5a5ac9d6c466c3c351ef66aef049bfdb30cefac0e0dfe461f22ce9fdb2238cf230'
-            'debaf74c0b8005083b1f9f287512237be143430179e0b6c182ff60b96754669f9dd2b0beeab89bdf83b0f96196bf1c98562fcfb84cbcd7e42eac01405321a2a9'
+            '387b7aaf4cebcba18b3e257c0bdd7627b07f0d1a8a622cb68a8404e51d4401c2ec40ce84197f6cc72ab60fc7500e1d32812dee9f0035f9359b9228a437ac3000'
+            'a3a9385d32fc42ab89f1299f9f486f87798fd62efce766a9a03ed3451f1164764da3eeeaafb04a3154ddfc2e57f68ed84546df459e602b86d7597eeefc35f7bc'
             'ec16967d268aa6dac891740b2302d7d850650b0d529e93df66292a7d6675bbe042d4a9dda173981e93ed04fa564d5a42398f627d6e98227bcc07771592a703d2')
 
 package() {
@@ -23,6 +25,8 @@ package() {
   install -Dm644 "${srcdir}/local-overrides.quirks" -t "${pkgdir}/usr/share/libinput/"
   install -Dm755 "${srcdir}/archpad-audio-reprobe" -t "${pkgdir}/usr/lib/archpad/"
   install -Dm644 "${srcdir}/archpad-audio-reprobe.service" -t "${pkgdir}/usr/lib/systemd/system/"
+  install -Dm644 "${srcdir}/audio-reprobe.txt" \
+    "${pkgdir}/usr/share/doc/archpad/audio-reprobe.txt"
   install -Dm644 "${srcdir}/archpad-pipa-modules.conf" "${pkgdir}/usr/lib/modules-load.d/archpad-pipa.conf"
 
   install -d "${pkgdir}/usr/lib/systemd/system-preset"

@@ -1,6 +1,6 @@
 # ArchPad roadmap and current state
 
-Updated: **2026-09-08 22:48 IST**
+Updated: **2026-09-08 22:53 IST**
 Device: **Xiaomi Pad 6 (`pipa`), Snapdragon 870, 6/128 GB, Tianma panel**
 
 This is the single project-level source of truth. It records the milestone we
@@ -38,7 +38,7 @@ reproducibility, update-safety, clock, rollback and native-Arch validation gaps.
 | Disk Usage | **2.8 GiB / 105 GiB (3%)** on nested GPT ext4 (`/dev/loop0p2`) |
 | Kernel | Linux `7.1.4-pipa-r8`, package `linux-archpad-pipa-7.1.4-8` |
 | Rollback kernel | `7.1.4-pipa` r7 as an independently packaged, fully boot-tested generation |
-| Device package | `archpad-pipa-device-1.0.0-1`, Tianma variant |
+| Device package | `archpad-pipa-device-1.0.0-2`, Tianma variant |
 | Firmware | `archpad-pipa-firmware-1.0.0-1` |
 | Mesa/GPU | Mesa 26.2.2-arch1.1, Freedreno FD650 (GL 4.6 / GLES 3.2), Turnip (Vulkan 1.3) |
 | Display | Tianma DSI-1, 1800×2880 native, 120 Hz, smooth `ktz8866-backlight` dimming |
@@ -100,6 +100,28 @@ start the Arch system; it is not a claim of perfect tuning or endurance.
 - Refresh-rate behaviour, speaker mapping, pen extras, charging combinations,
   DisplayPort combinations and long suspend/thermal endurance need deeper
   validation.
+- Warning classification on the r8 validation boot:
+  - four DSI PLL lock retries recovered before the display came up; three DSI
+    status-5 recovery events also completed during the successful suspend test;
+  - the failed 3.1872 GHz CPU voltage request is not exposed as an available
+    frequency; CPU7 is bounded at its working 2.8416 GHz OPP;
+  - `bq25980` charge-pump probing fails, so high-speed charging is not yet a
+    supported claim; PM8150B USB power and `qcom-battery` reporting work;
+  - GPU cooling-device registration is absent, so sustained thermal/load
+    validation is required before heavy gaming or compilation claims;
+  - four SoundWire port-count mismatches coexist with working playback and
+    capture and remain audio-topology cleanup;
+  - duplicate remoteproc handover and systemd `bpf-restrict-fs` messages did
+    not produce a failed service or missing hardware;
+  - Nanosic keyboard-cover I2C retries recover at boot, but one post-resume read
+    error means cover behaviour needs a later manual suspend test;
+  - Nuvolta's missing pen-SOC messages are incorrectly error-level chatter when
+    no valid pen battery value is available.
+- On the current r8 boot the Awinic driver emitted zero `fmt` debug messages
+  and zero failure/error lines. The bounded audio service exited immediately
+  because the ALSA card already existed. `archpad-pipa-device` 1.0.0-2 now
+  installs the documentation referenced by that service; the service remains
+  temporary until kernel probe ordering is fixed.
 - These improvements can be delivered later as kernel, firmware or device-data
   package updates; none requires restarting the distribution design.
 
@@ -242,8 +264,10 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
   RTC-alarm-controlled `s2idle` cycle resumed with the same boot ID after about
   14 seconds; zero units failed and touch, GPU, cameras, audio, Wi-Fi,
   Bluetooth and battery reporting remained present.
-- Classify the real Awinic/ASoC failures and the remaining DSI PLL, GPU cooling,
-  charger, remoteproc, keyboard-I2C and BPF messages.
+- **[COMPLETE]** Classify the Awinic/ASoC, DSI PLL, GPU cooling, charger,
+  remoteproc, keyboard-I2C and BPF messages. No current item blocks GUI bring-up,
+  but fast charging, GPU thermal integration and long suspend/load testing
+  remain explicit reliability work.
 - Regenerate or supersede the stale release manifest after the builder is
   authoritative.
 
@@ -266,8 +290,8 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
 
 ## Immediate next action
 
-Finish the remaining bounded Phase 3.5 validation: kernel-warning
-classification, a fresh release manifest, and two clean build comparisons.
+Finish the remaining bounded Phase 3.5 validation: a fresh release manifest
+and two clean build comparisons.
 The former GUI blockers—source versioning, clock persistence, console
 manifest, atomic kernel generations and a tested rollback—are now resolved.
 

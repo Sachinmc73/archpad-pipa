@@ -1,0 +1,12 @@
+ArchPad audio reprobe service
+=============================
+
+Linux 7.1.4 on Xiaomi Pad 6 can leave the LPASS VA macro and dependent audio
+components deferred after an early probe-order failure. If the Xiaomi Pad 6
+ALSA card is absent, this bounded one-shot service reloads only
+snd_soc_lpass_va_macro, waits for udev, and retries at most three times.
+
+The service exits immediately without changing modules when the ALSA card is
+already present. This is a temporary device-integration measure; the long-term
+fix is to correct the kernel probe dependency/order and then remove the
+service.

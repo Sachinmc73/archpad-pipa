@@ -1,6 +1,6 @@
 # ArchPad Handoff to Antigravity
 
-Updated: **2026-09-08 22:48 IST**
+Updated: **2026-09-08 22:53 IST**
 
 Read `ROADMAP.md` for the single project-level source of truth.
 
@@ -74,6 +74,14 @@ Native-Arch hardware gates now closed on r8:
   99%, and touch, GPU, two cameras, audio, Wi-Fi and Bluetooth remained
   enumerated after resume.
 
+Kernel-warning triage is complete for GUI-gate purposes. DSI retries recover,
+the invalid 3.1872 GHz CPU request is excluded in favour of the working
+2.8416 GHz maximum, and audio currently initializes without using its reprobe
+path. Fast-charge-pump support and GPU cooling-device registration remain real
+future power/thermal work; keyboard-cover suspend behaviour needs a later
+manual check. `archpad-pipa-device` 1.0.0-2 fixes the service's previously
+missing documentation file.
+
 ---
 
 ## 3. Strict Operating Standards (User-Mandated)
@@ -91,9 +99,8 @@ Do not install the final GUI yet. The former blockers—Git versioning, image
 builder, baseline manifest, persistent clock, atomic kernel update and complete
 rollback generation—are resolved. Complete the remaining bounded checks:
 
-1. classify the current non-fatal kernel warnings (fast-charge probe, top CPU
-   voltage, SoundWire ports and pen-charging chatter);
-2. regenerate the release manifest and perform two clean-build comparisons.
+1. regenerate the release manifest;
+2. perform two clean-build comparisons.
 
 The Arch Linux ARM `[aur]` entry is a curated binary repository and is not the
 same service as `aur.archlinux.org`; retain or remove it only through an
