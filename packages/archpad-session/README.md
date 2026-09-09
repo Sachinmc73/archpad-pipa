@@ -7,7 +7,8 @@ Phase 4B/4C session foundation:
 - Hyprland at the preferred panel mode and scale 2;
 - 22-logical-pixel window rounding (the initial 3.5 mm estimate);
 - touchpad/keyboard basics and three-finger workspace navigation;
-- a Foot terminal at session start;
+- a Foot terminal available from the dock and `Super+Return`, without forcing
+  an application open at login;
 - session-bound polkit authentication;
 - a dedicated systemd graphical-session service on TTY1;
 - direct D-Bus accelerometer monitoring with synchronized display, touch and

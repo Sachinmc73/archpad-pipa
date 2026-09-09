@@ -1,6 +1,6 @@
 pkgname=archpad-shell
-pkgver=0.1.0
-pkgrel=1
+pkgver=0.2.0
+pkgrel=3
 pkgdesc='ArchPad touch-first Quickshell interface'
 arch=('any')
 url='https://github.com/archpad/archpad'
@@ -14,12 +14,14 @@ depends=(
 source=(
   'archpad-shell.service'
   'shell.qml'
+  'QuickSettings.qml'
   'README.md'
 )
 sha512sums=(
   '526bde679955c46e407a026316dd3bc7db45c365c3aaf48591e26a49e8893a3f8fa8cf076723d0f78869d3775f604ae596751629815ec19952c14e17349eb8dd'
-  '6773b96db8776a9c0d916dfb7a9cee7daa88f4be8fc817421cf73682af3973e7ff168747e1df8970e1bc430f0dcf8514ea611dfea1cc495d890daf52ff966fd3'
-  'f3b5ef99870369870925b3c35f8d37061fd85b3881f7b1fa02b1db250ce6fecc19b65e0babc015351778025ab55069b6a756009908062e2ea27d00344731aebd'
+  '87a66c641805ec0aafc5a29a7ad64b424c32423fd330d9a12f45379d6406097267b8b9a1b6e23e2634bd5abf08012aeae98cf348a77ec735a34951fed721191b'
+  '6b83294b6586b8806c1287265842ef1983421efdf62ad687098421583c985ed5b51dc839b6ecbf894a59ee50aef3b47a906d0fab23259eff5f602be691174691'
+  'ca3ef64c28b1216ceb65e0f908cc83bcd1a593b5b76ea9172151f198d72387bd14f0efeb9edafaba9fb516f97ae5d82c0fb2c9d01dc76004547c266e58951c8d'
 )
 
 package() {
@@ -27,6 +29,8 @@ package() {
     "$pkgdir/usr/lib/systemd/user/archpad-shell.service"
   install -Dm644 shell.qml \
     "$pkgdir/usr/share/archpad-shell/shell.qml"
+  install -Dm644 QuickSettings.qml \
+    "$pkgdir/usr/share/archpad-shell/QuickSettings.qml"
   install -Dm644 README.md \
     "$pkgdir/usr/share/doc/archpad-shell/README.md"
 
