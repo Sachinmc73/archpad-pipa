@@ -1,0 +1,38 @@
+pkgname=archpad-session
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='ArchPad touch-first Wayland session policy'
+arch=('any')
+url='https://github.com/archpad/archpad'
+license=('GPL-3.0-only')
+depends=(
+  'brightnessctl'
+  'foot'
+  'gnome-keyring'
+  'hyprland>=0.56.2'
+  'hyprpolkitagent'
+  'hyprshutdown'
+  'pipewire'
+  'uwsm'
+  'wireplumber'
+  'xdg-desktop-portal'
+  'xdg-desktop-portal-hyprland'
+)
+source=(
+  'archpad-session'
+  'hyprland.lua'
+)
+sha512sums=(
+  '587d78ff5c88cb4dcedc931e627a0998dc7b02934d843bf0718d6f304c89e4b841a876b703f92a1602f2eaa1cc61a87842f082b62d2a74de7bedc70379412880'
+  'd7763ab6449e6e32cc8d86c5a2f61e1270480832661c4b51dbde766eb89feccda2c5e5f4ba426fb7528750afcb99f58a62f7acc7cd6142187d3a02c8c43b23f6'
+)
+
+package() {
+  install -Dm755 archpad-session "$pkgdir/usr/bin/archpad-session"
+  install -Dm644 hyprland.lua \
+    "$pkgdir/usr/share/archpad-session/hyprland.lua"
+
+  install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
+  ln -s /usr/lib/systemd/user/hyprpolkitagent.service \
+    "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/hyprpolkitagent.service"
+}

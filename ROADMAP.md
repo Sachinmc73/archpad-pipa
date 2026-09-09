@@ -21,21 +21,22 @@ by Omarchy but designed for a tablet rather than copied from a desktop setup.
 OS-level AI agents and Google Gemini account integration are explicitly the
 last phase. A dependable operating system comes first.
 
-## Current milestone: Native Arch Linux ARM Base (Update-Safe)
+## Current milestone: Reversible Hyprland proof installed
 
 The tablet runs **pure native Arch Linux ARM** with its core hardware foundation
-functionally enabled and the userspace cleaned of graphical/desktop clutter.
-Before deliberate Phase 4 compositor work, Phase 3.5 closes the remaining
-reproducibility, update-safety, clock, rollback and native-Arch validation gaps.
+functionally enabled. Phase 3.5 closed the reproducibility, update-safety,
+clock, rollback and native-Arch validation gaps. The minimal Phase 4B Hyprland
+session is now installed but deliberately does not start at boot; its physical
+display/input/suspend proof is the next gate.
 
 | Component | Current validated value |
 |---|---|
 | Active slot | A |
 | Userspace | Native Arch Linux ARM aarch64 (rolling), systemd, `multi-user.target` |
 | Console Interface | Crisp 32px HiDPI Linux console on TTY1 (`ter-v32b` font) |
-| Package Count | **328 packages** (326-package console baseline plus clock and fallback packages) |
-| RAM Usage | **436 MiB / 5.40 GiB** in the r9 baseline manifest |
-| Disk Usage | **2.8 GiB / 105 GiB (3%)** on nested GPT ext4 (`/dev/loop0p2`) |
+| Package Count | **459 packages** after Phase 4B dependencies/toolchain; the archived console baseline remains 328 |
+| RAM Usage | **487 MiB / 5.40 GiB** at the post-install console idle check; r9 baseline was 436 MiB |
+| Disk Usage | **4.5 GiB / 105 GiB (5%)** on nested GPT ext4 (`/dev/loop0p2`) |
 | Kernel | Linux `7.1.4-pipa-r9`, package `linux-archpad-pipa-7.1.4-9`, running/default and hash-verified |
 | Rollback kernel | `7.1.4-pipa` r7 as an independently packaged, fully boot-tested generation |
 | Device package | `archpad-pipa-device-1.0.0-2`, Tianma variant |
@@ -309,10 +310,12 @@ environment; package signing remains a later repository-release requirement.
   rollback gates and records the alternatives considered. `UI-SPEC.md` fixes
   the first shell's desktop, dock, drawer, Overview, quick-settings, app-pill,
   floating-window and edge-gesture behavior.
-- **[NEXT: Reversible compositor proof]** Install the minimal compositor stack,
-  retain `multi-user.target`, and launch it manually from TTY1. Do not enable a
-  display manager or graphical autostart until GPU, touch, pen, scale,
-  suspend/resume and clean exit are validated.
+- **[INSTALLED; PHYSICAL PROOF NEXT]** Hyprland `0.56.2-3`, Aquamarine
+  `0.15.0-2`, UWSM `0.26.7-1`, portals, polkit agent, keyring and Foot are
+  installed with `archpad-session 0.1.0-1`. The default remains
+  `multi-user.target`; no display manager or graphical autostart is enabled.
+  `PHASE4B-STATUS.md` records package provenance, hashes, validation and the
+  exact physical test gate.
 - **[PENDING]** Implement synchronized rotation/input mapping, then pass the
   automatic OSK compatibility matrix before building the Quickshell UI. The
   interim keyboard must provide dependable text entry; the recorded long-term
@@ -327,8 +330,8 @@ environment; package signing remains a later repository-release requirement.
 
 ## Immediate next action
 
-Review the completed `PHASE4-ARCHITECTURE.md`, then execute its reversible 4B
-compositor proof.
+Log in locally as `archpad`, run `archpad-session`, and execute the physical 4B
+compositor proof in `PHASE4B-STATUS.md`.
 Keep the reboot path and `CONFIG_CRYPTO_USER` as explicit low-level backlog;
 do not let GUI work hide either issue. Build the next full flashable release
 only after the Phase 4 package set is fixed.
@@ -340,6 +343,7 @@ manifest, atomic kernel generations and a tested rollback—are now resolved.
 - `ROADMAP.md` — this project state and plan
 - `PHASE4-ARCHITECTURE.md` — selected GUI stack, package boundaries and gates
 - `UI-SPEC.md` — touch interaction, shell states and incremental build order
+- `PHASE4B-STATUS.md` — installed compositor proof, provenance and test gate
 - `packages/` — authoritative Arch package sources
 - `device/temporary-validation/` — only live-system workarounds still relevant
   during the Arch port; credentials are ignored

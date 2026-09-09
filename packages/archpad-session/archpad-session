@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -eu
+
+if [ "$(id -u)" -eq 0 ]; then
+  printf '%s\n' 'archpad-session: refuse to run a graphical session as root' >&2
+  exit 1
+fi
+
+exec uwsm start \
+  -g 0 \
+  -e \
+  -D ArchPad:Hyprland \
+  -N ArchPad \
+  -C 'ArchPad tablet session' \
+  -- hyprland.desktop -- --config /usr/share/archpad-session/hyprland.lua
