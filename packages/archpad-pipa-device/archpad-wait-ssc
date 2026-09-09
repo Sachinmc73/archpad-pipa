@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -eu
+
+attempt=1
+while [ "$attempt" -le 60 ]; do
+    if /usr/bin/ssccli --sensor accelerometer --timeout 1 >/dev/null 2>&1; then
+        printf '%s\n' "Sensor DSP accelerometer ready after attempt ${attempt}"
+        exit 0
+    fi
+
+    attempt=$((attempt + 1))
+    sleep 1
+done
+
+printf '%s\n' 'Sensor DSP accelerometer did not become ready within 120 seconds' >&2
+exit 1

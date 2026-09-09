@@ -96,6 +96,21 @@ Initial performance budgets, to be measured rather than assumed:
 - The pill invokes normal Hyprland close/move/resize/state operations; it never
   kills or reparents application processes to simulate window management.
 
+### Lock, wake and power key
+
+- A short power-button press first acquires a real Wayland session lock and
+  completes PAM-backed lock-screen startup, then asks logind to suspend.
+- Waking never exposes the existing session before successful authentication.
+- Cold boot and logout enter a real PAM-backed graphical greeter managed by
+  `greetd`; they are distinct from locking an existing session.
+- A long power-button press opens the ArchPad power menu with Sleep, Log out,
+  Restart and Shut down. It never performs a direct destructive action.
+- Power actions use logind/systemd interfaces. Shutdown and restart require a
+  second deliberate touch in the menu.
+- Until the secure lock and power-menu handlers are packaged and tested, both
+  short- and long-press actions remain ignored rather than falling back to
+  logind's desktop-host default of immediate power-off.
+
 ## Gesture map
 
 Gesture thresholds are configured in millimetres and converted from the

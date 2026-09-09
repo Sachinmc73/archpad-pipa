@@ -11,8 +11,11 @@ Phase 4B/4C session foundation:
   an application open at login;
 - session-bound polkit authentication;
 - a dedicated systemd graphical-session service on TTY1;
+- a safe interim systemd-logind vendor policy that ignores the power key until
+  the PAM-backed lock/suspend path and shell-owned long-press menu are installed;
 - direct D-Bus accelerometer monitoring with synchronized display, touch and
-  pen transforms;
+  pen transforms, including clean waiting for hardware discovery and across
+  SensorProxy restarts;
 - no third-party display manager; the shell and OSK remain separate packages.
 
 `archpad-graphical-session.service` starts `archpad-session` as the unprivileged

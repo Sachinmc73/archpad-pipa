@@ -40,9 +40,9 @@ The dependable interim on-screen keyboard is the next implementation gate.
 | Disk Usage | **4.5 GiB / 105 GiB (5%)** on nested GPT ext4 (`/dev/loop0p2`) |
 | Kernel | Linux `7.1.4-pipa-r9`, package `linux-archpad-pipa-7.1.4-9`, running/default and hash-verified |
 | Rollback kernel | `7.1.4-pipa` r7 as an independently packaged, fully boot-tested generation |
-| Device package | `archpad-pipa-device-1.0.0-4`, Tianma variant |
+| Device package | `archpad-pipa-device-1.0.0-5`, Tianma variant |
 | Firmware | `archpad-pipa-firmware-1.0.0-2` |
-| Sensor/rotation | `hexagonrpc 0.4.0-2`, `iio-sensor-proxy 3.9-1`, `archpad-session 0.3.0-3` |
+| Sensor/rotation | `hexagonrpc 0.4.0-2`, `iio-sensor-proxy 3.9-1`, `archpad-session 0.3.2-5` |
 | Mesa/GPU | Mesa 26.2.2-arch1.1, Freedreno FD650 (GL 4.6 / GLES 3.2), Turnip (Vulkan 1.3) |
 | Display | Tianma DSI-1, 1800×2880 native, 120 Hz, smooth `ktz8866-backlight` dimming |
 | Audio Stack | ALSA UCM2 HiFi + PipeWire 1.6.8 + WirePlumber (4x Quad Speakers, 3-mic array) |
@@ -109,9 +109,18 @@ start the Arch system; it is not a claim of perfect tuning or endurance.
 - Sensor DSP startup still produces excessive expected `temp.json` write
   diagnostics even though SSC initializes and streams correctly. Reduce that
   journal noise cleanly before a public release.
-- Automatic rotation is visually verified in normal and right-up orientations.
-  A cold graphical boot plus all four orientations, touch corners, multitouch
-  and pen alignment remain a physical validation gate.
+- A cold boot exposed a real Sensor DSP ordering race: iio-sensor-proxy ran
+  before Qualcomm SSC was ready and the rotation client entered a restart
+  storm. Device package 1.0.0-5 now starts HexagonRPC from the fastrpc udev
+  event and gates iio on a bounded real accelerometer probe. Session 0.3.2-5
+  waits cleanly for SensorProxy, then claims the accelerometer only after its
+  standard D-Bus availability property becomes true. A controlled
+  SensorProxy restart reproduced and passed this exact startup race; a
+  whole-device cold boot plus all four orientations, touch corners, multitouch
+  and pen alignment remain the final physical gate.
+- Power keys are temporarily ignored by a packaged logind drop-in. They must
+  not be enabled until short press securely locks then suspends, wake returns
+  to PAM authentication, and long press opens the shell power menu.
 - Warning classification on the r8 validation boot:
   - four DSI PLL lock retries recovered before the display came up; three DSI
     status-5 recovery events also completed during the successful suspend test;
@@ -341,6 +350,12 @@ environment; package signing remains a later repository-release requirement.
   supported configuration API. Normal and right-up transitions were verified
   on the physical tablet; the complete orientation/alignment matrix and one
   cold-login autostart check remain.
+- **[COMPLETE: SENSOR COLD-BOOT ORDERING FIX]** HexagonRPC now starts from the
+  fastrpc device event, its systemd unit remains activating until SSC answers a
+  bounded accelerometer probe, and iio-sensor-proxy starts only after that
+  readiness gate. The rotation user service now watches the D-Bus name instead
+  of failing/restarting while SensorProxy is absent, waits for
+  `HasAccelerometer=true`, and survives the service-name/device-discovery race.
 - **[NEXT]** Pass the automatic OSK compatibility matrix before expanding the
   Quickshell UI. The
   interim keyboard must provide dependable text entry; the recorded long-term

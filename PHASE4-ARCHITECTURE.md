@@ -186,6 +186,11 @@ component; do not force-show it permanently or patch applications.
   greeter is optional and comes after reliable touch authentication.
 - Development credentials may remain convenient during construction as the
   owner requested. Release documentation must require changing them.
+- A short power press must lock successfully before logind suspends. Wake
+  returns to that PAM-authenticated lock, never directly to the desktop. A long
+  press is handled by the shell as a power-menu request with explicit Sleep,
+  Log out, Restart and Shut down choices; logind must not turn it directly into
+  power-off.
 
 ### Portals and desktop integration
 
