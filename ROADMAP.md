@@ -312,7 +312,10 @@ environment; package signing remains a later repository-release requirement.
   display manager or graphical autostart until GPU, touch, pen, scale,
   suspend/resume and clean exit are validated.
 - **[PENDING]** Implement synchronized rotation/input mapping, then pass the
-  automatic OSK compatibility matrix before building the Quickshell UI.
+  automatic OSK compatibility matrix before building the Quickshell UI. The
+  interim keyboard must provide dependable text entry; the recorded long-term
+  target adds Gboard-class floating, split, swipe, prediction and multilingual
+  modes without delaying the initial GUI proof.
 
 ### Phase 5 — Advanced Customization & AI Integration (Future)
 

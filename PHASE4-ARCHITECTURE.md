@@ -108,11 +108,52 @@ tablet-shaped interface.
 
 ### On-screen keyboard
 
+The final target is a **Gboard-class tablet keyboard**, not merely a row of
+clickable keys. ArchPad requires:
+
+- normal docked mode;
+- a draggable, resizable phone-sized floating mode;
+- a split thumb layout for two-handed tablet use;
+- continuous swipe-to-type with candidate words and correction;
+- multiple languages, quick language switching, emoji and appropriate
+  password/number/URL/terminal layouts;
+- automatic appearance, manual override and keyboard-cover-aware suppression;
+- local/private dictionaries and prediction by default;
+- a future voice-input button, without making voice work part of Phase 4.
+
+No currently mature Linux Wayland keyboard has been verified to provide this
+whole experience. Therefore the OSK plan has two levels:
+
+1. **Dependable interim OSK:** first test repository-packaged Squeekboard. It
+   implements the Wayland input-method-v2 and virtual-keyboard protocols that
+   Hyprland exposes and has touch-oriented, language-specific and terminal
+   layouts. If its Hyprland integration fails, test the maintained `wvkbd`
+   source as a pinned native package; it documents automatic input-method
+   activation, international/emoji layouts, orientation-aware layouts and an
+   optional external swipe-word pipeline.
+2. **ArchPad Keyboard:** after the core GUI is dependable, build or adopt a
+   native component with floating and split surfaces plus an offline swipe and
+   prediction engine. Prefer Wayland input-method/virtual-keyboard protocols
+   over unrestricted `/dev/uinput` injection. Keep UI, input transport,
+   language data and prediction engine separable so each can be replaced.
+
+Qt Virtual Keyboard is a useful source of QML, multilingual, predictive and
+trace-input concepts, but is primarily an application/compositor integration
+framework rather than a proven system-wide Hyprland OSK. Maliit is multilingual
+but is unavailable in the tablet's current repositories and does not supply the
+requested complete mode set. Onboard's Wayland support is explicitly
+experimental outside KDE/GNOME.
+
+Very new projects that claim more complete behavior may be evaluated in an
+isolated source audit, but not adopted as trusted session infrastructure based
+only on a feature list. In particular, Aurora Keyboard currently has no
+release/package history, relies on privileged `/dev/uinput`, and its neural
+engine uses FUTO-derived components with licensing that must be reviewed before
+redistribution. `kway` demonstrates a split layout but still lists autocorrect
+and auto-rotation as future work.
+
 Automatic OSK appearance is a release gate, not something inferred from an OSK
-window appearing manually. The first candidate is repository-packaged
-Squeekboard because it implements the Wayland input-method-v2 and virtual-
-keyboard protocols that Hyprland exposes, and it has touch-oriented and
-terminal layouts.
+window appearing manually.
 
 Compatibility must be tested in GTK, Qt, Chromium/Electron and a terminal for:
 
@@ -126,9 +167,10 @@ Compatibility must be tested in GTK, Qt, Chromium/Electron and a terminal for:
 
 Squeekboard documents Phosh as its primary shell. Its presence in the Arch
 repository and matching protocols make this a justified experiment, **not yet
-a verified Hyprland solution**. If it fails the matrix, stop and evaluate a
-maintained alternative as a separately packaged component; do not force-show
-it permanently or patch applications.
+a verified Hyprland solution**. It is an interim input method, not the final
+Gboard-class design. If it fails the matrix, stop and evaluate the pinned
+`wvkbd` path or another maintained alternative as a separately packaged
+component; do not force-show it permanently or patch applications.
 
 ### Login, locking and secrets
 
@@ -203,7 +245,10 @@ Quickshell UI can begin inside `archpad-session`, then split into an
 ### 4D — OSK gate
 
 - Test Squeekboard against the full application matrix above.
-- Select and package an alternative only if evidence shows it is necessary.
+- If necessary, package and test a pinned `wvkbd` revision as the interim OSK.
+- Record a separate ArchPad Keyboard design for floating, split, swipe,
+  prediction and multilingual behavior; do not block the basic GUI on building
+  that full keyboard immediately.
 - Do not proceed to shell polish until touch text entry is reliable.
 
 ### 4E — Quickshell shell
