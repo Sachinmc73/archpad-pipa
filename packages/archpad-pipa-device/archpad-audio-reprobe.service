@@ -2,8 +2,7 @@
 Description=Recover Xiaomi Pad 6 audio after an early VA-macro probe failure
 Documentation=file:///usr/share/doc/archpad/audio-reprobe.txt
 ConditionPathExists=/sys/bus/platform/devices/3370000.codec
-Wants=systemd-udev-settle.service
-After=systemd-udev-settle.service
+After=sound.target
 Before=graphical.target
 
 [Service]
