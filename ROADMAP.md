@@ -306,7 +306,9 @@ environment; package signing remains a later repository-release requirement.
 - **[COMPLETE: Architecture]** `PHASE4-ARCHITECTURE.md` selects an
   UWSM-managed Hyprland session with ArchPad-owned policy and a Quickshell
   tablet shell. It defines the security, rotation, input-mapping, OSK and
-  rollback gates and records the alternatives considered.
+  rollback gates and records the alternatives considered. `UI-SPEC.md` fixes
+  the first shell's desktop, dock, drawer, Overview, quick-settings, app-pill,
+  floating-window and edge-gesture behavior.
 - **[NEXT: Reversible compositor proof]** Install the minimal compositor stack,
   retain `multi-user.target`, and launch it manually from TTY1. Do not enable a
   display manager or graphical autostart until GPU, touch, pen, scale,
@@ -337,6 +339,7 @@ manifest, atomic kernel generations and a tested rollback—are now resolved.
 
 - `ROADMAP.md` — this project state and plan
 - `PHASE4-ARCHITECTURE.md` — selected GUI stack, package boundaries and gates
+- `UI-SPEC.md` — touch interaction, shell states and incremental build order
 - `packages/` — authoritative Arch package sources
 - `device/temporary-validation/` — only live-system workarounds still relevant
   during the Arch port; credentials are ignored
