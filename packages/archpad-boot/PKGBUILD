@@ -1,6 +1,6 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-boot
-pkgver=1.1.3
+pkgver=1.1.4
 pkgrel=1
 pkgdesc="ArchPad boot hooks, mkinitcpio configuration, and nested-root deployment for Xiaomi Pad 6"
 arch=('any')
@@ -16,7 +16,7 @@ source=("archpad-userdata.install"
 sha512sums=('c67a7802c0a304fb3b496140c0db2b6073b5c7e31d8e9b284fad7aae045e942a52ccdd5024926e110f16d1e02d5057e125d79d6303f49b7f8a2c8f944c17c4d4'
             '7a2aa612ea39b39f1d3eedce306b997397cc5673dca6866aed9a0905127135f8081e9f112ed569b3c4eec01107de158300e5da00b61393b1948d749b8b6f5e65'
             '15072235ef85cd4e646421e6d14f7deadc9357e47fbf9d6851f13eee41b76296af79bb34c46ed725ec2fb8cf2d441b3bbfcf932ae3050ecfb39b3be930fe6441'
-            '4805a15afc6ad318a6a558113f14f8c04d5b167bf6e6cee6381149be12a11b1e9ca2ef0a85ee8703b81d0f44bde38d108b53e5a91cc31cf21defc091155278c0'
+            'b611c28eb8dc906edaa3206efe19cf759e6d1d3a35ae11841123a12d5a8aca9f9ee1086cf4e79e7e5636d43b16efe88e32347ffce1a8daf5a8952deaedbf69d3'
             '6297a675f19701c124bc203d39f49a9aafa57fe0b8b4555814fec8c5851991060564e49848dd4f0f9a42daf92c00d62324274967e2c24633fd6083d50acbb3dc'
             'f0040f5b4256251b4849620befa0b7a679d65e9b5486ee9732c4465deaec11d47410ec237cd9158793d87a29a88ac34d0a6e511267853045cf0b6b8e9964d781')
 

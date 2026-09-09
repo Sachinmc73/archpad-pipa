@@ -2,7 +2,7 @@
 
 pkgname=linux-archpad-pipa
 pkgver=7.1.4
-pkgrel=8
+pkgrel=9
 pkgdesc='Linux kernel for the Xiaomi Pad 6 (pipa), Tianma panel'
 arch=('aarch64')
 url='https://github.com/pipa-mainline'
@@ -35,6 +35,8 @@ options=('!strip')
 _flavor='pipa'
 _localversion="-r${pkgrel}"
 _build_epoch='1970-01-01T00:00:00Z'
+_debug_prefix_map="-fdebug-prefix-map=${srcdir}=."
+_rust_prefix_map="--remap-path-prefix=${srcdir}=."
 _patches=(
   '0001-arm64-dts-qcom-sm8250-xiaomi-pipa-Add-device-tree-fo.patch'
   '0002-power-supply-Add-driver-for-Qualcomm-PMIC-fuel-gauge.patch'
@@ -59,6 +61,8 @@ _patches=(
   '0023-media-hi846-wait-for-power-on.patch'
   '0024-media-hi846-pipa-timing-and-pll.patch'
   '0025-media-hi846-hide-unverified-2lane-full-resolution-modes.patch'
+  '0026-arm64-vdso32-normalize-debug-build-paths.patch'
+  '0027-drm-msm-make-register-header-generation-deterministic.patch'
 )
 
 source=(
@@ -69,7 +73,7 @@ source=(
 
 sha512sums=(
   '753b53b3f9a240b5838fe1156ad61f2356e2042941e571450492b5c8c46fd32140aede34fd4b074705650bac503deccec20ad9b8caee9d4c5fdc575401c76cc4'
-  '73fa3eab2ab9e420cd0eb8a366dd928e58ce17fc7c05a2a531b28cca8c0eb6fa0fd0b0708a74d2171e758f7c257095996875f14ea2f2a6fba68b22074fff2765'
+  '68a9e3dbad8b88da382beb9954076d99dd9f28dc8dcf81a83177cd71c98f56273284c17a7d16e7dde00bd574599cdc32ce4a7de2b94fa6a4a7b46c242a6aa764'
   'ae45edd80a6df1807b242c9733092c4ca3f6fb316db1f42ba57ec9fc4bd94b2cfdb40dd467d725aaea5023364fdec4c4ec71ee535fdee93166d590887b13d800'
   '34eab30dde870322ad10ab7babee8acf7c5da2b2d5d38d5e4f67fad87be4e7d1426950b46c7d7344627ba034643f030b8f4656cbf941bb2f04b1d649530842d3'
   'c3ca3b80e9a1d367572818afc45e6c19ca54ab5da03e615f3e537957bcac75a40171ee895f32e6141111702dea63ce4af6427333412d0f6eaa63506916c5d391'
@@ -93,6 +97,8 @@ sha512sums=(
   '411467753af4e30730a43ef4809943562a021a17d7526b6a398d44e4bae29f2e05996d974962ee492e6502ede8e70d6bf4ccfe2fa37f55b99ccd0c199e728496'
   'dcac85972fdcef175d23df3f05a16236b713986de6b99fc39a08693b226764e358258496e83825318972a12d274a28c335ce7c388cf06fa7589cb50d1755e149'
   'bbd9e60a60a970c94bf4c01bbd21893c90f99253a9ce0a6447524a8712b6407e28a89da334a08a50ff3180acba378e9cacfcf92b0fd8098e351329e30068d5c6'
+  '2f71f945c3c5fdacb55944edf89a634006acddcc3d313f9e885baf6462ccf8b29a355289f0210754bd9018388c36153625e084e64b1478cdb4a3127b12b9fd0e'
+  'd07306d2841e526652615f1ae5f3376600605e41aba55d033c52a158ac36452089434408f25e8d171968cc60cae93a112d0390a028ebecc60f60369e0b683f48'
 )
 
 prepare() {
@@ -104,7 +110,14 @@ prepare() {
   done
 
   cp "${srcdir}/config-xiaomi-pipa.aarch64" .config
-  make ARCH=arm64 LLVM=1 LOCALVERSION="${_localversion}" olddefconfig
+  make \
+    ARCH=arm64 \
+    LLVM=1 \
+    LOCALVERSION="${_localversion}" \
+    KCFLAGS="${_debug_prefix_map}" \
+    KAFLAGS="${_debug_prefix_map}" \
+    KRUSTFLAGS="${_rust_prefix_map}" \
+    olddefconfig
 }
 
 build() {
@@ -114,6 +127,9 @@ build() {
     ARCH=arm64 \
     LLVM=1 \
     LOCALVERSION="${_localversion}" \
+    KCFLAGS="${_debug_prefix_map}" \
+    KAFLAGS="${_debug_prefix_map}" \
+    KRUSTFLAGS="${_rust_prefix_map}" \
     KBUILD_BUILD_TIMESTAMP="${_build_epoch}" \
     KBUILD_BUILD_USER='archpad' \
     KBUILD_BUILD_HOST='builder' \
@@ -125,12 +141,18 @@ package() {
 
   local kernelrelease
   kernelrelease="$(make -s ARCH=arm64 LLVM=1 \
-    LOCALVERSION="${_localversion}" kernelrelease)"
+    LOCALVERSION="${_localversion}" \
+    KCFLAGS="${_debug_prefix_map}" \
+    KAFLAGS="${_debug_prefix_map}" \
+    KRUSTFLAGS="${_rust_prefix_map}" kernelrelease)"
 
   make \
     ARCH=arm64 \
     LLVM=1 \
     LOCALVERSION="${_localversion}" \
+    KCFLAGS="${_debug_prefix_map}" \
+    KAFLAGS="${_debug_prefix_map}" \
+    KRUSTFLAGS="${_rust_prefix_map}" \
     INSTALL_MOD_PATH="${pkgdir}/usr" \
     INSTALL_MOD_STRIP=1 \
     modules_install

@@ -11,9 +11,11 @@ initial hardware validation on the project's Tianma-panel tablet.
   `c6f27d1b653491029311e5c2bd0a25c4a654d436`
 - Original pmaports package: `linux-xiaomi-pipa` `7.1.4-r1`
 - Preserved fallback kernel release: `7.1.4-pipa` (`pkgrel=7`)
-- Current ArchPad package release: `pkgrel=8`, with kernel release
-  `7.1.4-pipa-r8` and the front-camera fixes
-  through patch `0025`
+- Installed release awaiting first-boot confirmation: `pkgrel=9`, kernel
+  `7.1.4-pipa-r9`
+- The r9 source includes the front-camera fixes through patch `0025`, VDSO
+  path normalization in `0026`, deterministic Qualcomm register generation in
+  `0027`, and canonical debug/Rust prefix maps
 - Toolchain mode: LLVM/Clang (`LLVM=1`), matching the validated build
 - Display tree installed by the package:
   `qcom/sm8250-xiaomi-pipa-tianma.dtb`
@@ -44,3 +46,9 @@ be rebuilt twice from clean inputs and compared before publication.
 The kernel build identity is fixed (`archpad@builder`) and its timestamp is
 fixed to the Unix epoch. These values avoid embedding the builder's username,
 hostname or wall-clock time in the package.
+
+Two independent clean output trees were built on 2026-09-09. Their Image,
+full and unstripped vmlinux, Tianma DTB, compat VDSO, generated Qualcomm A6xx
+header, config, System.map, Module.symvers and all 585 modules were
+byte-identical. The clean Image SHA-256 was
+`e86f360ccc39f5b18eaf9cbb2279d948dac62edccb4909e583f8a38178c7e8f0`.

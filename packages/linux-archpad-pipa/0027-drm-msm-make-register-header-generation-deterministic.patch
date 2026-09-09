@@ -1,0 +1,30 @@
+From: ArchPad Project <archpad@localhost>
+Subject: [PATCH] drm/msm: make register header generation deterministic
+
+Parser.variants is a set.  Iterating it directly makes the placement of the
+generated per-chip register tables depend on Python's randomized hash seed.
+The generated C data is equivalent, but the header checksum recorded in DWARF
+changes and consequently changes the kernel GNU build ID.
+
+Sort the variants before emitting them so identical inputs produce identical
+headers on independent builds.
+
+---
+ drivers/gpu/drm/msm/registers/gen_header.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/msm/registers/gen_header.py b/drivers/gpu/drm/msm/registers/gen_header.py
+index 798fa28c3e9c..2e257f5c3e25 100644
+--- a/drivers/gpu/drm/msm/registers/gen_header.py
++++ b/drivers/gpu/drm/msm/registers/gen_header.py
+@@ -760,7 +760,7 @@ class Parser(xml.parsers.expat.ParserCreate):
+ 						if reg == vreg:
+ 							d[(usage, sanitize_variant(variant))].append(reg)
+ 				else:
+-					for variant in self.variants:
++					for variant in sorted(self.variants):
+ 						d[(usage, sanitize_variant(variant))].append(reg)
+ 
+ 		print("#ifdef __cplusplus")
+-- 
+2.51.0

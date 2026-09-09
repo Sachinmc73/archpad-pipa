@@ -1,0 +1,30 @@
+From: ArchPad Project <archpad@localhost>
+Subject: [PATCH] arm64: vdso32: normalize debug build paths
+
+The compat vDSO intentionally constructs its own compiler flags and therefore
+does not inherit KCFLAGS/KAFLAGS.  With debug info enabled, an out-of-tree
+build embeds objtree and srctree in its objects.  The vDSO GNU build ID then
+changes with the build directory and propagates into the arm64 kernel image.
+
+Apply the same debug-prefix normalization recommended by the kernel
+reproducible-build documentation directly to the compat vDSO flags.
+
+---
+ arch/arm64/kernel/vdso32/Makefile | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/kernel/vdso32/Makefile b/arch/arm64/kernel/vdso32/Makefile
+index 7d7a113de6de..3312dcd24fc2 100644
+--- a/arch/arm64/kernel/vdso32/Makefile
++++ b/arch/arm64/kernel/vdso32/Makefile
+@@ -32,6 +32,8 @@ VDSO_CAFLAGS := $(VDSO_CPPFLAGS)
+ VDSO_CAFLAGS += $(call cc32-option,-fno-PIE)
+ ifdef CONFIG_DEBUG_INFO
+ VDSO_CAFLAGS += -g
++VDSO_CAFLAGS += $(call cc32-option,-fdebug-prefix-map=$(CURDIR)=.)
++VDSO_CAFLAGS += $(call cc32-option,-fdebug-prefix-map=$(srctree)=.)
+ endif
+ 
+ # From arm Makefile
+-- 
+2.51.0

@@ -108,6 +108,26 @@ set_default() {
   printf 'ArchPad default boot entry: %s\n' "$id"
 }
 
+remove_generation() {
+  local release=$1 path entry id default_id running
+  validate_release "$release"
+  path="$boot_root/$release"
+  id="archpad-$release.conf"
+  entry="$entries/$id"
+  running=$(uname -r)
+  [[ $release != "$running" ]] || die "refusing to remove running kernel generation: $release"
+  default_id=$(awk '/^default[[:space:]]/ { print $2; exit }' /boot/loader/loader.conf)
+  [[ $id != "$default_id" ]] || die "refusing to remove default kernel generation: $release"
+  [[ -d $path && ! -L $path ]] || die "generation directory is missing or unsafe: $release"
+  [[ -f $entry && ! -L $entry ]] || die "generation entry is missing or unsafe: $release"
+
+  rm -f -- "$entry"
+  rm -rf -- "$path"
+  sync /boot
+  [[ ! -e $path && ! -e $entry ]] || die "generation removal did not complete: $release"
+  printf 'Removed obsolete ArchPad boot generation: %s\n' "$release"
+}
+
 case ${1-} in
   ensure-modules)
     ensure_modules
@@ -136,7 +156,11 @@ case ${1-} in
     (($# == 2)) || die 'usage: set-default {RELEASE|legacy}'
     set_default "$2"
     ;;
+  remove)
+    (($# == 2)) || die 'usage: remove RELEASE'
+    remove_generation "$2"
+    ;;
   *)
-    die 'usage: {ensure-modules|install-staged RELEASE TITLE|install-current TITLE|verify RELEASE|set-default RELEASE|legacy}'
+    die 'usage: {ensure-modules|install-staged RELEASE TITLE|install-current TITLE|verify RELEASE|set-default RELEASE|legacy|remove RELEASE}'
     ;;
 esac

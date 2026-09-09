@@ -36,7 +36,7 @@ reproducibility, update-safety, clock, rollback and native-Arch validation gaps.
 | Package Count | **328 packages** (326-package console baseline plus clock and fallback packages) |
 | RAM Usage | **421 MiB / 5.40 GiB** at the latest post-hardening check |
 | Disk Usage | **2.8 GiB / 105 GiB (3%)** on nested GPT ext4 (`/dev/loop0p2`) |
-| Kernel | Linux `7.1.4-pipa-r8`, package `linux-archpad-pipa-7.1.4-8` |
+| Kernel | `linux-archpad-pipa-7.1.4-9` installed/default; first r9 boot confirmation pending (last confirmed running kernel: `7.1.4-pipa-r8`) |
 | Rollback kernel | `7.1.4-pipa` r7 as an independently packaged, fully boot-tested generation |
 | Device package | `archpad-pipa-device-1.0.0-2`, Tianma variant |
 | Firmware | `archpad-pipa-firmware-1.0.0-1` |
@@ -182,9 +182,10 @@ archpad-session          touch shell, OSK, rotation and interaction policy
 ```
 
 The authoritative current kernel inputs are the PKGBUILD, config and patches in
-`packages/linux-archpad-pipa/`, presently through patch `0025`. All inputs have
-SHA-512 checksums. Release packages must be built in a clean AArch64 Arch
-environment, signed, and eventually rebuilt twice to check reproducibility.
+`packages/linux-archpad-pipa/`, presently through patch `0027`. All 27 inputs
+have SHA-512 checksums and the 25-patch series applies cleanly to pristine
+Linux 7.1.4. Release packages must be built in a clean AArch64 Arch
+environment; package signing remains a later repository-release requirement.
 
 ## Development phases
 
@@ -239,13 +240,19 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
   control; baseline commit `ef523e9` and builder/audit commit `f941910`.
 - **[COMPLETE]** Preserve the nested-GPT/ESP/rootfs/sparse-image construction as a versioned,
   non-interactive builder with explicit inputs, root expansion and manifests.
-- **[PARTIAL]** Automatic signing of every module with an ephemeral build key
-  is disabled because signature enforcement is off and the signatures added no
-  trust boundary. Two clean-build comparisons remain required before claiming
-  bit-for-bit reproducibility.
+- **[COMPLETE]** Remove kernel build nondeterminism: normalize the arm64 compat
+  VDSO build path, sort Qualcomm register-generator set iteration, retain
+  signature-verification support required by lockdown, disable automatic module
+  signing and use no accidental build-time signing key. Two independent clean
+  builds produced byte-identical Image, full/unstripped vmlinux, Tianma DTB,
+  compat VDSO, generated A6xx header, config, System.map, Module.symvers and
+  all 585 modules. Image SHA-256:
+  `e86f360ccc39f5b18eaf9cbb2279d948dac62edccb4909e583f8a38178c7e8f0`.
 - **[COMPLETE]** Deploy kernel updates as complete versioned generations:
   matching Image, DTB, initramfs and module tree, validated before activation.
-  `archpad-boot` 1.1.3 provides the ALPM hook and generation manager.
+  `archpad-boot` 1.1.4 provides the ALPM hook, generation manager and a guarded
+  obsolete-generation removal command that refuses the running or default
+  kernel.
 - **[COMPLETE]** Preserve r7 through the separately owned
   `linux-archpad-pipa-fallback` package. It was booted after the active kernel
   package had been upgraded to r8; its independent modules, touchscreen,
@@ -268,6 +275,11 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
   remoteproc, keyboard-I2C and BPF messages. No current item blocks GUI bring-up,
   but fast charging, GPU thermal integration and long suspend/load testing
   remain explicit reliability work.
+- **[IN PROGRESS]** Install the reproducible r9 payload. Pacman installed r9,
+  created and verified its complete generation, then selected it as default.
+  The first reboot has not yet returned an IP address, so the running r9 kernel
+  and hardware gates are not yet confirmed; r7 remains an independently
+  packaged, verified fallback and r8 remains on the ESP pending safe pruning.
 - Regenerate or supersede the stale release manifest after the builder is
   authoritative.
 
@@ -290,8 +302,8 @@ environment, signed, and eventually rebuilt twice to check reproducibility.
 
 ## Immediate next action
 
-Finish the remaining bounded Phase 3.5 validation: a fresh release manifest
-and two clean build comparisons.
+Complete the first r9 boot validation, safely prune the obsolete r8 boot entry,
+then regenerate or explicitly supersede the stale release manifest.
 The former GUI blockers—source versioning, clock persistence, console
 manifest, atomic kernel generations and a tested rollback—are now resolved.
 
