@@ -1,141 +1,141 @@
-# ArchPad Handoff to Antigravity
+# ArchPad Current Handoff
 
-Updated: **2026-09-09**
+Updated: **2026-09-09 22:40 IST**
 
-Read `ROADMAP.md` for the single project-level source of truth.
+Supersedes all older intermediate handoffs. `ROADMAP.md` remains the full
+project source of truth.
 
----
+## Owner's goal and standards
 
-## 1. Current Device & System State
+ArchPad is a native Arch Linux ARM tablet OS for Xiaomi Pad 6 (`pipa`), using
+touch as the primary UI and terminal agents as a primary development tool.
+Reliability, reproducibility, native Linux interfaces, pacman ownership and
+safe upgrades are mandatory. Do not hide problems with startup loops, patched
+system binaries or shell-command simulations when a standard systemd, D-Bus,
+PAM, Wayland or compositor interface exists. AI/Gemini integration is last.
 
-The tablet has successfully migrated from postmarketOS to **pure native Arch Linux ARM** and runs as a minimal, hardware-verified system.
+The owner explicitly does not need the former Android data. Never use
+`qbootctl`. Preserve USB networking/SSH as the recovery path and do not alter
+partitions, boot firmware or the kernel during GUI work.
 
-- **Device:** Xiaomi Pad 6 (`pipa`), Snapdragon 870 (sm8250), 6/128 GB, Tianma LCD.
-- **Active Slot:** Slot A (`boot_a`).
-- **OS & Kernel:** Arch Linux ARM (aarch64), Linux `7.1.4-pipa-r9`, package `linux-archpad-pipa-7.1.4-9`.
-- **Runlevel:** `multi-user.target` (pure console, zero desktop/GUI daemons active).
-- **Physical Display:** Tianma DSI-1 (1800×2880 @ 120 Hz) with crisp 32px HiDPI font (`ter-v32b`).
-- **Package Count:** **328 packages** (`pacman -Q`).
-- **Resource Usage:** **421 MiB RAM** at the latest check, **2.8 GiB disk usage** (3% of 105 GB ext4 root on `/dev/loop0p2`).
-- **Compressed Swap:** 2.7 GiB dynamic zram swap active (`zram-generator`).
-- **Build Toolchain:** `git`, `fakeroot`, `binutils`, and `yay-bin` (13.0.1) are installed and ready.
+## Current tablet state
 
-### Network & SSH Access
-- **USB Gadget Network:** `usb0` on `172.16.42.1/24` (host at `172.16.42.2`).
-- **SSH Config:** Host `~/.ssh/config` is aliased as `archpad` (`HostName 172.16.42.1`, user `root`, key `~/.ssh/id_ed25519`).
-- **Wi-Fi 6:** Qualcomm QCA6390 managed via `iwd` (`iwctl station wlan0 ...`).
-- **Bluetooth 5.1:** `hci0` active with public MAC (`00:03:7F:12:05:06`).
+- Device: Xiaomi Pad 6, Snapdragon 870, Tianma panel, active Android-style
+  slot A. U-Boot is the firmware payload in `boot_a`, then launches
+  systemd-boot; it is not GRUB and not a separately flashed U-Boot partition.
+- OS: native Arch Linux ARM aarch64, `graphical.target`.
+- Kernel: `linux-archpad-pipa 7.1.4-9`, running generation
+  `7.1.4-pipa-r9`; independently packaged r7 rollback remains available.
+- GUI: Hyprland `0.56.2-3`, Quickshell `0.3.1-1`,
+  `archpad-session 0.3.2-5`, `archpad-shell 0.2.0-3`.
+- Device/sensors: `archpad-pipa-device 1.0.0-5`, HexagonRPC `0.4.0-2`,
+  iio-sensor-proxy `3.9-1`.
+- Live state at handoff: graphical session, HexagonRPC, SensorProxy and the
+  user rotation service are all active; system and user failed-unit lists are
+  empty; Hyprland `configerrors` is empty.
+- USB SSH: root at `172.16.42.1`; host is `172.16.42.2`. Use an explicit
+  isolated invocation if no host alias is available:
 
----
+  ```sh
+  ssh -F /dev/null -o BatchMode=yes -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null root@172.16.42.1
+  ```
 
-## 2. Completed Milestones
+The development account credentials are intentionally temporary and may be
+used by agents during construction. They must be changed before release.
 
-| Phase / Stage | Status | Notes |
-|---|---|---|
-| **Phase 1: U-Boot Exploration** | Closed | U-Boot runs inside Android `boot_a` as standard UEFI firmware (`EFI v2.11 by Das U-Boot`), which launches `systemd-boot`. The host compile tree `work/u-boot` is archived. |
-| **Tablet Backup Safety Gate** | **VERIFIED** | Full raw backup stored in `artifacts/private/tablet-backup-postmarketos-2026-09-07/` (3.5 GB). |
-| **Phase 2: Arch Native Packaging & Boot** | **COMPLETE** | Custom kernel (`linux-archpad-pipa`), firmware, device packages, nested GPT userdata hook flashed. |
-| **Phase 3: Functional Hardware Base** | **COMPLETE** | Display, GPU, basic audio, wireless and input smoke tests passed; both cameras enumerate. Native-Arch camera streaming, suspend/resume and deeper reliability remain in Phase 3.5. |
-| **Rollback & Cleanup** | **COMPLETE** | Purged temporary GUI prototypes (Phosh, Plasma), vacuumed 311 MB journal logs, and reclaimed 31 GB on host workspace. |
-| **Phase 3.5: Baseline Hardening** | **COMPLETE** | Kernel reproducibility, complete generations, rollback, clock, bounded r9 hardware validation and fresh runtime manifest are complete. Final full-image assembly is deliberately deferred until the Phase 4 package set is fixed. |
+## Work completed in the latest stage
 
-Phase 3.5 clock hardening is complete. Package `archpad-clock` 1.0.1 restores
-time from a Linux-owned PMIC-counter offset and never writes PMIC registers or
-EFI variables. A reboot verified correction from the RTC's 1972 base to 2026
-in roughly 50 ms; multi-user was reached in 18 seconds with no failed units.
+Git commit: **`271d27c Fix sensor startup and rotation races`**. The worktree
+was clean immediately after that commit.
 
-Phase 3.5 kernel-update hardening is also complete. `archpad-boot` 1.1.4
-creates a versioned boot generation only after checking the kernel, Tianma DTB,
-matching module vermagic and generated initramfs, then changes the persistent
-systemd-boot default only after hash validation. EFI variables are read-only in
-this U-Boot environment, so the manager updates `loader.conf` atomically.
+1. Fixed the cold-boot Sensor DSP ordering problem at its service boundary:
+   the pipa fastrpc udev event requests
+   `archpad-hexagonrpcd-sdsp.service`; its systemd unit remains `activating`
+   until a bounded real `ssccli` accelerometer probe succeeds. SensorProxy is
+   ordered after that readiness gate.
+2. Removed the former rotation-service restart storm. The user daemon watches
+   the standard `net.hadess.SensorProxy` D-Bus name and reconnects normally.
+3. Fixed the finer service-name/device-discovery race. The rotation daemon
+   waits for the authoritative standard `HasAccelerometer=true` property,
+   claims the sensor once, then receives event-driven orientation updates.
+   The temporary 250 ms GLib discovery check exists only while discovery is
+   pending and stops after the claim.
+4. Reproduced the race by starting the rotation client before restarting
+   SensorProxy. The fixed daemon logged:
 
-Current boot generations:
+   ```text
+   sensor proxy connected; waiting for accelerometer discovery
+   accelerometer claimed
+   orientation right-up applied as transform 3
+   ```
 
-- `7.1.4-pipa-r9`: running/default and hash-verified, from
-  `linux-archpad-pipa 7.1.4-9`.
-- `7.1.4-pipa`: known-good r7 fallback, owned by
-  `linux-archpad-pipa-fallback 7.1.4-7` with its complete Image, DTB,
-  initramfs and module tree.
+   D-Bus then reported `HasAccelerometer=true` and
+   `AccelerometerOrientation="right-up"`.
+5. Cleared the visible Hyprland configuration warning. It was stale compositor
+   state caused by pacman's atomic replacement of `hyprland.lua` while the
+   compositor was running. The file was present, `pacman -Qkk` was clean, a
+   normal `hyprctl reload` succeeded, and `configerrors` is now empty.
+6. Packaged a safe interim logind policy:
+   `HandlePowerKey=ignore` and `HandlePowerKeyLongPress=ignore`. This prevents
+   the upstream desktop default from powering off the tablet and prevents an
+   unsafe suspend that wakes directly into an unlocked desktop.
 
-Rollback was tested end-to-end after upgrading the active package: r7 booted,
-loaded `nt36523_ts` from the separately retained module tree, passed all boot
-hashes and had zero failed units. The system then booted back to r8. Automatic
-module signing is disabled and the build uses no accidental ephemeral key;
-signature-verification support remains because the kernel lockdown framework
-requires it, while enforcement and Secure Boot are not active.
+Native package artifacts retained under the ignored private artifact folder:
 
-Kernel r9 reproducibility is verified. Two independent clean output trees
-produced identical Image, full/unstripped vmlinux, Tianma DTB, compat VDSO,
-generated A6xx header, config, System.map, Module.symvers and 585/585 modules.
-The Image SHA-256 is
-`e86f360ccc39f5b18eaf9cbb2279d948dac62edccb4909e583f8a38178c7e8f0`.
-All 27 source checksums pass and all 25 patches apply to pristine Linux 7.1.4.
+- `artifacts/private/arch-packages-phase4c-r2/archpad-pipa-device-1.0.0-5-any.pkg.tar.xz`
+- `artifacts/private/arch-packages-phase4c-r2/archpad-session-0.3.2-5-aarch64.pkg.tar.xz`
+  SHA-256: `a83689f9134e2634f68a9029badec01a7e3c3808796f581b6b7ebabe2ff7de19`
 
-The r9 cold boot reached `multi-user.target` in 17.5 seconds with zero failed
-units. Touch, GPU, 16 video nodes, both libcamera cameras, audio, battery,
-Wi-Fi and Bluetooth were present. After these checks the guarded manager
-removed obsolete r8; only r9 and the independently packaged r7 fallback remain,
-both hash-verified. The sanitized baseline is
-`artifacts/manifests/archpad-console-r9-2026-09-09.txt`, SHA-256
-`e397fb362c4f8a5b76d6c18a7d70d18d6c09edbbea6a08e9748d5d600f073757`.
+## Immediate validation still needed
 
-Two non-blocking low-level items remain explicit: `systemctl reboot` performed
-a clean shutdown but left the tablet powered off instead of resetting, and
-BlueZ requests an absent `crypto_user` module although Bluetooth works. Fix
-the restart path before public release and enable `CONFIG_CRYPTO_USER` in the
-next planned kernel rather than modifying BlueZ's package-owned file.
+The owner must physically rotate through portrait and both landscape
+directions after the latest package install. Confirm display, touch and pen
+remain aligned in every orientation. Then perform one later cold-boot check to
+prove the complete hardware-to-session startup path. Do not reopen the sensor
+implementation unless that test fails; collect logs first.
 
-Native-Arch hardware gates now closed on r8:
+## Next implementation stage: secure login, lock and power UX
 
-- Rear OV13B10 and front HI846 each completed 30/30 frames at 1280x720 through
-  libcamera's Simple/software-ISP path. The rear sensor's default full-resolution
-  software-ISP allocation still exceeds the bounded 128 MiB CMA pool; normal
-  preview resolutions work.
-- A single `rtcwake -m mem -s 10` test entered `s2idle` and resumed with the
-  same boot ID after about 14 seconds. No units failed, battery remained at
-  99%, and touch, GPU, two cameras, audio, Wi-Fi and Bluetooth remained
-  enumerated after resume.
+This has **not** been implemented yet. Currently both power-button actions are
+intentionally inert.
 
-Kernel-warning triage is complete for GUI-gate purposes. DSI retries recover,
-the invalid 3.1872 GHz CPU request is excluded in favour of the working
-2.8416 GHz maximum, and audio currently initializes without using its reprobe
-path. Fast-charge-pump support and GPU cooling-device registration remain real
-future power/thermal work; keyboard-cover suspend behaviour needs a later
-manual check. `archpad-pipa-device` 1.0.0-2 fixes the service's previously
-missing documentation file.
+Required behavior:
 
----
+- short press: acquire a real Wayland session lock, complete PAM-backed locker
+  startup, then request suspend through logind;
+- wake: show the authenticated lock screen before any desktop content;
+- cold boot/logout: show a proper PAM-backed graphical greeter rather than
+  automatically recreating the user session;
+- long press: show an ArchPad shell power menu with Sleep, Log out, Restart and
+  Shut down; destructive actions require a second deliberate touch;
+- all actual actions go through logind/systemd interfaces.
 
-## 3. Strict Operating Standards (User-Mandated)
+The recorded architecture selects `hyprlock` (repository version observed:
+`0.9.6-3`) for the Wayland session-lock protocol and `greetd` (`0.10.3-2`) for
+the graphical PAM login boundary. Do not install blindly. First design and
+validate touch authentication: an ordinary OSK surface may not be visible over
+the secure session-lock protocol. Use a secure integrated PIN/keyboard path or
+another standards-compliant solution; never imitate a lock screen with a
+normal Quickshell overlay. Only after lock-before-suspend works should logind's
+short power action be enabled. Long-press detection and the menu belong to the
+shell/input-policy layer, not a direct logind power-off action.
 
-1. **No intrusive or non-standard workarounds:** Do not patch system binaries, mask essential system services without explicit necessity, or bypass security layers.
-2. **Explain before acting:** Always explain why a step is necessary and what it does before applying system-level modifications.
-3. **Solve problems at the root:** For example, do not disable or hide a lockscreen issue; resolve the underlying PAM / compositor integration cleanly.
-4. **Preserve stability:** Do not touch partition tables, kernel modules, or hardware configs without safety checks.
+Read before changing this stage:
 
----
+- `ROADMAP.md`
+- `PHASE4-ARCHITECTURE.md`, especially “Login, locking and secrets”
+- `UI-SPEC.md`, especially “Lock, wake and power key”
+- `packages/archpad-session/README.md`
 
-## 4. Immediate Next Step: Phase 4B compositor proof
+## Important unrelated known limitations
 
-Phase 4 architecture is now recorded in `PHASE4-ARCHITECTURE.md`. It selects an
-UWSM-managed Hyprland session, ArchPad-owned rotation/OSK/input policy and a
-Quickshell tablet shell. The first implementation step is deliberately a
-minimal, manually launched compositor proof—not the final GUI.
-
-The former blockers—Git versioning, image builder, baseline manifest,
-persistent clock, atomic kernel update and complete rollback generation, clean
-kernel reproducibility and r9 validation—are resolved. Proceed with these
-boundaries:
-
-1. follow the staged gates in `PHASE4-ARCHITECTURE.md`; retain
-   `multi-user.target`, TTY1 and SSH while validating the compositor;
-2. keep reboot and `crypto_user` on the low-level backlog;
-3. generate the final 114 GB flashable image only after the GUI package set is
-   fixed. The existing image is a pre-GUI recovery artifact, not a current r9
-   release image.
-
-The Arch Linux ARM `[aur]` entry is a curated binary repository and is not the
-same service as `aur.archlinux.org`; retain or remove it only through an
-explicit repository-trust decision. Current audio initializes normally; its
-bounded reprobe fallback and warning classification are documented.
+- Rear camera orientation/focus and ISP tuning remain later improvements.
+- Fast charging, GPU cooling registration, long suspend/thermal endurance,
+  DisplayPort combinations and other deep hardware tuning remain later gates.
+- Sensor DSP startup emits noisy expected `temp.json` diagnostics; reduce this
+  cleanly before public release.
+- The current graphical login is still
+  `archpad-graphical-session.service`, which starts the unprivileged `archpad`
+  session through PAM and restarts it after logout because there is no greeter.
+- Keep the power keys ignored if the secure lock stage cannot be completed.
