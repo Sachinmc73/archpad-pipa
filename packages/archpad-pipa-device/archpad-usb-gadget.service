@@ -1,0 +1,14 @@
+[Unit]
+Description=ArchPad USB Gadget Network Service
+DefaultDependencies=no
+After=sys-kernel-config.mount udev.service
+Before=network-pre.target systemd-networkd.service
+Wants=sys-kernel-config.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/archpad-usb-gadget
+
+[Install]
+WantedBy=sysinit.target multi-user.target

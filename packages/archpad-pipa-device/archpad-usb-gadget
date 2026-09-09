@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e
+
+# Mount configfs if not already mounted
+mountpoint -q /sys/kernel/config || mount -t configfs none /sys/kernel/config 2>/dev/null || true
+
+# Load gadget composite driver
+modprobe -q libcomposite || true
+
+CONFIGFS="/sys/kernel/config/usb_gadget/g1"
+
+if [ ! -d "$CONFIGFS" ]; then
+    mkdir -p "$CONFIGFS"
+    echo "0x18d1" > "$CONFIGFS/idVendor"
+    echo "0xd001" > "$CONFIGFS/idProduct"
+
+    mkdir -p "$CONFIGFS/strings/0x409"
+    echo "Xiaomi" > "$CONFIGFS/strings/0x409/manufacturer"
+    echo "ArchPad" > "$CONFIGFS/strings/0x409/product"
+    echo "archpad-pipa" > "$CONFIGFS/strings/0x409/serialnumber"
+
+    mkdir -p "$CONFIGFS/configs/c.1/strings/0x409"
+    echo "CDC-NCM" > "$CONFIGFS/configs/c.1/strings/0x409/configuration"
+
+    mkdir -p "$CONFIGFS/functions/ncm.usb0"
+    ln -sf "$CONFIGFS/functions/ncm.usb0" "$CONFIGFS/configs/c.1/"
+
+    # Bind to first available UDC
+    for i in $(seq 1 10); do
+        UDC_DEV="$(ls /sys/class/udc 2>/dev/null | head -n 1 || true)"
+        if [ -n "$UDC_DEV" ]; then
+            echo "$UDC_DEV" > "$CONFIGFS/UDC"
+            break
+        fi
+        sleep 0.5
+    done
+fi
+
+# Ensure usb0 interface is up
+ip link set usb0 up 2>/dev/null || true
