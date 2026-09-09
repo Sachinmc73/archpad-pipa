@@ -34,7 +34,7 @@ login; the first visible ArchPad shell layer is the next implementation stage.
 | Active slot | A |
 | Userspace | Native Arch Linux ARM aarch64 (rolling), systemd, `graphical.target` |
 | Console Interface | Crisp 32px HiDPI Linux console on TTY1 (`ter-v32b` font) |
-| Package Count | **459 packages** after Phase 4B dependencies/toolchain; the archived console baseline remains 328 |
+| Package Count | **466 packages** after Quickshell and `archpad-shell`; the archived console baseline remains 328 |
 | RAM Usage | **487 MiB / 5.40 GiB** at the post-install console idle check; r9 baseline was 436 MiB |
 | Disk Usage | **4.5 GiB / 105 GiB (5%)** on nested GPT ext4 (`/dev/loop0p2`) |
 | Kernel | Linux `7.1.4-pipa-r9`, package `linux-archpad-pipa-7.1.4-9`, running/default and hash-verified |
@@ -317,6 +317,11 @@ environment; package signing remains a later repository-release requirement.
   USB networking and SSH remain active recovery paths.
   `PHASE4B-STATUS.md` records package provenance, hashes, validation and the
   remaining cold-boot/peripheral checks.
+- **[INSTALLED; OWNER TOUCH REVIEW]** Official Arch Linux ARM Quickshell
+  `0.3.1-1` and independently packaged `archpad-shell 0.1.0-1` provide the
+  first top bar, workspace switcher and bottom dock. Both native layer surfaces,
+  package integrity and UWSM autostart wiring are verified.
+  `PHASE4-SHELL-STATUS.md` is the exact handoff and physical checklist.
 - **[PENDING]** Implement synchronized rotation/input mapping, then pass the
   automatic OSK compatibility matrix before building the Quickshell UI. The
   interim keyboard must provide dependable text entry; the recorded long-term
@@ -331,10 +336,9 @@ environment; package signing remains a later repository-release requirement.
 
 ## Immediate next action
 
-Build the first independently packaged Quickshell shell surface: top bar,
-workspace indicator and bottom dock, with large touch targets and a visible
-exit/recovery action. Add the proven interim OSK immediately after that shell
-surface is usable.
+Complete the short owner touch review in `PHASE4-SHELL-STATUS.md`, then execute
+the dependable interim OSK compatibility gate. Continue with the real app
+drawer only after touch text entry is usable without a hardware keyboard.
 Keep the reboot path and `CONFIG_CRYPTO_USER` as explicit low-level backlog;
 do not let GUI work hide either issue. Build the next full flashable release
 only after the Phase 4 package set is fixed.

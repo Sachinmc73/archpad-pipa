@@ -1,0 +1,36 @@
+pkgname=archpad-shell
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='ArchPad touch-first Quickshell interface'
+arch=('any')
+url='https://github.com/archpad/archpad'
+license=('GPL-3.0-only')
+depends=(
+  'archpad-session>=0.2.0'
+  'hyprland>=0.56.2'
+  'quickshell=0.3.1'
+  'uwsm'
+)
+source=(
+  'archpad-shell.service'
+  'shell.qml'
+  'README.md'
+)
+sha512sums=(
+  '526bde679955c46e407a026316dd3bc7db45c365c3aaf48591e26a49e8893a3f8fa8cf076723d0f78869d3775f604ae596751629815ec19952c14e17349eb8dd'
+  '6773b96db8776a9c0d916dfb7a9cee7daa88f4be8fc817421cf73682af3973e7ff168747e1df8970e1bc430f0dcf8514ea611dfea1cc495d890daf52ff966fd3'
+  'f3b5ef99870369870925b3c35f8d37061fd85b3881f7b1fa02b1db250ce6fecc19b65e0babc015351778025ab55069b6a756009908062e2ea27d00344731aebd'
+)
+
+package() {
+  install -Dm644 archpad-shell.service \
+    "$pkgdir/usr/lib/systemd/user/archpad-shell.service"
+  install -Dm644 shell.qml \
+    "$pkgdir/usr/share/archpad-shell/shell.qml"
+  install -Dm644 README.md \
+    "$pkgdir/usr/share/doc/archpad-shell/README.md"
+
+  install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
+  ln -s /usr/lib/systemd/user/archpad-shell.service \
+    "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-shell.service"
+}

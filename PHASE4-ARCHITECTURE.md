@@ -214,8 +214,9 @@ User customisations live under `~/.config/` and are never overwritten on
 upgrade. Device kernel, firmware, camera and audio data remain in their current
 packages; the GUI package must not own or mutate them.
 
-Quickshell UI can begin inside `archpad-session`, then split into an
-`archpad-shell` package only when it has its own meaningful release lifecycle.
+Quickshell UI is independently packaged as `archpad-shell`; even its first
+bar/dock slice has a meaningful release, validation and rollback lifecycle.
+`archpad-session` remains limited to compositor and session policy.
 
 ## Staged implementation and stop points
 
