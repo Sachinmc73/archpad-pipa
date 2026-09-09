@@ -1,5 +1,5 @@
 pkgname=archpad-session
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc='ArchPad touch-first Wayland session policy'
 arch=('any')
@@ -20,17 +20,25 @@ depends=(
 )
 source=(
   'archpad-session'
+  'archpad-graphical-session.service'
   'hyprland.lua'
+  'README.md'
 )
 sha512sums=(
   '587d78ff5c88cb4dcedc931e627a0998dc7b02934d843bf0718d6f304c89e4b841a876b703f92a1602f2eaa1cc61a87842f082b62d2a74de7bedc70379412880'
+  '05d729a9762a3263dc03f861a9926c6bb1adc0df0105939548af12dc57c7dd92629dc58df20314ab9c0748fb5e0c750b34e09442aeb503c224f72c6a40f2ac16'
   'd7763ab6449e6e32cc8d86c5a2f61e1270480832661c4b51dbde766eb89feccda2c5e5f4ba426fb7528750afcb99f58a62f7acc7cd6142187d3a02c8c43b23f6'
+  'a61bbbdefb7d643bd2cb97d3fe55affdd8031c3500b63c03a50fd602140ea7192c9c8014ef772827cbf7eda3700c6564fcae97e0063577939dc225756243eb9c'
 )
 
 package() {
   install -Dm755 archpad-session "$pkgdir/usr/bin/archpad-session"
+  install -Dm644 archpad-graphical-session.service \
+    "$pkgdir/usr/lib/systemd/system/archpad-graphical-session.service"
   install -Dm644 hyprland.lua \
     "$pkgdir/usr/share/archpad-session/hyprland.lua"
+  install -Dm644 README.md \
+    "$pkgdir/usr/share/doc/archpad-session/README.md"
 
   install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
   ln -s /usr/lib/systemd/user/hyprpolkitagent.service \

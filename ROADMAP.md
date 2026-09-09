@@ -26,13 +26,13 @@ last phase. A dependable operating system comes first.
 The tablet runs **pure native Arch Linux ARM** with its core hardware foundation
 functionally enabled. Phase 3.5 closed the reproducibility, update-safety,
 clock, rollback and native-Arch validation gaps. The minimal Phase 4B Hyprland
-session is now installed but deliberately does not start at boot; its physical
-display/input/suspend proof is the next gate.
+session is installed, touch-validated and enabled as the default graphical
+login; the first visible ArchPad shell layer is the next implementation stage.
 
 | Component | Current validated value |
 |---|---|
 | Active slot | A |
-| Userspace | Native Arch Linux ARM aarch64 (rolling), systemd, `multi-user.target` |
+| Userspace | Native Arch Linux ARM aarch64 (rolling), systemd, `graphical.target` |
 | Console Interface | Crisp 32px HiDPI Linux console on TTY1 (`ter-v32b` font) |
 | Package Count | **459 packages** after Phase 4B dependencies/toolchain; the archived console baseline remains 328 |
 | RAM Usage | **487 MiB / 5.40 GiB** at the post-install console idle check; r9 baseline was 436 MiB |
@@ -310,12 +310,13 @@ environment; package signing remains a later repository-release requirement.
   rollback gates and records the alternatives considered. `UI-SPEC.md` fixes
   the first shell's desktop, dock, drawer, Overview, quick-settings, app-pill,
   floating-window and edge-gesture behavior.
-- **[INSTALLED; PHYSICAL PROOF NEXT]** Hyprland `0.56.2-3`, Aquamarine
+- **[COMPLETE: COMPOSITOR/LOGIN FOUNDATION]** Hyprland `0.56.2-3`, Aquamarine
   `0.15.0-2`, UWSM `0.26.7-1`, portals, polkit agent, keyring and Foot are
-  installed with `archpad-session 0.1.0-1`. The default remains
-  `multi-user.target`; no display manager or graphical autostart is enabled.
+  installed with `archpad-session 0.2.0-1`. A packaged PAM/logind service runs
+  the unprivileged session on TTY1 and `graphical.target` is the boot default.
+  USB networking and SSH remain active recovery paths.
   `PHASE4B-STATUS.md` records package provenance, hashes, validation and the
-  exact physical test gate.
+  remaining cold-boot/peripheral checks.
 - **[PENDING]** Implement synchronized rotation/input mapping, then pass the
   automatic OSK compatibility matrix before building the Quickshell UI. The
   interim keyboard must provide dependable text entry; the recorded long-term
@@ -330,8 +331,10 @@ environment; package signing remains a later repository-release requirement.
 
 ## Immediate next action
 
-Log in locally as `archpad`, run `archpad-session`, and execute the physical 4B
-compositor proof in `PHASE4B-STATUS.md`.
+Build the first independently packaged Quickshell shell surface: top bar,
+workspace indicator and bottom dock, with large touch targets and a visible
+exit/recovery action. Add the proven interim OSK immediately after that shell
+surface is usable.
 Keep the reboot path and `CONFIG_CRYPTO_USER` as explicit low-level backlog;
 do not let GUI work hide either issue. Build the next full flashable release
 only after the Phase 4 package set is fixed.

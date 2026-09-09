@@ -1,6 +1,6 @@
-# Phase 4B reversible compositor proof
+# Phase 4B compositor and graphical-login foundation
 
-Status: **installed; physical validation pending — 2026-09-09**
+Status: **installed and live-validated; cold-boot check pending — 2026-09-09**
 
 ## What is installed
 
@@ -13,12 +13,15 @@ Status: **installed; physical validation pending — 2026-09-09**
 - polkit `127-3` with `hyprpolkitagent 0.1.3-10`;
 - GNOME Keyring `50.0-1` for the Secret Service API;
 - Foot `1.28.0-2` as the proof terminal;
-- `archpad-session 0.1.0-1`, built from `packages/archpad-session/`.
+- `archpad-session 0.2.0-1`, built from `packages/archpad-session/`;
+- `archpad-graphical-session.service`, enabled on `graphical.target`, running
+  UWSM as the unprivileged `archpad` user through PAM on seat0/TTY1.
 
-The full system was updated first. The resulting console has 459 packages,
-uses about 487 MiB RAM at idle and occupies 4.5 GiB of the 105 GiB rootfs.
-`multi-user.target` is still the default and no display manager is installed or
-enabled.
+The full system was updated first. The resulting installation has 459 packages,
+used about 487 MiB RAM at the last console idle check and occupies 4.5 GiB of
+the 105 GiB rootfs. `graphical.target` is now the default. No third-party
+display manager is installed: the packaged ArchPad service owns graphical
+startup and conflicts only with `getty@tty1.service`.
 
 ## Why Hyprland was built locally
 
@@ -42,8 +45,10 @@ The built executable reports Aquamarine 0.15.0 and directly links
 `libaquamarine.so.14`. The normal repository package can replace this build
 when Arch Linux ARM publishes a newer Hyprland version.
 
-The `archpad-session` package SHA-256 is
+The original `archpad-session 0.1.0-1` package SHA-256 was
 `153b7f3904c480ac267319cbda279da586b65721e7424f2478419f3c8d7ef754`.
+The installed `0.2.0-1` package SHA-256 is
+`c60bedc16756a4ae28398d352936370db199d22c425fca53d3d6ffc641890d11`.
 Both binary packages are retained under the ignored private artifact directory
 `artifacts/private/arch-packages-phase4b/`; tracked package sources remain the
 authoritative inputs.
@@ -59,36 +64,38 @@ authoritative inputs.
 - the original `/etc/hosts` was restored byte-for-byte and all temporary
   mirror tunnels, pacman configurations and tablet build directories were
   removed.
+- native DSI output at 1800x2880, 120 Hz, scale 2;
+- touch taps, continuous dragging, touch scrolling, pinch and simultaneous
+  multitouch contacts on a native Qt/Wayland test surface;
+- touchscreen and pen are both exposed to Hyprland;
+- the persistent service has an active PAM/logind `archpad` session on
+  seat0/TTY1, with no failed user units or service warnings;
+- a deliberate service restart cleanly destroyed and recreated Hyprland, Foot
+  and the seat0 session with no warnings;
+- `graphical.target`, the graphical service, USB networking and SSH are all
+  active together; TTY1 getty alone is inactive by design.
 
-## Physical proof procedure
+## Remaining validation gate
 
-From TTY1, log in as the normal `archpad` user and run:
+The service and target were activated successfully without rebooting. A later
+controlled power cycle must prove automatic cold-boot startup. This is kept
+separate because the existing low-level issue can cause `systemctl reboot` to
+power off instead of restarting; it does not invalidate graphical startup.
 
-```sh
-archpad-session
-```
-
-Expected first screen: a minimal Hyprland desktop at scale 2 with one Foot
-terminal. This is a compositor test surface, not the finished ArchPad shell.
-Use `Super+Return` for another terminal and `Super+Shift+E` for clean logout.
-
-Validate, in order:
-
-1. native panel mode, correct orientation, acceptable scale and no corruption;
-2. touch taps and continuous dragging;
-3. pen position, motion, pressure behavior and no obvious mapping offset;
-4. keyboard-cover input and the recovery/logout shortcuts;
-5. three-finger horizontal workspace switching;
-6. clean logout back to TTY1;
-7. after the first six pass, one suspend/resume cycle and repeat touch/pen.
-
-During the running session, use SSH to capture `hyprctl monitors -j`,
-`hyprctl devices -j`, renderer logs and resource use. Do not proceed to the
-rotation service, OSK or Quickshell shell until this gate is recorded as passed.
+Still validate pen pressure/precision, keyboard-cover input, workspace gesture,
+session restart after clean logout, and touch/pen after suspend-resume. These
+are incremental checks and do not block beginning the visible shell.
 
 ## Recovery
 
-The graphical session is not part of boot. If it fails, use another TTY or SSH
-and stop the user's graphical session; the console remains the normal boot
-path. Removing `archpad-session` and `hyprland` returns to the console state
-without touching either kernel generation, boot partition or device packages.
+If graphical startup fails, connect over USB SSH and run:
+
+```sh
+systemctl disable --now archpad-graphical-session.service
+systemctl set-default multi-user.target
+systemctl start getty@tty1.service
+```
+
+This restores the console boot path without touching either kernel generation,
+the boot partition or any device package. Re-enable the service and set
+`graphical.target` when ready to retry.

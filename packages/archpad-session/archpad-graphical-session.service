@@ -1,0 +1,27 @@
+[Unit]
+Description=ArchPad graphical tablet session
+Documentation=file:/usr/share/doc/archpad-session/README.md
+After=systemd-user-sessions.service systemd-logind.service
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+User=archpad
+Group=users
+PAMName=login
+WorkingDirectory=/home/archpad
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty1
+UtmpMode=user
+ExecStart=/usr/bin/archpad-session
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical.target
