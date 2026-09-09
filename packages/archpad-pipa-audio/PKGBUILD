@@ -1,7 +1,7 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-audio
 pkgver=1.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc="ALSA UCM audio configuration for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
@@ -10,7 +10,7 @@ depends=('alsa-ucm-conf')
 source=("pipa.conf"
         "HiFi.conf")
 sha512sums=('007908c49db107dd8289a96049ed4d77a55c7846e21f76fa7f97306df953ccdec7d821cbc7732a3ff7c532285175ebf0d6a4e3f224740ac002b23f3608cbf76d'
-            '0aac54c9412d40ffa0289d635bd6adbb68b7aee092f46c8e1d2c8f6b28074a531c54a4830268603ce7312dd70da361a5f45bfe72caf7f27b7b92924fde58ce6a')
+            '46cc2c08ff524038742d3b257368e9568a59a88ecf6d0a760347bae669a8dcc22d41462cd1a60476b4cab43797d5f62a997d36e659f242ed6981e18dbfd05238')
 
 package() {
   install -Dm644 "${srcdir}/pipa.conf" -t "${pkgdir}/usr/share/alsa/ucm2/Xiaomi/pipa/"
