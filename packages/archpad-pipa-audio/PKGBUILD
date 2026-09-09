@@ -1,16 +1,18 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-audio
 pkgver=1.0.0
-pkgrel=2
+pkgrel=3
 pkgdesc="ALSA UCM audio configuration for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
 license=('BSD-3-Clause')
 depends=('alsa-ucm-conf')
 source=("pipa.conf"
-        "HiFi.conf")
+        "HiFi.conf"
+        "51-pipa.conf")
 sha512sums=('007908c49db107dd8289a96049ed4d77a55c7846e21f76fa7f97306df953ccdec7d821cbc7732a3ff7c532285175ebf0d6a4e3f224740ac002b23f3608cbf76d'
-            '46cc2c08ff524038742d3b257368e9568a59a88ecf6d0a760347bae669a8dcc22d41462cd1a60476b4cab43797d5f62a997d36e659f242ed6981e18dbfd05238')
+            '4a5ee228c1ae8f0745b3fc2e4fc24867725ef04a598bf6e90f77ef868ac833496670c44d7a0cfae6510a6ed9206a6b995c45af0b3bc8c6df3ec6b3ff076b07da'
+            '3235b3a377e636642070b9d24ae374068ad38b06ebbf6a8b0723c3b7432146e137235c4cd986d8ab5d083d964be78f470f1d6bc35a8306670926609f65737b4f')
 
 package() {
   install -Dm644 "${srcdir}/pipa.conf" -t "${pkgdir}/usr/share/alsa/ucm2/Xiaomi/pipa/"
@@ -19,4 +21,7 @@ package() {
   mkdir -p "${pkgdir}/usr/share/alsa/ucm2/conf.d/sm8250"
   ln -s "../../Xiaomi/pipa/pipa.conf" \
     "${pkgdir}/usr/share/alsa/ucm2/conf.d/sm8250/xiaomi-XiaomiPad6.conf"
+
+  install -Dm644 "${srcdir}/51-pipa.conf" \
+    "${pkgdir}/usr/share/wireplumber/wireplumber.conf.d/51-pipa.conf"
 }
