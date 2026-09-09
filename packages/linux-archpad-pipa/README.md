@@ -11,7 +11,7 @@ initial hardware validation on the project's Tianma-panel tablet.
   `c6f27d1b653491029311e5c2bd0a25c4a654d436`
 - Original pmaports package: `linux-xiaomi-pipa` `7.1.4-r1`
 - Preserved fallback kernel release: `7.1.4-pipa` (`pkgrel=7`)
-- Installed release awaiting first-boot confirmation: `pkgrel=9`, kernel
+- Current installed and validated release: `pkgrel=9`, kernel
   `7.1.4-pipa-r9`
 - The r9 source includes the front-camera fixes through patch `0025`, VDSO
   path normalization in `0026`, deterministic Qualcomm register generation in

@@ -34,9 +34,9 @@ reproducibility, update-safety, clock, rollback and native-Arch validation gaps.
 | Userspace | Native Arch Linux ARM aarch64 (rolling), systemd, `multi-user.target` |
 | Console Interface | Crisp 32px HiDPI Linux console on TTY1 (`ter-v32b` font) |
 | Package Count | **328 packages** (326-package console baseline plus clock and fallback packages) |
-| RAM Usage | **421 MiB / 5.40 GiB** at the latest post-hardening check |
+| RAM Usage | **436 MiB / 5.40 GiB** in the r9 baseline manifest |
 | Disk Usage | **2.8 GiB / 105 GiB (3%)** on nested GPT ext4 (`/dev/loop0p2`) |
-| Kernel | `linux-archpad-pipa-7.1.4-9` installed/default; first r9 boot confirmation pending (last confirmed running kernel: `7.1.4-pipa-r8`) |
+| Kernel | Linux `7.1.4-pipa-r9`, package `linux-archpad-pipa-7.1.4-9`, running/default and hash-verified |
 | Rollback kernel | `7.1.4-pipa` r7 as an independently packaged, fully boot-tested generation |
 | Device package | `archpad-pipa-device-1.0.0-2`, Tianma variant |
 | Firmware | `archpad-pipa-firmware-1.0.0-1` |
@@ -275,13 +275,26 @@ environment; package signing remains a later repository-release requirement.
   remoteproc, keyboard-I2C and BPF messages. No current item blocks GUI bring-up,
   but fast charging, GPU thermal integration and long suspend/load testing
   remain explicit reliability work.
-- **[IN PROGRESS]** Install the reproducible r9 payload. Pacman installed r9,
-  created and verified its complete generation, then selected it as default.
-  The first reboot has not yet returned an IP address, so the running r9 kernel
-  and hardware gates are not yet confirmed; r7 remains an independently
-  packaged, verified fallback and r8 remains on the ESP pending safe pruning.
-- Regenerate or supersede the stale release manifest after the builder is
-  authoritative.
+- **[COMPLETE]** Install and cold-boot the reproducible r9 payload. r9 is
+  running/default, both cameras enumerate, touchscreen/GPU/audio/Wi-Fi/
+  Bluetooth/battery nodes are present, the clock one-shot succeeded and zero
+  units failed. The guarded manager removed obsolete r8 only after r9 was
+  running and default; r7 remains the independently packaged fallback.
+- **[COMPLETE]** Capture the sanitized r9 runtime manifest at
+  `artifacts/manifests/archpad-console-r9-2026-09-09.txt` (SHA-256
+  `e397fb362c4f8a5b76d6c18a7d70d18d6c09edbbea6a08e9748d5d600f073757`).
+  The older full image is explicitly retained only as a pre-GUI recovery
+  artifact; regenerating a 114 GB image now would be immediately invalidated
+  by Phase 4. A final flashable image and manifest are required after the GUI
+  package set is fixed.
+- **[OPEN, NON-BLOCKING]** `systemctl reboot` completed orderly userspace
+  shutdown but left the tablet powered off; a long power-button press produced
+  a normal 17.5-second cold boot. Diagnose the platform restart path before the
+  first public release.
+- **[OPEN, NEXT KERNEL]** BlueZ 5.87 requests `crypto_user`, while the kernel
+  has `CONFIG_CRYPTO_USER` disabled. Bluetooth works and
+  `systemd-modules-load` succeeds, so do not delete BlueZ's package-owned load
+  file; enable the expected module in the next planned kernel release.
 
 ### Phase 4 — Touch-first ArchPad interface: planned
 
@@ -302,8 +315,10 @@ environment; package signing remains a later repository-release requirement.
 
 ## Immediate next action
 
-Complete the first r9 boot validation, safely prune the obsolete r8 boot entry,
-then regenerate or explicitly supersede the stale release manifest.
+Begin Phase 4 with a written touch-session architecture and package boundary.
+Keep the reboot path and `CONFIG_CRYPTO_USER` as explicit low-level backlog;
+do not let GUI work hide either issue. Build the next full flashable release
+only after the Phase 4 package set is fixed.
 The former GUI blockers—source versioning, clock persistence, console
 manifest, atomic kernel generations and a tested rollback—are now resolved.
 

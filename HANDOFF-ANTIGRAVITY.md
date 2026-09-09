@@ -12,7 +12,7 @@ The tablet has successfully migrated from postmarketOS to **pure native Arch Lin
 
 - **Device:** Xiaomi Pad 6 (`pipa`), Snapdragon 870 (sm8250), 6/128 GB, Tianma LCD.
 - **Active Slot:** Slot A (`boot_a`).
-- **OS & Kernel:** Arch Linux ARM (aarch64), Linux `7.1.4-pipa-r8`, package `linux-archpad-pipa-7.1.4-8`.
+- **OS & Kernel:** Arch Linux ARM (aarch64), Linux `7.1.4-pipa-r9`, package `linux-archpad-pipa-7.1.4-9`.
 - **Runlevel:** `multi-user.target` (pure console, zero desktop/GUI daemons active).
 - **Physical Display:** Tianma DSI-1 (1800×2880 @ 120 Hz) with crisp 32px HiDPI font (`ter-v32b`).
 - **Package Count:** **328 packages** (`pacman -Q`).
@@ -37,7 +37,7 @@ The tablet has successfully migrated from postmarketOS to **pure native Arch Lin
 | **Phase 2: Arch Native Packaging & Boot** | **COMPLETE** | Custom kernel (`linux-archpad-pipa`), firmware, device packages, nested GPT userdata hook flashed. |
 | **Phase 3: Functional Hardware Base** | **COMPLETE** | Display, GPU, basic audio, wireless and input smoke tests passed; both cameras enumerate. Native-Arch camera streaming, suspend/resume and deeper reliability remain in Phase 3.5. |
 | **Rollback & Cleanup** | **COMPLETE** | Purged temporary GUI prototypes (Phosh, Plasma), vacuumed 311 MB journal logs, and reclaimed 31 GB on host workspace. |
-| **Phase 3.5: Baseline Hardening** | **IN PROGRESS** | Kernel reproducibility, complete generations, rollback, clock and bounded hardware validation are complete; r9 first-boot confirmation and release-manifest disposition remain. |
+| **Phase 3.5: Baseline Hardening** | **COMPLETE** | Kernel reproducibility, complete generations, rollback, clock, bounded r9 hardware validation and fresh runtime manifest are complete. Final full-image assembly is deliberately deferred until the Phase 4 package set is fixed. |
 
 Phase 3.5 clock hardening is complete. Package `archpad-clock` 1.0.1 restores
 time from a Linux-owned PMIC-counter offset and never writes PMIC registers or
@@ -52,10 +52,8 @@ this U-Boot environment, so the manager updates `loader.conf` atomically.
 
 Current boot generations:
 
-- `7.1.4-pipa-r9`: installed/default and hash-verified, from
-  `linux-archpad-pipa 7.1.4-9`; first running-boot confirmation is pending.
-- `7.1.4-pipa-r8`: last confirmed running kernel; its boot files remain until
-  r9 boots and the guarded manager can safely remove this obsolete generation.
+- `7.1.4-pipa-r9`: running/default and hash-verified, from
+  `linux-archpad-pipa 7.1.4-9`.
 - `7.1.4-pipa`: known-good r7 fallback, owned by
   `linux-archpad-pipa-fallback 7.1.4-7` with its complete Image, DTB,
   initramfs and module tree.
@@ -73,6 +71,20 @@ generated A6xx header, config, System.map, Module.symvers and 585/585 modules.
 The Image SHA-256 is
 `e86f360ccc39f5b18eaf9cbb2279d948dac62edccb4909e583f8a38178c7e8f0`.
 All 27 source checksums pass and all 25 patches apply to pristine Linux 7.1.4.
+
+The r9 cold boot reached `multi-user.target` in 17.5 seconds with zero failed
+units. Touch, GPU, 16 video nodes, both libcamera cameras, audio, battery,
+Wi-Fi and Bluetooth were present. After these checks the guarded manager
+removed obsolete r8; only r9 and the independently packaged r7 fallback remain,
+both hash-verified. The sanitized baseline is
+`artifacts/manifests/archpad-console-r9-2026-09-09.txt`, SHA-256
+`e397fb362c4f8a5b76d6c18a7d70d18d6c09edbbea6a08e9748d5d600f073757`.
+
+Two non-blocking low-level items remain explicit: `systemctl reboot` performed
+a clean shutdown but left the tablet powered off instead of resetting, and
+BlueZ requests an absent `crypto_user` module although Bluetooth works. Fix
+the restart path before public release and enable `CONFIG_CRYPTO_USER` in the
+next planned kernel rather than modifying BlueZ's package-owned file.
 
 Native-Arch hardware gates now closed on r8:
 
@@ -104,18 +116,19 @@ missing documentation file.
 
 ---
 
-## 4. Immediate Next Step: Confirm r9 and Finish Phase 3.5
+## 4. Immediate Next Step: Design Phase 4
 
 Do not install the final GUI yet. The former blockers—Git versioning, image
 builder, baseline manifest, persistent clock, atomic kernel update and complete
-rollback generation and clean kernel reproducibility—are resolved. Complete
-the remaining bounded checks:
+rollback generation, clean kernel reproducibility and r9 validation—are
+resolved. Proceed with these boundaries:
 
-1. determine the visible state of the tablet after the first r9 reboot and
-   complete running-kernel/hardware validation;
-2. use `archpad-kernel-generation remove 7.1.4-pipa-r8` only after r9 is both
-   running and default;
-3. regenerate or explicitly supersede the stale release manifest.
+1. write the touch-session architecture and package boundary before installing
+   a compositor;
+2. keep reboot and `crypto_user` on the low-level backlog;
+3. generate the final 114 GB flashable image only after the GUI package set is
+   fixed. The existing image is a pre-GUI recovery artifact, not a current r9
+   release image.
 
 The Arch Linux ARM `[aur]` entry is a curated binary repository and is not the
 same service as `aur.archlinux.org`; retain or remove it only through an
