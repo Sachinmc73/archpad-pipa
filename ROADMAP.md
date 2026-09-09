@@ -1,6 +1,6 @@
 # ArchPad roadmap and current state
 
-Updated: **2026-09-08 22:53 IST**
+Updated: **2026-09-09**
 Device: **Xiaomi Pad 6 (`pipa`), Snapdragon 870, 6/128 GB, Tianma panel**
 
 This is the single project-level source of truth. It records the milestone we
@@ -62,7 +62,7 @@ Pinned construction inputs:
   7.1.0 and archive SHA-256
   `42a4eeaa038994ffd31fa173256ef2f0ef511358eeb41b9ea1f8626391b9b319`
 
-Current validation kernel artifact:
+Retained rollback kernel artifact:
 
 - `linux-xiaomi-pipa-7.1.4-r7.apk`
 - SHA-256 `82a0832e43badab375c082b5e6c72818f1af48075c214a4ccad88c42c5cac5ab`
@@ -228,13 +228,14 @@ environment; package signing remains a later repository-release requirement.
   - **Bluetooth:** Bluetooth 5.1 controller (`hci0`) initialized with public MAC (`00:03:7F:12:05:06`); powered on and scanning verified.
   - **Input:** 10-point multi-touch (`event1`) and 4096-level pressure/tilt stylus pen (`event2`) verified with `evtest`.
   - **Cameras:** Mainline Simple pipeline enumerates front HI846W (using the
-    initial `hi846.yaml` bring-up profile) and rear OV13B10. CMA was expanded
-    to 128 MiB; native-Arch streaming still requires verification.
+  initial `hi846.yaml` bring-up profile) and rear OV13B10. CMA was expanded
+  to 128 MiB; both sensors were subsequently stream-verified on native Arch as
+  recorded in Phase 3.5.
 - **[COMPLETE]** Battery & fuel-gauge reporting accurate (`qcom-battery` / `pm8150b-charger`).
 - **[COMPLETE]** Arch Linux ARM pacman repositories (`core`, `extra`, `alarm`,
   and its curated binary `aur` repository) synchronized.
 
-### Phase 3.5 — Baseline hardening: in progress
+### Phase 3.5 — Baseline hardening: complete
 
 - **[COMPLETE]** Put authoritative sources and documents under Git version
   control; baseline commit `ef523e9` and builder/audit commit `f941910`.
@@ -252,12 +253,14 @@ environment; package signing remains a later repository-release requirement.
   matching Image, DTB, initramfs and module tree, validated before activation.
   `archpad-boot` 1.1.4 provides the ALPM hook, generation manager and a guarded
   obsolete-generation removal command that refuses the running or default
-  kernel.
+  kernel. The active system is now r9; r8 was removed only after r9 and the r7
+  fallback had both passed generation verification.
 - **[COMPLETE]** Preserve r7 through the separately owned
   `linux-archpad-pipa-fallback` package. It was booted after the active kernel
   package had been upgraded to r8; its independent modules, touchscreen,
   hashes and clean system state were verified. The tablet was then returned to
-  r8, which is the current and default entry.
+  r8 for that rollback test and was subsequently upgraded to current/default
+  r9.
 - **[COMPLETE]** Set `Asia/Kolkata`, retain `systemd-timesyncd`, and install
   `archpad-clock` 1.0.1. Its bounded early-boot service explicitly loads the
   PMIC RTC module, restores wall time from a Linux-owned offset without writing
@@ -296,16 +299,20 @@ environment; package signing remains a later repository-release requirement.
   `systemd-modules-load` succeeds, so do not delete BlueZ's package-owned load
   file; enable the expected module in the next planned kernel release.
 
-### Phase 4 — Touch-first ArchPad interface: planned
+### Phase 4 — Touch-first ArchPad interface: in progress
 
 - **[COMPLETED: Base Reset & Rollback]** Reset the environment back to pure minimal Arch Linux ARM console (`multi-user.target`, `ter-v32b` font, 326 packages) after evaluating prototype GUI shells (Phosh, Plasma).
 - **[COMPLETED: Library & Workspace Cleanup]** Purged 50 residual desktop libraries and pruned 311 MB of journal logs; freed 31 GB on the host workspace while preserving recovery backups and the 30-second kernel rebuild tree.
-- **[PENDING: Compositor & Touch Shell Design]** Evaluate touch-first Wayland compositors (Hyprland, Niri, Sway, or Phosh) following strict architectural standards:
-  - Zero intrusive, non-standard hacks or binary patching.
-  - Proper lockscreen / PAM integration (no screen-lock bypasses or hidden issues).
-  - Explicit user alignment and thorough explanation before applying system changes.
-  - Clean On-Screen Keyboard (OSK) with touch focus.
-  - Automatic sensor-driven screen rotation via `iio-sensor-proxy`.
+- **[COMPLETE: Architecture]** `PHASE4-ARCHITECTURE.md` selects an
+  UWSM-managed Hyprland session with ArchPad-owned policy and a Quickshell
+  tablet shell. It defines the security, rotation, input-mapping, OSK and
+  rollback gates and records the alternatives considered.
+- **[NEXT: Reversible compositor proof]** Install the minimal compositor stack,
+  retain `multi-user.target`, and launch it manually from TTY1. Do not enable a
+  display manager or graphical autostart until GPU, touch, pen, scale,
+  suspend/resume and clean exit are validated.
+- **[PENDING]** Implement synchronized rotation/input mapping, then pass the
+  automatic OSK compatibility matrix before building the Quickshell UI.
 
 ### Phase 5 — Advanced Customization & AI Integration (Future)
 
@@ -315,7 +322,8 @@ environment; package signing remains a later repository-release requirement.
 
 ## Immediate next action
 
-Begin Phase 4 with a written touch-session architecture and package boundary.
+Review the completed `PHASE4-ARCHITECTURE.md`, then execute its reversible 4B
+compositor proof.
 Keep the reboot path and `CONFIG_CRYPTO_USER` as explicit low-level backlog;
 do not let GUI work hide either issue. Build the next full flashable release
 only after the Phase 4 package set is fixed.
@@ -325,6 +333,7 @@ manifest, atomic kernel generations and a tested rollback—are now resolved.
 ## Minimal repository map
 
 - `ROADMAP.md` — this project state and plan
+- `PHASE4-ARCHITECTURE.md` — selected GUI stack, package boundaries and gates
 - `packages/` — authoritative Arch package sources
 - `device/temporary-validation/` — only live-system workarounds still relevant
   during the Arch port; credentials are ignored

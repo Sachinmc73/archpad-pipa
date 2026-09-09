@@ -1,6 +1,6 @@
 # ArchPad Handoff to Antigravity
 
-Updated: **2026-09-08 22:53 IST**
+Updated: **2026-09-09**
 
 Read `ROADMAP.md` for the single project-level source of truth.
 
@@ -116,15 +116,20 @@ missing documentation file.
 
 ---
 
-## 4. Immediate Next Step: Design Phase 4
+## 4. Immediate Next Step: Phase 4B compositor proof
 
-Do not install the final GUI yet. The former blockers—Git versioning, image
-builder, baseline manifest, persistent clock, atomic kernel update and complete
-rollback generation, clean kernel reproducibility and r9 validation—are
-resolved. Proceed with these boundaries:
+Phase 4 architecture is now recorded in `PHASE4-ARCHITECTURE.md`. It selects an
+UWSM-managed Hyprland session, ArchPad-owned rotation/OSK/input policy and a
+Quickshell tablet shell. The first implementation step is deliberately a
+minimal, manually launched compositor proof—not the final GUI.
 
-1. write the touch-session architecture and package boundary before installing
-   a compositor;
+The former blockers—Git versioning, image builder, baseline manifest,
+persistent clock, atomic kernel update and complete rollback generation, clean
+kernel reproducibility and r9 validation—are resolved. Proceed with these
+boundaries:
+
+1. follow the staged gates in `PHASE4-ARCHITECTURE.md`; retain
+   `multi-user.target`, TTY1 and SSH while validating the compositor;
 2. keep reboot and `crypto_user` on the low-level backlog;
 3. generate the final 114 GB flashable image only after the GUI package set is
    fixed. The existing image is a pre-GUI recovery artifact, not a current r9
