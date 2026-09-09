@@ -75,7 +75,9 @@ was clean immediately after that commit.
 5. Cleared the visible Hyprland configuration warning. It was stale compositor
    state caused by pacman's atomic replacement of `hyprland.lua` while the
    compositor was running. The file was present, `pacman -Qkk` was clean, a
-   normal `hyprctl reload` succeeded, and `configerrors` is now empty.
+   normal `hyprctl reload` succeeded, and `configerrors` was empty. The visual
+   overlay remained after reload, so it was removed through Hyprland's supported
+   `hyprctl -i 0 seterror disable` command; the error list remained empty.
 6. Packaged a safe interim logind policy:
    `HandlePowerKey=ignore` and `HandlePowerKeyLongPress=ignore`. This prevents
    the upstream desktop default from powering off the tablet and prevents an
@@ -87,13 +89,20 @@ Native package artifacts retained under the ignored private artifact folder:
 - `artifacts/private/arch-packages-phase4c-r2/archpad-session-0.3.2-5-aarch64.pkg.tar.xz`
   SHA-256: `a83689f9134e2634f68a9029badec01a7e3c3808796f581b6b7ebabe2ff7de19`
 
-## Immediate validation still needed
+## Rotation validation
 
-The owner must physically rotate through portrait and both landscape
-directions after the latest package install. Confirm display, touch and pen
-remain aligned in every orientation. Then perform one later cold-boot check to
-prove the complete hardware-to-session startup path. Do not reopen the sensor
-implementation unless that test fails; collect logs first.
+The owner physically confirmed that automatic rotation works after installing
+session 0.3.2-5. A later cold-boot check through all orientations, including
+touch-corner and pen alignment, remains a release-quality validation gate. Do
+not reopen the sensor implementation unless that test fails; collect logs
+first.
+
+The shell journal also contains earlier action-dispatch warnings such as
+`workspace 2` and `exec uwsm app -- foot` being rejected by Hyprland's newer
+Lua dispatcher syntax. These are separate from the cleared configuration
+overlay. Reproduce the affected touch targets and correct their Quickshell IPC
+calls through the supported Hyprland API before treating the dock/workspace
+controls as complete.
 
 ## Next implementation stage: secure login, lock and power UX
 
