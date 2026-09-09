@@ -1,6 +1,6 @@
 # Phase 4 ArchPad shell handoff
 
-Status: **first packaged shell slice installed; owner touch review pending — 2026-09-09**
+Status: **first shell touch proof and live native rotation complete; OSK next — 2026-09-09**
 
 ## Installed result
 
@@ -18,8 +18,10 @@ Status: **first packaged shell slice installed; owner touch review pending — 2
 - `archpad-shell.service` is attached to UWSM's
   `graphical-session.target`, so it starts with every ArchPad graphical login.
 
-The system now has 466 packages and still uses 4.5 GiB of the 105 GiB rootfs.
-No system or user unit is failed.
+The system now has 474 packages. The latest system and graphical user-session
+snapshots had no failed unit; `archpad-shell` and `archpad-rotation` were both
+active. Their first cold-login autostart after the rotation package install
+remains a physical check rather than an inferred pass.
 
 ## Visible scope
 
@@ -53,15 +55,55 @@ Those remain separate testable increments.
   memory was about 1.21 GiB. This is a baseline, not yet an optimized result;
   the final graphical idle target remains below 800 MiB.
 
-## Owner touch check
+## Owner touch check: passed
 
-Confirm on the tablet:
+The owner confirmed that the bar/dock touch targets, workspace selection,
+Terminal launcher, feedback targets and application touch/dragging behaved as
+intended. The diagnostic bottom contact counter was not reliable, but its live
+touch visualization and an independent browser multitouch test both responded
+to multiple contacts.
 
-1. the bar and dock are correctly sized and unobstructed;
-2. workspace buttons 1–4 switch and update their highlight;
-3. Terminal opens another Foot window;
-4. Apps, Overview and USB Recovery update the top-right feedback message;
-5. existing application touch and dragging remain correct outside the panels.
+## Native rotation slice
+
+- Official Arch Linux ARM `iio-sensor-proxy 3.9-1` consumes the Qualcomm SSC
+  accelerometer enabled only for pipa by `archpad-pipa-device 1.0.0-4`.
+- A sandboxed system service runs `hexagonrpcd` against the Sensor DSP. The
+  exact upstream HexagonRPC v0.4.0 source is pinned at tag commit
+  `23a69640bf10dc498226c602c5b5db11d8cb3d8e`, with one checksummed patch that
+  exposes the firmware registry-version marker expected by pipa's DSP image.
+- `archpad-session 0.3.0-3` installs a small unprivileged GDBus service. It
+  claims the accelerometer and applies the DSI-1, touchscreen and pen transforms
+  together through Hyprland's supported Lua `eval` configuration interface.
+- `HasAccelerometer=true`, raw SSC samples and iio-sensor-proxy orientation
+  events were verified. The owner visually confirmed automatic transitions
+  between normal and right-up.
+- All four installed package trees passed `pacman -Qkk` with zero altered
+  files. The ignored final artifact set is in
+  `artifacts/private/arch-packages-phase4c/`:
+
+  - `archpad-pipa-device-1.0.0-4-any.pkg.tar.xz` — SHA-256
+    `07c6bf59df29d14de498ed2c3cd4a769ef76b6335fc6cf1daac6dfc2d2381845`
+  - `archpad-pipa-firmware-1.0.0-2-any.pkg.tar.xz` — SHA-256
+    `6245f153eddcbd41d3a36bf626819f65629f1ad86d253b64604e746dca5ea705`
+  - `archpad-session-0.3.0-3-aarch64.pkg.tar.xz` — SHA-256
+    `b3e00e2a68a9b1291e166cd301a29933ff73854539cb093bdbf134b3e54d3952`
+  - `hexagonrpc-0.4.0-2-aarch64.pkg.tar.xz` — SHA-256
+    `01a1e9f216ecc3d6c86d3d97aab27f06e3069bb42cb460694e5e9f7c59935c4c`
+
+Package archives rebuilt at different times are not expected to be
+byte-identical because makepkg records build metadata. Reproducibility here
+means pinned, checksummed inputs and repeatable verified contents; byte-for-byte
+package archive reproducibility is not yet claimed.
+
+### Remaining physical rotation check
+
+After the next cold graphical boot, confirm:
+
+1. rotation starts automatically without SSH intervention;
+2. normal, left-up, bottom-up and right-up all orient correctly;
+3. single-touch corners and drag direction match in each orientation;
+4. browser multitouch remains aligned;
+5. pen position follows the tip in each orientation.
 
 ## Recovery
 
@@ -72,6 +114,7 @@ runuser -u archpad -- env HOME=/home/archpad XDG_RUNTIME_DIR=/run/user/10000 \
   systemctl --user stop archpad-shell.service
 ```
 
-The next bounded stage is the dependable interim OSK gate. After touch text
-entry works in representative Qt, GTK, Chromium/Electron and terminal fields,
-continue the shell with the real application drawer.
+After that short check, the next bounded stage is the dependable interim OSK
+gate. Once touch text entry works in representative Qt, GTK,
+Chromium/Electron and terminal fields, continue the shell with the real
+application drawer.

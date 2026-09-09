@@ -1,8 +1,8 @@
 pkgname=archpad-session
-pkgver=0.2.0
-pkgrel=1
+pkgver=0.3.0
+pkgrel=3
 pkgdesc='ArchPad touch-first Wayland session policy'
-arch=('any')
+arch=('aarch64')
 url='https://github.com/archpad/archpad'
 license=('GPL-3.0-only')
 depends=(
@@ -12,24 +12,35 @@ depends=(
   'hyprland>=0.56.2'
   'hyprpolkitagent'
   'hyprshutdown'
+  'iio-sensor-proxy'
   'pipewire'
   'uwsm'
   'wireplumber'
   'xdg-desktop-portal'
   'xdg-desktop-portal-hyprland'
 )
+makedepends=('gcc' 'pkgconf')
 source=(
   'archpad-session'
   'archpad-graphical-session.service'
+  'archpad-rotation.c'
+  'archpad-rotation.service'
   'hyprland.lua'
   'README.md'
 )
 sha512sums=(
   '587d78ff5c88cb4dcedc931e627a0998dc7b02934d843bf0718d6f304c89e4b841a876b703f92a1602f2eaa1cc61a87842f082b62d2a74de7bedc70379412880'
   '05d729a9762a3263dc03f861a9926c6bb1adc0df0105939548af12dc57c7dd92629dc58df20314ab9c0748fb5e0c750b34e09442aeb503c224f72c6a40f2ac16'
+  '87ac1f06e833141bdb98f04c3027cbc00bd2ff7e84848a2453a1dc54c6504ea0ebc182c170a36978f6f98dbf790a7c9d513a0aca2c8349949d50763439d76e10'
+  '4621ceaf43ed7deb142ba02a29bd3b17e75cc0e9f51b8d5ec8b56990d56df2ee2661d17b1b4630de04ac2fd37b7bd7fc4febf632a196ecad072aa36d9a63a5ce'
   'd7763ab6449e6e32cc8d86c5a2f61e1270480832661c4b51dbde766eb89feccda2c5e5f4ba426fb7528750afcb99f58a62f7acc7cd6142187d3a02c8c43b23f6'
-  'a61bbbdefb7d643bd2cb97d3fe55affdd8031c3500b63c03a50fd602140ea7192c9c8014ef772827cbf7eda3700c6564fcae97e0063577939dc225756243eb9c'
+  'b8b16cf2e5a1843156f290bb52644a829fa4e09be4e3eaee346c59e03a70af1231624a0707a9e1c0a177a2f0edccc66ce7eea1ecd7295ac5547060893a6fd19b'
 )
+
+build() {
+  cc ${CFLAGS} ${CPPFLAGS} archpad-rotation.c -o archpad-rotation \
+    $(pkg-config --cflags --libs gio-2.0 gio-unix-2.0) ${LDFLAGS}
+}
 
 package() {
   install -Dm755 archpad-session "$pkgdir/usr/bin/archpad-session"
@@ -39,8 +50,14 @@ package() {
     "$pkgdir/usr/share/archpad-session/hyprland.lua"
   install -Dm644 README.md \
     "$pkgdir/usr/share/doc/archpad-session/README.md"
+  install -Dm755 archpad-rotation \
+    "$pkgdir/usr/lib/archpad-session/archpad-rotation"
+  install -Dm644 archpad-rotation.service \
+    "$pkgdir/usr/lib/systemd/user/archpad-rotation.service"
 
   install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
   ln -s /usr/lib/systemd/user/hyprpolkitagent.service \
     "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/hyprpolkitagent.service"
+  ln -s /usr/lib/systemd/user/archpad-rotation.service \
+    "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-rotation.service"
 }

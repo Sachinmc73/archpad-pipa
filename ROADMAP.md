@@ -21,26 +21,28 @@ by Omarchy but designed for a tablet rather than copied from a desktop setup.
 OS-level AI agents and Google Gemini account integration are explicitly the
 last phase. A dependable operating system comes first.
 
-## Current milestone: Reversible Hyprland proof installed
+## Current milestone: Native rotation and first shell installed
 
 The tablet runs **pure native Arch Linux ARM** with its core hardware foundation
 functionally enabled. Phase 3.5 closed the reproducibility, update-safety,
-clock, rollback and native-Arch validation gaps. The minimal Phase 4B Hyprland
-session is installed, touch-validated and enabled as the default graphical
-login; the first visible ArchPad shell layer is the next implementation stage.
+clock, rollback and native-Arch validation gaps. The Phase 4B Hyprland session
+and first Quickshell surface are installed and touch-validated. Phase 4C adds a
+native Sensor DSP pipeline and synchronized display, touch and pen rotation.
+The dependable interim on-screen keyboard is the next implementation gate.
 
 | Component | Current validated value |
 |---|---|
 | Active slot | A |
 | Userspace | Native Arch Linux ARM aarch64 (rolling), systemd, `graphical.target` |
 | Console Interface | Crisp 32px HiDPI Linux console on TTY1 (`ter-v32b` font) |
-| Package Count | **466 packages** after Quickshell and `archpad-shell`; the archived console baseline remains 328 |
+| Package Count | **474 packages** after the sensor/rotation stack; the archived console baseline remains 328 |
 | RAM Usage | **487 MiB / 5.40 GiB** at the post-install console idle check; r9 baseline was 436 MiB |
 | Disk Usage | **4.5 GiB / 105 GiB (5%)** on nested GPT ext4 (`/dev/loop0p2`) |
 | Kernel | Linux `7.1.4-pipa-r9`, package `linux-archpad-pipa-7.1.4-9`, running/default and hash-verified |
 | Rollback kernel | `7.1.4-pipa` r7 as an independently packaged, fully boot-tested generation |
-| Device package | `archpad-pipa-device-1.0.0-2`, Tianma variant |
-| Firmware | `archpad-pipa-firmware-1.0.0-1` |
+| Device package | `archpad-pipa-device-1.0.0-4`, Tianma variant |
+| Firmware | `archpad-pipa-firmware-1.0.0-2` |
+| Sensor/rotation | `hexagonrpc 0.4.0-2`, `iio-sensor-proxy 3.9-1`, `archpad-session 0.3.0-3` |
 | Mesa/GPU | Mesa 26.2.2-arch1.1, Freedreno FD650 (GL 4.6 / GLES 3.2), Turnip (Vulkan 1.3) |
 | Display | Tianma DSI-1, 1800×2880 native, 120 Hz, smooth `ktz8866-backlight` dimming |
 | Audio Stack | ALSA UCM2 HiFi + PipeWire 1.6.8 + WirePlumber (4x Quad Speakers, 3-mic array) |
@@ -101,6 +103,15 @@ start the Arch system; it is not a claim of perfect tuning or endurance.
 - Refresh-rate behaviour, speaker mapping, pen extras, charging combinations,
   DisplayPort combinations and long suspend/thermal endurance need deeper
   validation.
+- The pipa sensor registry needs a narrow ArchPad patch on HexagonRPC 0.4.0 to
+  expose `sns_reg_version` to the Qualcomm Sensor DSP. Track this upstream and
+  remove the local patch when an equivalent implementation is released.
+- Sensor DSP startup still produces excessive expected `temp.json` write
+  diagnostics even though SSC initializes and streams correctly. Reduce that
+  journal noise cleanly before a public release.
+- Automatic rotation is visually verified in normal and right-up orientations.
+  A cold graphical boot plus all four orientations, touch corners, multitouch
+  and pen alignment remain a physical validation gate.
 - Warning classification on the r8 validation boot:
   - four DSI PLL lock retries recovered before the display came up; three DSI
     status-5 recovery events also completed during the successful suspend test;
@@ -312,18 +323,26 @@ environment; package signing remains a later repository-release requirement.
   floating-window and edge-gesture behavior.
 - **[COMPLETE: COMPOSITOR/LOGIN FOUNDATION]** Hyprland `0.56.2-3`, Aquamarine
   `0.15.0-2`, UWSM `0.26.7-1`, portals, polkit agent, keyring and Foot are
-  installed with `archpad-session 0.2.0-1`. A packaged PAM/logind service runs
+  installed with `archpad-session 0.3.0-3`. A packaged PAM/logind service runs
   the unprivileged session on TTY1 and `graphical.target` is the boot default.
   USB networking and SSH remain active recovery paths.
   `PHASE4B-STATUS.md` records package provenance, hashes, validation and the
   remaining cold-boot/peripheral checks.
-- **[INSTALLED; OWNER TOUCH REVIEW]** Official Arch Linux ARM Quickshell
+- **[COMPLETE: FIRST SHELL TOUCH PROOF]** Official Arch Linux ARM Quickshell
   `0.3.1-1` and independently packaged `archpad-shell 0.1.0-1` provide the
   first top bar, workspace switcher and bottom dock. Both native layer surfaces,
   package integrity and UWSM autostart wiring are verified.
   `PHASE4-SHELL-STATUS.md` is the exact handoff and physical checklist.
-- **[PENDING]** Implement synchronized rotation/input mapping, then pass the
-  automatic OSK compatibility matrix before building the Quickshell UI. The
+- **[COMPLETE: NATIVE SENSOR/ROTATION PIPELINE]** Official ALARM
+  `iio-sensor-proxy 3.9-1` reads pipa's Qualcomm SSC accelerometer through a
+  systemd-managed HexagonRPC 0.4.0 service and a device-specific udev opt-in.
+  The unprivileged `archpad-rotation` user service consumes its D-Bus API and
+  applies display, touch and pen transforms together through Hyprland's
+  supported configuration API. Normal and right-up transitions were verified
+  on the physical tablet; the complete orientation/alignment matrix and one
+  cold-login autostart check remain.
+- **[NEXT]** Pass the automatic OSK compatibility matrix before expanding the
+  Quickshell UI. The
   interim keyboard must provide dependable text entry; the recorded long-term
   target adds Gboard-class floating, split, swipe, prediction and multilingual
   modes without delaying the initial GUI proof.
@@ -336,8 +355,9 @@ environment; package signing remains a later repository-release requirement.
 
 ## Immediate next action
 
-Complete the short owner touch review in `PHASE4-SHELL-STATUS.md`, then execute
-the dependable interim OSK compatibility gate. Continue with the real app
+Complete the short cold-login and four-orientation physical check in
+`PHASE4-SHELL-STATUS.md`, then execute the dependable interim OSK compatibility
+gate. Continue with the real app
 drawer only after touch text entry is usable without a hardware keyboard.
 Keep the reboot path and `CONFIG_CRYPTO_USER` as explicit low-level backlog;
 do not let GUI work hide either issue. Build the next full flashable release

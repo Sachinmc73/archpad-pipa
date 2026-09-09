@@ -1,0 +1,21 @@
+[Unit]
+Description=ArchPad pipa Sensor DSP filesystem service
+BindsTo=dev-fastrpc\x2dsdsp.device
+After=dev-fastrpc\x2dsdsp.device
+Before=iio-sensor-proxy.service
+ConditionPathIsDirectory=/usr/share/qcom/sm8250/Xiaomi/pipa/sensors/registry
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hexagonrpcd -f /dev/fastrpc-sdsp -d sdsp -s -R /usr/share/qcom/sm8250/Xiaomi/pipa
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target

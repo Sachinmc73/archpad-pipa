@@ -1,14 +1,16 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-firmware
 pkgver=1.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Firmware and Hexagon sensor calibration files for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
 license=('proprietary')
 options=('!strip')
-source=("archpad-pipa-firmware-${pkgver}.tar.xz")
-sha512sums=('e81ddecf618e5b7b2c65177c7f9dd581ad6d6ebc57f71e89bda4052d8ca43f4e260e4f06dc46ed97f17d73d561e495fd39e6e917589b8a045ca1b64179b1e54f')
+source=("archpad-pipa-firmware-${pkgver}.tar.xz"
+        "sns_reg_version")
+sha512sums=('e81ddecf618e5b7b2c65177c7f9dd581ad6d6ebc57f71e89bda4052d8ca43f4e260e4f06dc46ed97f17d73d561e495fd39e6e917589b8a045ca1b64179b1e54f'
+            '361f2eb0a980c90047c3d2703f9825ee97d24f35ee366581b723f5a23d42f311722d7be1de9d9d5e7570332de4cc499d7a6154f178abb917400a8aed3ffb8c16')
 
 package() {
   mkdir -p "${pkgdir}/usr/lib/firmware"
@@ -16,6 +18,8 @@ package() {
 
   mkdir -p "${pkgdir}/usr/share/qcom"
   cp -r "${srcdir}/usr/share/qcom/"* "${pkgdir}/usr/share/qcom/"
+  install -Dm644 "${srcdir}/sns_reg_version" \
+    "${pkgdir}/usr/share/qcom/sm8250/Xiaomi/pipa/sensors/sns_reg_version"
 
   find "${pkgdir}/usr" -type d -exec chmod 0755 {} +
   find "${pkgdir}/usr" -type f -exec chmod 0644 {} +

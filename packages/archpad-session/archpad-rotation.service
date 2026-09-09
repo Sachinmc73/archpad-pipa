@@ -1,0 +1,21 @@
+[Unit]
+Description=ArchPad synchronized display and input rotation
+PartOf=graphical-session.target
+After=wayland-wm@hyprland.desktop.service
+
+[Service]
+Type=simple
+Environment=ARCHPAD_OUTPUT=DSI-1
+Environment=XDG_RUNTIME_DIR=%t
+ExecStart=/usr/lib/archpad-session/archpad-rotation
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=graphical-session.target

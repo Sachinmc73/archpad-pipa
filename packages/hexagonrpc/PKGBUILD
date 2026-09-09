@@ -1,0 +1,30 @@
+pkgname=hexagonrpc
+pkgver=0.4.0
+pkgrel=2
+pkgdesc='FastRPC wrapper and reverse-tunnel daemon for Qualcomm Hexagon DSPs'
+arch=('aarch64')
+url='https://github.com/linux-msm/hexagonrpc'
+license=('GPL-3.0-or-later')
+depends=('glibc')
+makedepends=('meson' 'ninja')
+source=("${pkgname}-v${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"
+        '0001-hexagonfs-map-sns-reg-version.patch')
+sha256sums=('fe742549a2672902d59a90dafd741a9a0acbeca059e07ff5130e2b525a66574f'
+            '1f0376761553234bbd23ebd67c6c1b9dc9b8fb5872af61c6fa191fc24d45b8ae')
+
+prepare() {
+  patch -d "${pkgname}-${pkgver}" -Np1 -i "${srcdir}/0001-hexagonfs-map-sns-reg-version.patch"
+}
+
+build() {
+  arch-meson "${pkgname}-${pkgver}" build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
