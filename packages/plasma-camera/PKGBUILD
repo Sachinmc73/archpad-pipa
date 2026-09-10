@@ -2,8 +2,8 @@
 
 pkgname=plasma-camera
 pkgver=26.08.0
-pkgrel=1.1
-pkgdesc='Camera application for Plasma Mobile (with camera switch deadlock fix)'
+pkgrel=1.2
+pkgdesc='Camera application for Plasma Mobile (with pipa camera focus, orientation and deadlock fixes)'
 arch=('aarch64' 'x86_64')
 url='https://apps.kde.org/plasma.camera/'
 license=('GPL-3.0-or-later')
@@ -29,13 +29,16 @@ makedepends=(
   extra-cmake-modules
 )
 source=("https://download.kde.org/stable/release-service/${pkgver}/src/${pkgname}-${pkgver}.tar.xz"
-        "0001-fix-camera-switch-deadlock.patch")
+        "0001-fix-camera-switch-deadlock.patch"
+        "0002-pipa-camera-focus-and-orientation.patch")
 sha256sums=('8acf6eaa0fa5ffacd8f296d942a2bd4a9ac07964fa8d69fd00b5db072c1d7023'
-            '3c9060ec2501b01dcda6efd63411ed97a86a8554ab9c1a6ba8143e3ca3c31e97')
+            '3c9060ec2501b01dcda6efd63411ed97a86a8554ab9c1a6ba8143e3ca3c31e97'
+            'f97e8d62f7e10d75e62d553c9890f84785910ba3e4e9c00e6bee7d59ef87f812')
 
 prepare() {
   cd "${pkgname}-${pkgver}"
   patch -Np1 -i "${srcdir}/0001-fix-camera-switch-deadlock.patch"
+  patch -Np1 -i "${srcdir}/0002-pipa-camera-focus-and-orientation.patch"
 }
 
 build() {

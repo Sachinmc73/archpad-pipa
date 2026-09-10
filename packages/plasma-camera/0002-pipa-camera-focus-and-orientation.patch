@@ -1,0 +1,608 @@
+diff --git a/src/contents/ui/camera/CameraExtraControls.qml b/src/contents/ui/camera/CameraExtraControls.qml
+index 697e782..a2ebe77 100644
+--- a/src/contents/ui/camera/CameraExtraControls.qml
++++ b/src/contents/ui/camera/CameraExtraControls.qml
+@@ -13,6 +13,7 @@ import org.kde.kirigamiaddons.components as Components
+ Rectangle {
+     id: root
+ 
++    property PlasmaCamera camera: null
+     required property bool audioRecordingEnabled
+     required property bool audioRecordingEnabledShown
+     required property bool exposureValueEnabled
+@@ -43,6 +44,31 @@ Rectangle {
+ 
+             Item { Layout.fillWidth: true }
+ 
++            QQC2.ToolButton {
++                id: rotateButton
++                icon.name: "object-rotate-right"
++                icon.color: "white"
++                text: i18n("Rotate (Current: %1°)", root.camera ? root.camera.softwareRotationDegrees : 0)
++                display: QQC2.ToolButton.IconOnly
++                onClicked: if (root.camera) root.camera.cycleRotation()
++
++                QQC2.ToolTip.visible: down
++                QQC2.ToolTip.text: text
++            }
++
++            QQC2.ToolButton {
++                id: focusButton
++                icon.name: "lensautofix"
++                icon.color: (root.camera && root.camera.autoFocusRunning) ? "#3daee9" : "white"
++                text: i18n("Focus")
++                display: QQC2.ToolButton.IconOnly
++                visible: root.camera ? root.camera.focusSupported : false
++                onClicked: focusSelectStrip.shown = !focusSelectStrip.shown
++
++                QQC2.ToolTip.visible: down
++                QQC2.ToolTip.text: text
++            }
++
+             QQC2.ToolButton {
+                 id: audioRecordingButton
+                 icon.name: root.audioRecordingEnabled ? 'microphone-sensitivity-high-symbolic' : 'microphone-sensitivity-muted-symbolic'
+@@ -72,6 +98,14 @@ Rectangle {
+             Item { Layout.fillWidth: true }
+         }
+ 
++        FocusSelectStrip {
++            id: focusSelectStrip
++            visible: root.camera ? root.camera.focusSupported : false
++            shown: false
++            camera: root.camera
++            Layout.fillWidth: true
++        }
++
+         ExposureSelectStrip {
+             id: exposureSelectStrip
+             visible: root.exposureValueEnabled
+diff --git a/src/contents/ui/camera/CameraPage.qml b/src/contents/ui/camera/CameraPage.qml
+index 311d6c0..4929eea 100644
+--- a/src/contents/ui/camera/CameraPage.qml
++++ b/src/contents/ui/camera/CameraPage.qml
+@@ -118,6 +118,7 @@ Kirigami.Page {
+             anchors.left: parent.left
+             anchors.right: parent.right
+ 
++            camera: root.camera
+             audioRecordingEnabled: root.captureSession.audioRecordingEnabled
+             audioRecordingEnabledShown: root.captureMode === CameraPage.CaptureMode.Video && !root.captureSession.isRecordingVideo && !root.captureSession.isSavingVideo
+             exposureValueEnabled: root.camera.exposureValueAvailable
+diff --git a/src/contents/ui/camera/FocusSelectStrip.qml b/src/contents/ui/camera/FocusSelectStrip.qml
+new file mode 100644
+index 0000000..f70a0e9
+--- /dev/null
++++ b/src/contents/ui/camera/FocusSelectStrip.qml
+@@ -0,0 +1,69 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++import QtQuick
++import QtQuick.Controls as QQC2
++import QtQuick.Layouts
++import org.kde.kirigami as Kirigami
++import org.kde.plasmacamera
++
++Rectangle {
++    id: root
++
++    property PlasmaCamera camera: null
++    property bool shown: false
++
++    implicitHeight: shown ? contentLayout.implicitHeight + Kirigami.Units.smallSpacing * 2 : 0
++    visible: shown
++    clip: true
++    color: Qt.rgba(0, 0, 0, 0.4)
++
++    Behavior on implicitHeight {
++        NumberAnimation { duration: 150; easing.type: Easing.InOutQuad }
++    }
++
++    RowLayout {
++        id: contentLayout
++        anchors.left: parent.left
++        anchors.right: parent.right
++        anchors.verticalCenter: parent.verticalCenter
++        anchors.margins: Kirigami.Units.smallSpacing
++        spacing: Kirigami.Units.smallSpacing
++
++        QQC2.Button {
++            text: i18n("Auto AF")
++            icon.name: "lensautofix"
++            enabled: root.camera ? !root.camera.autoFocusRunning : false
++            onClicked: if (root.camera) root.camera.triggerAutoFocus()
++        }
++
++        QQC2.Button {
++            text: i18n("Macro")
++            onClicked: if (root.camera) root.camera.focusPosition = 750
++        }
++
++        QQC2.Button {
++            text: i18n("Normal")
++            onClicked: if (root.camera) root.camera.focusPosition = 450
++        }
++
++        QQC2.Button {
++            text: i18n("Inf")
++            onClicked: if (root.camera) root.camera.focusPosition = 50
++        }
++
++        QQC2.Slider {
++            id: focusSlider
++            Layout.fillWidth: true
++            from: root.camera ? root.camera.focusMin : 0
++            to: root.camera ? root.camera.focusMax : 1023
++            stepSize: 10
++            value: root.camera ? root.camera.focusPosition : 450
++            onMoved: if (root.camera) root.camera.focusPosition = Math.round(value)
++        }
++
++        QQC2.Label {
++            text: root.camera ? root.camera.focusPosition.toString() : ""
++            color: "white"
++            Layout.preferredWidth: Kirigami.Units.gridUnit * 2
++        }
++    }
++}
+diff --git a/src/contents/ui/camera/Viewfinder.qml b/src/contents/ui/camera/Viewfinder.qml
+index 405c20e..ffa15da 100644
+--- a/src/contents/ui/camera/Viewfinder.qml
++++ b/src/contents/ui/camera/Viewfinder.qml
+@@ -35,4 +35,25 @@ Rectangle {
+         width: parent.width
+         height: parent.height
+     }
++
++    MouseArea {
++        anchors.fill: parent
++        onClicked: {
++            if (root.camera && root.camera.focusSupported) {
++                root.camera.triggerAutoFocus();
++            }
++        }
++    }
++
++    Rectangle {
++        id: focusIndicator
++        anchors.centerIn: parent
++        width: Kirigami.Units.gridUnit * 4
++        height: Kirigami.Units.gridUnit * 4
++        color: "transparent"
++        border.color: "#3daee9"
++        border.width: 2
++        radius: Kirigami.Units.smallSpacing
++        visible: root.camera ? root.camera.autoFocusRunning : false
++    }
+ }
+\ No newline at end of file
+diff --git a/src/plasmacamera.cpp b/src/plasmacamera.cpp
+index c6c1a83..cd1b227 100644
+--- a/src/plasmacamera.cpp
++++ b/src/plasmacamera.cpp
+@@ -5,6 +5,13 @@
+ #include <map>
+ #include <unistd.h>
+ #include <sys/mman.h>
++#include <linux/v4l2-controls.h>
++#include <linux/videodev2.h>
++#include <sys/ioctl.h>
++#include <fcntl.h>
++#include <QDir>
++#include <QFile>
++#include <algorithm>
+ #include <plasmacameramanager.h>
+ 
+ #include "plasmacamera.h"
+@@ -54,6 +61,7 @@ PlasmaCamera::PlasmaCamera(QObject *parent) : QObject(parent)
+ 
+     // resend frames that we received from the camera worker
+     connect(m_cameraWorker, &Worker::viewFinderFrame, this, &PlasmaCamera::viewFinderFrame);
++    connect(this, &PlasmaCamera::viewFinderFrame, this, &PlasmaCamera::handleViewfinderFrameForAf);
+     connect(m_cameraWorker, &Worker::stillCaptureFrames, this, &PlasmaCamera::stillCaptureFrames);
+     connect(m_cameraWorker, &Worker::stillCaptureFrames, this, [this]() {
+         // Finished taking image
+@@ -71,6 +79,8 @@ PlasmaCamera::PlasmaCamera(QObject *parent) : QObject(parent)
+ 
+ PlasmaCamera::~PlasmaCamera()
+ {
++    cleanupFocusActuator();
++
+     // Cleanup signals
+     m_cameraManager->cameraAdded.disconnect();
+     m_cameraManager->cameraRemoved.disconnect();
+@@ -315,6 +325,7 @@ void PlasmaCamera::setCameraDevice(const QString &cameraDeviceId)
+ 
+     if (m_state == State::Running && m_camera) {
+         qDebug() << "Stopping active camera before switching to" << cameraDeviceId;
++        cleanupFocusActuator();
+         setState(State::Stopping);
+         m_camera.reset();
+         m_cameraId = cameraDeviceId;
+@@ -523,6 +534,7 @@ void PlasmaCamera::startCameraInternal()
+ 
+ void PlasmaCamera::stopCameraInternal()
+ {
++    cleanupFocusActuator();
+     setState(State::Stopping);
+ 
+     // Clear the current camera
+@@ -616,27 +628,236 @@ bool PlasmaCamera::acquire()
+     m_settings.load(m_camera->controls());
+     Q_EMIT settingsChanged(m_settings);
+ 
+-    // Find the amount of degrees needed to rotate the camera output by and populate m_softwareRotationDegrees
+-    std::optional<int> cameraRotation = m_camera->properties().get(libcamera::properties::Rotation);
+-    qInfo() << "Camera offset orientation:" << cameraRotation.value_or(0);
+-    switch (cameraRotation.value_or(0)) {
+-    case 0:
+-        m_softwareRotationDegrees = 0;
+-        break;
+-    case 90:
+-        m_softwareRotationDegrees = 270;
+-        break;
+-    case 180:
+-        m_softwareRotationDegrees = 180;
+-        break;
+-    case 270:
+-        m_softwareRotationDegrees = 90;
+-        break;
+-    }
++    // On Xiaomi Pad 6, sensors are physically mounted in landscape mode.
++    // Default software rotation to 0 for upright display in landscape.
++    m_softwareRotationDegrees = 0;
++    Q_EMIT softwareRotationDegreesChanged();
+ 
+-    // Find whether the camera output needs to be mirrored (ex. selife cam)
++    // Find whether the camera output needs to be mirrored (ex. selfie cam)
+     std::optional<int> location = m_camera->properties().get(libcamera::properties::Location);
+     m_mirrorOutput = location.value_or(libcamera::properties::CameraLocationExternal) == libcamera::properties::CameraLocationFront;
+ 
++    // Check if rear camera and initialize focus actuator
++    bool isRear = (location.value_or(-1) == libcamera::properties::CameraLocationBack)
++                  || (m_camera->id().find("camera@10") != std::string::npos)
++                  || (m_camera->id().find("ov13b10") != std::string::npos);
++    if (isRear) {
++        initFocusActuator();
++    } else {
++        cleanupFocusActuator();
++    }
++
+     return true;
+ }
++
++bool PlasmaCamera::focusSupported() const
++{
++    return m_focusSupported;
++}
++
++int PlasmaCamera::focusPosition() const
++{
++    return m_focusPosition;
++}
++
++int PlasmaCamera::focusMin() const
++{
++    return m_focusMin;
++}
++
++int PlasmaCamera::focusMax() const
++{
++    return m_focusMax;
++}
++
++bool PlasmaCamera::autoFocusRunning() const
++{
++    return m_autoFocusRunning;
++}
++
++void PlasmaCamera::setFocusPosition(int pos)
++{
++    if (m_focusFd < 0) {
++        return;
++    }
++
++    pos = std::clamp(pos, m_focusMin, m_focusMax);
++    struct v4l2_control ctrl;
++    memset(&ctrl, 0, sizeof(ctrl));
++    ctrl.id = V4L2_CID_FOCUS_ABSOLUTE;
++    ctrl.value = pos;
++    if (::ioctl(m_focusFd, VIDIOC_S_CTRL, &ctrl) == 0) {
++        m_focusPosition = pos;
++        Q_EMIT focusPositionChanged();
++    } else {
++        qWarning() << "Failed to set focus position" << pos << ":" << strerror(errno);
++    }
++}
++
++void PlasmaCamera::setSoftwareRotationDegrees(int deg)
++{
++    deg = ((deg % 360) + 360) % 360;
++    if (m_softwareRotationDegrees != deg) {
++        m_softwareRotationDegrees = deg;
++        Q_EMIT softwareRotationDegreesChanged();
++    }
++}
++
++void PlasmaCamera::cycleRotation()
++{
++    setSoftwareRotationDegrees(m_softwareRotationDegrees + 90);
++}
++
++void PlasmaCamera::initFocusActuator()
++{
++    cleanupFocusActuator();
++
++    QDir dir(QStringLiteral("/sys/class/video4linux"));
++    const QStringList subdevs = dir.entryList(QStringList() << QStringLiteral("v4l-subdev*"), QDir::Dirs);
++    QString vcmPath;
++
++    for (const QString &subdev : subdevs) {
++        QFile nameFile(dir.filePath(subdev + QStringLiteral("/name")));
++        if (nameFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
++            QString name = QString::fromUtf8(nameFile.readAll()).trimmed();
++            nameFile.close();
++            if (name.contains(QStringLiteral("dw9768"), Qt::CaseInsensitive) ||
++                name.contains(QStringLiteral("vcm"), Qt::CaseInsensitive) ||
++                name.contains(QStringLiteral("focus"), Qt::CaseInsensitive)) {
++                vcmPath = QStringLiteral("/dev/") + subdev;
++                qInfo() << "Found focus VCM subdevice:" << vcmPath << "(" << name << ")";
++                break;
++            }
++        }
++    }
++
++    if (vcmPath.isEmpty()) {
++        qWarning() << "No VCM focus subdevice found";
++        return;
++    }
++
++    int fd = ::open(vcmPath.toUtf8().constData(), O_RDWR | O_NONBLOCK);
++    if (fd < 0) {
++        qWarning() << "Failed to open VCM device" << vcmPath << ":" << strerror(errno);
++        return;
++    }
++
++    struct v4l2_queryctrl qctrl;
++    memset(&qctrl, 0, sizeof(qctrl));
++    qctrl.id = V4L2_CID_FOCUS_ABSOLUTE;
++    if (::ioctl(fd, VIDIOC_QUERYCTRL, &qctrl) == 0 && !(qctrl.flags & V4L2_CTRL_FLAG_DISABLED)) {
++        m_focusFd = fd;
++        m_focusMin = qctrl.minimum;
++        m_focusMax = qctrl.maximum;
++        m_focusStep = qctrl.step > 0 ? qctrl.step : 1;
++        m_focusSupported = true;
++        qInfo() << "VCM focus supported, range [" << m_focusMin << ".." << m_focusMax << "], step" << m_focusStep;
++
++        // Apply default hyperfocal focus (450)
++        setFocusPosition(m_focusPosition);
++        Q_EMIT focusSupportedChanged();
++    } else {
++        qWarning() << "V4L2_CID_FOCUS_ABSOLUTE not supported on" << vcmPath;
++        ::close(fd);
++    }
++}
++
++void PlasmaCamera::cleanupFocusActuator()
++{
++    if (m_autoFocusRunning) {
++        m_autoFocusRunning = false;
++        Q_EMIT autoFocusRunningChanged();
++    }
++    if (m_focusFd >= 0) {
++        ::close(m_focusFd);
++        m_focusFd = -1;
++    }
++    if (m_focusSupported) {
++        m_focusSupported = false;
++        Q_EMIT focusSupportedChanged();
++    }
++}
++
++static double computeImageSharpness(const QImage &img)
++{
++    if (img.isNull() || img.width() < 64 || img.height() < 64) {
++        return 0.0;
++    }
++
++    int w = img.width();
++    int h = img.height();
++    int x0 = w * 3 / 8;
++    int y0 = h * 3 / 8;
++    int rw = w / 4;
++    int rh = h / 4;
++
++    double sumGrad = 0.0;
++    int count = 0;
++
++    for (int y = y0; y < y0 + rh - 1; y += 2) {
++        const uchar *line1 = img.constScanLine(y);
++        const uchar *line2 = img.constScanLine(y + 1);
++        int bpp = img.depth() / 8;
++        if (bpp < 3) continue;
++        for (int x = x0; x < x0 + rw - 1; x += 2) {
++            int p00 = line1[x * bpp + 1];
++            int p01 = line1[(x + 1) * bpp + 1];
++            int p10 = line2[x * bpp + 1];
++            int dx = p01 - p00;
++            int dy = p10 - p00;
++            sumGrad += static_cast<double>(dx * dx + dy * dy);
++            count++;
++        }
++    }
++
++    return count > 0 ? (sumGrad / count) : 0.0;
++}
++
++void PlasmaCamera::triggerAutoFocus()
++{
++    if (m_focusFd < 0 || m_autoFocusRunning) {
++        return;
++    }
++
++    qInfo() << "Starting Auto Focus sweep...";
++    m_afSweepPositions = { 100, 250, 400, 550, 700, 850 };
++    m_afStepIndex = 0;
++    m_afFrameSkip = 2;
++    m_bestAfPos = m_focusPosition;
++    m_bestAfSharpness = -1.0;
++    m_autoFocusRunning = true;
++    Q_EMIT autoFocusRunningChanged();
++
++    setFocusPosition(m_afSweepPositions[0]);
++}
++
++void PlasmaCamera::handleViewfinderFrameForAf(const QImage &frame)
++{
++    if (!m_autoFocusRunning || m_focusFd < 0) {
++        return;
++    }
++
++    if (m_afFrameSkip > 0) {
++        m_afFrameSkip--;
++        return;
++    }
++
++    double sharpness = computeImageSharpness(frame);
++    qDebug() << "AF step" << m_afStepIndex << "pos" << m_afSweepPositions.value(m_afStepIndex) << "sharpness" << sharpness;
++
++    if (sharpness > m_bestAfSharpness) {
++        m_bestAfSharpness = sharpness;
++        m_bestAfPos = m_afSweepPositions.value(m_afStepIndex);
++    }
++
++    m_afStepIndex++;
++    if (m_afStepIndex < m_afSweepPositions.size()) {
++        setFocusPosition(m_afSweepPositions[m_afStepIndex]);
++        m_afFrameSkip = 2;
++    } else {
++        qInfo() << "AF finished. Best position:" << m_bestAfPos << "sharpness:" << m_bestAfSharpness;
++        setFocusPosition(m_bestAfPos);
++        m_autoFocusRunning = false;
++        Q_EMIT autoFocusRunningChanged();
++    }
++}
+diff --git a/src/plasmacamera.h b/src/plasmacamera.h
+index 86af1af..1c3e124 100644
+--- a/src/plasmacamera.h
++++ b/src/plasmacamera.h
+@@ -56,6 +56,14 @@ class PlasmaCamera : public QObject
+     Q_PROPERTY(QCameraFormat cameraFormat READ cameraFormat WRITE setCameraFormat NOTIFY cameraFormatChanged)
+ 
+     // Focus
++    Q_PROPERTY(bool focusSupported READ focusSupported NOTIFY focusSupportedChanged)
++    Q_PROPERTY(int focusPosition READ focusPosition WRITE setFocusPosition NOTIFY focusPositionChanged)
++    Q_PROPERTY(int focusMin READ focusMin CONSTANT)
++    Q_PROPERTY(int focusMax READ focusMax CONSTANT)
++    Q_PROPERTY(bool autoFocusRunning READ autoFocusRunning NOTIFY autoFocusRunningChanged)
++
++    // Rotation
++    Q_PROPERTY(int softwareRotationDegrees READ softwareRotationDegrees WRITE setSoftwareRotationDegrees NOTIFY softwareRotationDegreesChanged)
+     // Q_PROPERTY(QSize afWindow READ afWindow WRITE setAfWindow RESET resetAfWindow NOTIFY afWindowChanged)
+ 
+     // Brightness
+@@ -165,6 +173,14 @@ public:
+     int softwareRotationDegrees() const;
+     bool mirrorOutput() const;
+ 
++    bool focusSupported() const;
++    int focusPosition() const;
++    int focusMin() const;
++    int focusMax() const;
++    bool autoFocusRunning() const;
++    Q_INVOKABLE void cycleRotation();
++    Q_INVOKABLE void triggerAutoFocus();
++
+ Q_SIGNALS:
+     void errorChanged();
+     void errorOccurred(const QString &errorString);
+@@ -185,6 +201,10 @@ Q_SIGNALS:
+ 
+     // Focus
+     void afWindowChanged(const QSize &newAfWindow);
++    void focusSupportedChanged();
++    void focusPositionChanged();
++    void autoFocusRunningChanged();
++    void softwareRotationDegreesChanged();
+ 
+     // Settings
+     void settingsChanged(const Settings &settings);
+@@ -196,6 +216,8 @@ public Q_SLOTS:
+     void setCameraFormat(const QCameraFormat &cameraFormat);
+ 
+     // Focus
++    void setFocusPosition(int pos);
++    void setSoftwareRotationDegrees(int deg);
+     void setAfWindow(const QSize &afWindow);
+     void resetAfWindow();
+ 
+@@ -270,6 +292,13 @@ private:
+      */
+     bool acquire();
+ 
++    void initFocusActuator();
++    void cleanupFocusActuator();
++
++private Q_SLOTS:
++    void handleViewfinderFrameForAf(const QImage &frame);
++
++private:
+     bool m_error = false;
+     QString m_errorString;
+ 
+@@ -281,6 +310,21 @@ private:
+     // Whether the camera output should be mirrored
+     bool m_mirrorOutput = false;
+ 
++    // Focus actuator
++    int m_focusFd = -1;
++    bool m_focusSupported = false;
++    int m_focusPosition = 450;
++    int m_focusMin = 0;
++    int m_focusMax = 1023;
++    int m_focusStep = 1;
++
++    bool m_autoFocusRunning = false;
++    QList<int> m_afSweepPositions;
++    int m_afStepIndex = 0;
++    int m_afFrameSkip = 0;
++    int m_bestAfPos = 450;
++    double m_bestAfSharpness = -1.0;
++
+     Settings m_settings;
+ 
+     // Whether the camera has been requested to be active (see state for the actual camera state).
+diff --git a/src/plasmacameramanager.cpp b/src/plasmacameramanager.cpp
+index ceedb3a..c10cb47 100644
+--- a/src/plasmacameramanager.cpp
++++ b/src/plasmacameramanager.cpp
+@@ -269,6 +269,11 @@ void PlasmaCameraManager::setPlasmaCamera(PlasmaCamera *plasmaCamera)
+             connect(plasmaCamera, &PlasmaCamera::settingsChanged, this, &PlasmaCameraManager::setSettings);
+             connect(plasmaCamera, &PlasmaCamera::viewFinderFrame, this, &PlasmaCameraManager::processViewfinderFrame);
+             connect(plasmaCamera, &PlasmaCamera::stillCaptureFrames, this, &PlasmaCameraManager::processCaptureImage);
++            connect(plasmaCamera, &PlasmaCamera::softwareRotationDegreesChanged, this, [this]() {
++                if (!m_currentFrame.isNull()) {
++                    processViewfinderFrame(m_currentFrame);
++                }
++            });
+         }
+ 
+         Q_EMIT plasmaCameraChanged();
+@@ -689,5 +694,5 @@ int PlasmaCameraManager::captureImageInternal()
+ 
+ float PlasmaCameraManager::outputOrientationDegrees() const
+ {
+-    return m_plasmaCamera->softwareRotationDegrees() + m_orientationSensorDegrees;
++    return static_cast<float>(m_plasmaCamera ? m_plasmaCamera->softwareRotationDegrees() : 0);
+ }
+diff --git a/src/resources.qrc b/src/resources.qrc
+index e1a8176..5561118 100644
+--- a/src/resources.qrc
++++ b/src/resources.qrc
+@@ -19,6 +19,7 @@
+         <file alias="camera/Viewfinder.qml">contents/ui/camera/Viewfinder.qml</file>
+         <file alias="camera/ViewfinderTimerOverlay.qml">contents/ui/camera/ViewfinderTimerOverlay.qml</file>
+         <file alias="camera/ExposureSelectStrip.qml">contents/ui/camera/ExposureSelectStrip.qml</file>
++        <file alias="camera/FocusSelectStrip.qml">contents/ui/camera/FocusSelectStrip.qml</file>
+         <file alias="camera/ViewfinderVideoDurationOverlay.qml">contents/ui/camera/ViewfinderVideoDurationOverlay.qml</file>
+ 
+         <file alias="camera_flash_off.png">contents/ui/images/camera_flash_off.png</file>
