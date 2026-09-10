@@ -1,15 +1,18 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-camera
 pkgver=1.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc="libcamera configuration and sensor tuning for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
 license=('CC0-1.0')
 depends=('libcamera')
-source=("hi846.yaml")
-sha512sums=('2ee566653b17d565d2c0de67cbe6ebad25df5aac6051cad78e6bae52016fa2ca0247e964d735ac776b3e0bd447ead9c4fcb26cd7629228cdba3ceb91b46f378f')
+source=("hi846.yaml"
+        "ov13b10.yaml")
+sha512sums=('2ee566653b17d565d2c0de67cbe6ebad25df5aac6051cad78e6bae52016fa2ca0247e964d735ac776b3e0bd447ead9c4fcb26cd7629228cdba3ceb91b46f378f'
+            '2ee566653b17d565d2c0de67cbe6ebad25df5aac6051cad78e6bae52016fa2ca0247e964d735ac776b3e0bd447ead9c4fcb26cd7629228cdba3ceb91b46f378f')
 
 package() {
   install -Dm644 "${srcdir}/hi846.yaml" -t "${pkgdir}/usr/share/libcamera/ipa/simple/"
+  install -Dm644 "${srcdir}/ov13b10.yaml" -t "${pkgdir}/usr/share/libcamera/ipa/simple/"
 }

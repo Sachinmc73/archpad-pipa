@@ -1,0 +1,4 @@
+# ArchPad Camera Software ISP DMA-BUF permissions
+# Ensure early-boot DMA-BUF providers are accessible to the video group
+KERNEL=="udmabuf", SUBSYSTEM=="misc", GROUP="video", MODE="0660"
+SUBSYSTEM=="dma_heap", GROUP="video", MODE="0660"
