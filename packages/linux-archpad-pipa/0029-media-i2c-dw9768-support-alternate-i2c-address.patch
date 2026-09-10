@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ArchPad project <archpad@localhost>
+Date: Thu, 10 Sep 2026 20:21:00 +0530
+Subject: [PATCH] media: i2c: dw9768: support alternate i2c address fallback
+
+DW9768 and related actuators can be strapped with SA0 tied high or low,
+responding at either 0x76 (8-bit 0xec) or 0x0c (8-bit 0x18).
+If the initial communication at client->addr fails during init, try the
+alternate address before reporting failure.
+---
+ drivers/media/i2c/dw9768.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/i2c/dw9768.c b/drivers/media/i2c/dw9768.c
+--- a/drivers/media/i2c/dw9768.c
++++ b/drivers/media/i2c/dw9768.c
+@@ -224,8 +224,18 @@ static int dw9768_init(struct dw9768 *dw
+ 	/* Reset DW9768_RING_PD_CONTROL_REG to default status 0x00 */
+ 	ret = i2c_smbus_write_byte_data(client, DW9768_RING_PD_CONTROL_REG,
+ 					DW9768_PD_MODE_OFF);
+-	if (ret < 0)
+-		return ret;
++	if (ret < 0) {
++		unsigned short alt_addr = (client->addr == 0x76) ? 0x0c : 0x76;
++		client->addr = alt_addr;
++		ret = i2c_smbus_write_byte_data(client, DW9768_RING_PD_CONTROL_REG,
++						DW9768_PD_MODE_OFF);
++		if (ret < 0) {
++			client->addr = (alt_addr == 0x76) ? 0x0c : 0x76;
++			dev_err(&client->dev, "DW9768 reset failed at both 0x76 and 0x0c: %d\n", ret);
++			return ret;
++		}
++		dev_info(&client->dev, "DW9768 detected at alternate address 0x%02x\n", client->addr);
++	}
+ 
+ 	/*
+ 	 * DW9769 requires waiting delay time of t_OPR
+-- 

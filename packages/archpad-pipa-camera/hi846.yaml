@@ -8,4 +8,22 @@ algorithms:
   - Awb:
   - Adjust:
   - Agc:
+      relativeLuminanceTarget: 0.20
+      AeExposureMode:
+        ExposureNormal:
+          exposureTime: [ 500, 10000, 30000, 33333 ]
+          gain: [ 1.0, 1.5, 3.0, 6.0 ]
+      AeConstraintMode:
+        ConstraintNormal:
+          lower:
+            qLo: 0.95
+            qHi: 1.0
+            yTarget:
+              - 0: 0.50
+          upper:
+            qLo: 0.98
+            qHi: 1.0
+            yTarget:
+              - 0: 0.90
 ...
+

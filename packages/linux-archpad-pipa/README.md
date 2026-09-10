@@ -10,12 +10,12 @@ initial hardware validation on the project's Tianma-panel tablet.
 - Device patch/config source: postmarketOS pmaports commit
   `c6f27d1b653491029311e5c2bd0a25c4a654d436`
 - Original pmaports package: `linux-xiaomi-pipa` `7.1.4-r1`
-- Preserved fallback kernel release: `7.1.4-pipa` (`pkgrel=7`)
-- Current installed and validated release: `pkgrel=9`, kernel
-  `7.1.4-pipa-r9`
-- The r9 source includes the front-camera fixes through patch `0025`, VDSO
-  path normalization in `0026`, deterministic Qualcomm register generation in
-  `0027`, and canonical debug/Rust prefix maps
+- Preserved fallback kernel release: `7.1.4-pipa` (`pkgrel=7`) and `7.1.4-pipa-r9` (`pkgrel=9`)
+- Current installed and validated release: `pkgrel=10`, kernel
+  `7.1.4-pipa-r10`
+- The r10 source includes DW9768 VCM autofocus actuator support and sensor rotation
+  fix in `0028`, DW9768 alternate address fallback resilience in `0029`, and
+  enabled kernel module `CONFIG_VIDEO_DW9768=m`
 - Toolchain mode: LLVM/Clang (`LLVM=1`), matching the validated build
 - Display tree installed by the package:
   `qcom/sm8250-xiaomi-pipa-tianma.dtb`

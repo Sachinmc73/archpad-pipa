@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ArchPad project <archpad@localhost>
+Date: Thu, 10 Sep 2026 20:20:00 +0530
+Subject: [PATCH] arm64: dts: qcom: sm8250-xiaomi-pipa: add rear camera vcm
+ and fix rotation
+
+Describe the Dongwoon DW9768 Voice Coil Motor (VCM) actuator on CCI0
+I2C bus 0 (slave address 0x76, powered by vreg_l1c_1p8 and vreg_l7c_2p85)
+and link it to the OV13B10 rear camera sensor via lens-focus.
+
+Also correct the sensor orientation rotation property from 270 to 90
+to match the hardware sensor roll angle from Xiaomi pipa vendor device
+tree (sensor-position-roll = <90>).
+---
+ .../dts/qcom/sm8250-xiaomi-pipa-common.dtsi   | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/sm8250-xiaomi-pipa-common.dtsi b/arch/arm64/boot/dts/qcom/sm8250-xiaomi-pipa-common.dtsi
+--- a/arch/arm64/boot/dts/qcom/sm8250-xiaomi-pipa-common.dtsi
++++ b/arch/arm64/boot/dts/qcom/sm8250-xiaomi-pipa-common.dtsi
+@@ -628,7 +628,9 @@
+ 		pinctrl-names = "default";
+ 
+ 		orientation = <1>; /* Rear facing */
+-		rotation = <270>;
++		rotation = <90>;
++
++		lens-focus = <&vcm_wide>;
+ 
+ 		port {
+ 			camera_ov13b10_ep: endpoint {
+@@ -639,6 +641,14 @@
+ 			};
+ 		};
+ 	};
++
++	vcm_wide: camera-lens@76 {
++		compatible = "dongwoon,dw9768";
++		reg = <0x76>;
++
++		vin-supply = <&vreg_l1c_1p8>;
++		vdd-supply = <&vreg_l7c_2p85>;
++	};
+ };
+ 
+ &cci1 {
+-- 

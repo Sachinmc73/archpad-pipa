@@ -1,0 +1,50 @@
+# Maintainer: ArchPad Project <https://github.com/pipa-mainline>
+
+pkgname=plasma-camera
+pkgver=26.08.0
+pkgrel=1.1
+pkgdesc='Camera application for Plasma Mobile (with camera switch deadlock fix)'
+arch=('aarch64' 'x86_64')
+url='https://apps.kde.org/plasma.camera/'
+license=('GPL-3.0-or-later')
+groups=('kde-applications')
+depends=(
+  exiv2
+  glibc
+  kconfig
+  kcoreaddons
+  ki18n
+  kirigami
+  kirigami-addons
+  libcamera
+  libgcc
+  libstdc++
+  qt6-base
+  qt6-declarative
+  qt6-multimedia
+  qt6-sensors
+)
+makedepends=(
+  cmake
+  extra-cmake-modules
+)
+source=("https://download.kde.org/stable/release-service/${pkgver}/src/${pkgname}-${pkgver}.tar.xz"
+        "0001-fix-camera-switch-deadlock.patch")
+sha256sums=('8acf6eaa0fa5ffacd8f296d942a2bd4a9ac07964fa8d69fd00b5db072c1d7023'
+            '3c9060ec2501b01dcda6efd63411ed97a86a8554ab9c1a6ba8143e3ca3c31e97')
+
+prepare() {
+  cd "${pkgname}-${pkgver}"
+  patch -Np1 -i "${srcdir}/0001-fix-camera-switch-deadlock.patch"
+}
+
+build() {
+  cmake -B build -S "${pkgname}-${pkgver}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+}
