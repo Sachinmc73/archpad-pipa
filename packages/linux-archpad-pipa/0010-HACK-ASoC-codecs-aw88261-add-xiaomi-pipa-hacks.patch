@@ -45,8 +45,8 @@ index a6805d5405cd..9671bca54e4a 100644
  
 +		if (reg_addr == AW88261_I2SCTRL2_REG &&
 +			of_machine_is_compatible("xiaomi,pipa")) {
-+			u32 slot_num = 0; // HACK: force left slot for now
-+			reg_val = 0b0101000000000000 | (slot_num << 4) | (slot_num); // 0b0101_0000_0000_0000;
++			u32 slot_num = aw88261->aw_pa->channel;
++			reg_val = 0b0101000000000000 | (slot_num << 4) | (slot_num);
 +		}
 +
  		/* i2stxen */
