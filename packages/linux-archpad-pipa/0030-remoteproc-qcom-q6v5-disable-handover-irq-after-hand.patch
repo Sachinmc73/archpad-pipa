@@ -18,14 +18,14 @@ interrupt if handover was not already completed to maintain balance.
 
 Signed-off-by: ArchPad Project <archpad@localhost>
 ---
- drivers/remoteproc/qcom_q6v5.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/remoteproc/qcom_q6v5.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/remoteproc/qcom_q6v5.c b/drivers/remoteproc/qcom_q6v5.c
 index 24eb37452..68c4a5c37 100644
 --- a/drivers/remoteproc/qcom_q6v5.c
 +++ b/drivers/remoteproc/qcom_q6v5.c
-@@ -81,7 +81,8 @@ int qcom_q6v5_prepare(struct qcom_q6v5 *q6v5)
+@@ -78,7 +78,8 @@
   */
  int qcom_q6v5_unprepare(struct qcom_q6v5 *q6v5)
  {
@@ -35,7 +35,7 @@ index 24eb37452..68c4a5c37 100644
  	q6v5_load_state_toggle(q6v5, false);
  
  	/* Disable interconnect vote, in case handover never happened */
-@@ -168,6 +169,8 @@ static irqreturn_t q6v5_handover_interrupt(int irq, void *data)
+@@ -169,6 +170,8 @@
  		return IRQ_HANDLED;
  	}
  
