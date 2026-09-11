@@ -1,13 +1,13 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=11
+pkgrel=12
 pkgdesc="Device integration, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
 license=('MIT')
-depends=('archpad-pipa-firmware>=1.0.0-2' 'hexagonrpc>=0.4.0-2'
-         'iio-sensor-proxy' 'libssc>=0.4.4' 'systemd' 'udev'
+depends=('archpad-pipa-firmware>=1.0.0-2' 'hexagonrpc>=0.4.0-3'
+         'iio-sensor-proxy>=3.9-2' 'libssc>=0.4.4' 'systemd' 'udev'
          'networkmanager' 'bluez' 'bluez-utils' 'bluedevil')
 source=("81-libssc-xiaomi-pipa.rules"
         "82-archpad-bluetooth.rules"
@@ -24,11 +24,13 @@ source=("81-libssc-xiaomi-pipa.rules"
         "archpad-pipa-modules.conf"
         "archpad-usb-gadget"
         "archpad-usb-gadget.service"
-        "80-usb0.network")
+        "80-usb0.network"
+        "archpad-wait-sensor-proxy"
+        "10-archpad-display-manager.conf")
 sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5119335d4bb4e73b3cfe7b87fe7e9d8799b69f34fe180c425d0febba87d95c'
             'cdd3151aa5a96927ec01d9026b1150544fad78ba0d8c7c5f0eeb6559e1838bf61fa1caa36faec529ba6f0c1bdaea69e9a38b7eed61de7c4087e8294aed835ca2'
             'd73e0a550de972a572dd9bde80f405dbf546f294fd7ca771a504a91c44cd546185bfea363f980f0985a4af5cf45c88024757f0b0b1516f7ed03b1e4d96f311e3'
-            '523461ec38054873664aee2442c026c9547cdcc34cdb428770e135f9f6051125b3dcf136b313876c871654c1a9ee97195ae50d33d0eebd282e6efdb90baf836a'
+            '2dea1e0275bb172068bb844718340cac24cd40d3033911078d27671bc33a2057be2e92feb88a1414d0dd31ff4d82a0107e3e0b941339787efa63b892b060deda'
             'e947e7a6bd1b44ba9d8369f5d8a64b17a336ed0189326dc88cf7b5a8209faef2712126ab3b05ce938247173da971fccd33a7c101ddf6b545cebeb9a9e65e87e8'
             'b195dacf1cae36ed7a3cf1671071785aff2fd53df3e24b74ae0e9061d734d8d35ef74e7cfdacbf3eba94bad0bc1262afbbc2a208cf67e1bfa61884f08949704e'
             'bea1b1a792cb5d7d41b82551fb0da5a8380bf3fd4eb0e6392dac7c215a3661a4f6106444767a8c4e8609c6effb96228bb1d71f0d2f2ae9ad1e49553b83828e81'
@@ -40,7 +42,9 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             'ec16967d268aa6dac891740b2302d7d850650b0d529e93df66292a7d6675bbe042d4a9dda173981e93ed04fa564d5a42398f627d6e98227bcc07771592a703d2'
             'b65711c65218088a3e3b71ca6411bc403ffa89d1d3983159e8ea6eaabcfa5d2cb668ca3417f4378454076a84fbf2338bc3897721f4bb6af02f8bc2ec9b659b67'
             '5daba5db23f875592052fec5c7a7ecc69c6e3f5f199ac356857097b8473888ea9c6b9308f3e33a51c467c8f265d68b1bad3b88ea1663b2c5b4936a10b8930c7a'
-            '12eb2fad62feb67df26646b554e9c6ab6e6aac9ad325736578f79d4ee1ad14fc4f63653107233f9436edf10c78058da1ce24223a896186317ebcab256a3b48db')
+            '12eb2fad62feb67df26646b554e9c6ab6e6aac9ad325736578f79d4ee1ad14fc4f63653107233f9436edf10c78058da1ce24223a896186317ebcab256a3b48db'
+            '50078f6bdc64b9638fa3ebc57d165226357dc219877b5d6dfdac97a162beb0de39b0afba7f770fa36a69f5dd2ca1a5e41b479aeed78aeece6f4f305aabcc40a0'
+            'd3c87de94336b90a0aa0d6d2562dc4d2547b80a2baecd43ee2b4721b3419ac2ef1e750d52097a93bb0d233e516f88c0bfc3edb951bbddc0650d8d76b80254f6b')
 
 package() {
   install -Dm644 "${srcdir}/81-libssc-xiaomi-pipa.rules" -t "${pkgdir}/usr/lib/udev/rules.d/"
@@ -48,6 +52,10 @@ package() {
   install -Dm644 "${srcdir}/83-archpad-camera.rules" -t "${pkgdir}/usr/lib/udev/rules.d/"
   install -Dm644 "${srcdir}/10-archpad-sensors.conf" \
     "${pkgdir}/usr/lib/systemd/system/iio-sensor-proxy.service.d/10-archpad-sensors.conf"
+  install -Dm644 "${srcdir}/10-archpad-display-manager.conf" \
+    "${pkgdir}/usr/lib/systemd/system/display-manager.service.d/10-archpad-sensors.conf"
+  install -Dm644 "${srcdir}/10-archpad-display-manager.conf" \
+    "${pkgdir}/usr/lib/systemd/system/sddm.service.d/10-archpad-sensors.conf"
   install -Dm644 "${srcdir}/10-archpad-bluetooth.conf" \
     "${pkgdir}/usr/lib/systemd/system/bluetooth.service.d/10-archpad-bluetooth.conf"
   install -Dm644 "${srcdir}/10-archpad-networkmanager.conf" \
@@ -56,6 +64,7 @@ package() {
   install -Dm644 "${srcdir}/archpad-hexagonrpcd-sdsp.service" \
     -t "${pkgdir}/usr/lib/systemd/system/"
   install -Dm755 "${srcdir}/archpad-wait-ssc" -t "${pkgdir}/usr/lib/archpad/"
+  install -Dm755 "${srcdir}/archpad-wait-sensor-proxy" -t "${pkgdir}/usr/lib/archpad/"
   install -Dm755 "${srcdir}/archpad-audio-reprobe" -t "${pkgdir}/usr/lib/archpad/"
   install -Dm644 "${srcdir}/archpad-audio-reprobe.service" -t "${pkgdir}/usr/lib/systemd/system/"
   install -Dm644 "${srcdir}/audio-reprobe.txt" \

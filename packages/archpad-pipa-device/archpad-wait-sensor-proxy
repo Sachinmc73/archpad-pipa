@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+# Wait for iio-sensor-proxy to finish asynchronous libssc discovery on sDSP
+timeout=50 # 5.0s max
+while [ "$timeout" -gt 0 ]; do
+    if val=$(gdbus call --system --dest net.hadess.SensorProxy --object-path /net/hadess/SensorProxy --method org.freedesktop.DBus.Properties.Get net.hadess.SensorProxy HasAccelerometer 2>/dev/null); then
+        case "$val" in
+            *true*)
+                exit 0
+                ;;
+        esac
+    fi
+    timeout=$((timeout - 1))
+    sleep 0.1
+done
+
+printf '%s\n' 'Sensor proxy accelerometer did not become available within 5 seconds' >&2
+exit 1
