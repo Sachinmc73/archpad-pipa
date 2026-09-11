@@ -3,7 +3,7 @@
 pkgbase=linux-archpad-pipa
 pkgname=('linux-archpad-pipa' 'linux-archpad-pipa-headers')
 pkgver=7.1.4
-pkgrel=10
+pkgrel=11
 pkgdesc='Linux kernel and modules for the Xiaomi Pad 6 (pipa)'
 arch=('aarch64')
 url='https://github.com/pipa-mainline'
@@ -63,6 +63,7 @@ _patches=(
   '0027-drm-msm-make-register-header-generation-deterministic.patch'
   '0028-arm64-dts-qcom-sm8250-xiaomi-pipa-add-rear-camera-vcm.patch'
   '0029-media-i2c-dw9768-support-alternate-i2c-address.patch'
+  '0030-remoteproc-qcom-q6v5-disable-handover-irq-after-hand.patch'
 )
 
 source=(
@@ -101,6 +102,7 @@ sha512sums=(
   'd07306d2841e526652615f1ae5f3376600605e41aba55d033c52a158ac36452089434408f25e8d171968cc60cae93a112d0390a028ebecc60f60369e0b683f48'
   'b5868d8b8a584eaa290f6964c7cf6ef380309c6d105c9fe1eadb49877e7912f71eefbfa15c165747c1738af17c661516a2a19866f867581e14dca0e8172b674d'
   'f12428b25b480cdd85396a114587f53c5349420e8ba2856580a83c06034607bef7d3790ef3f05788adf6482605452c75ebc5e53927eef3ff2b67da8dd2af7d2f'
+  '2f150e8e5d14e91784acb00cbdfa9f1a17d79d5d5f6b3eac8e8cbd1373bd4b8d2046f006a2573a852d10db4115a77abfbd13ea629d6ba6d3658a9f03cdc4d03a'
 )
 
 prepare() {

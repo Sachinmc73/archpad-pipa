@@ -5,7 +5,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/lib/archpad-session/archpad-pwrkey
+ExecStart=/usr/lib/archpad/archpad-pwrkey
 Restart=always
 RestartSec=1s
 

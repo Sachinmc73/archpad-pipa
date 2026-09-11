@@ -48,9 +48,10 @@ archpad/
 │   ├── linux-archpad-pipa/       # Linux kernel 7.1.x with pipa device patches (Tianma + CSOT DTBs)
 │   ├── archpad-pipa-audio/       # ALSA UCM profiles, PipeWire limiter, QDSP6 period alignment
 │   ├── archpad-pipa-camera/      # libcamera configuration, sensor tuning, udev permissions
-│   ├── archpad-pipa-device/      # Core hardware integration, sensor readiness gates
+│   ├── archpad-pipa-device/      # Core hardware integration, sensor gates, power key daemon (archpad-pwrkey)
 │   ├── archpad-pipa-firmware/    # Signed Qualcomm DSP firmware and Wi-Fi/BT calibration blobs
-│   ├── archpad-session/          # Power button daemon (archpad-pwrkey), uinput rules, lockscreen
+│   ├── archpad-artwork/          # Official wallpapers and branding icons
+│   ├── archpad-session/          # Optional touch-first Hyprland session policy
 │   ├── archpad-boot/             # Boot hooks, systemd-boot generation manager, mkinitcpio config
 │   ├── plasma-camera-pipa/       # KDE Camera with pipa focus and orientation patches
 │   └── wvkbd-mobintl/            # Touch-friendly on-screen keyboard

@@ -1,0 +1,55 @@
+# Maintainer: ArchPad Project <https://github.com/pipa-mainline>
+pkgname=archpad-artwork
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Official wallpapers and branding icons for ArchPad"
+arch=('any')
+url="https://github.com/pipa-mainline"
+license=('CC-BY-SA-4.0')
+options=('!strip')
+source=("archpad-artwork-${pkgver}.tar.xz")
+sha512sums=('21e05e86335d502e64428a9248355295643b85cb7b413ba800efea13e36291fbbc95adc95b9c130b258734075e5192b62066619711a4b7d906ba00f7c56b5947')
+
+package() {
+  local src="${srcdir}/archpad-artwork-${pkgver}"
+
+  # 1. Wallpapers
+  mkdir -p "${pkgdir}/usr/share/wallpapers"
+  cp -r "${src}/wallpapers/ArchPad" "${pkgdir}/usr/share/wallpapers/"
+
+  # 2. Pixmaps
+  install -Dm644 "${src}/icons/archpad-logo.png" "${pkgdir}/usr/share/pixmaps/archpad-logo.png"
+  ln -s archpad-logo.png "${pkgdir}/usr/share/pixmaps/archpad-launcher.png"
+
+  # 3. Hicolor theme icons
+  local sizes=(16 22 24 32 48 64 128 256 512)
+  for size in "${sizes[@]}"; do
+    local icon="${src}/icons/archpad-logo-${size}.png"
+    if [[ -f "$icon" ]]; then
+      local destdir="${pkgdir}/usr/share/icons/hicolor/${size}x${size}/apps"
+      install -Dm644 "$icon" "${destdir}/archpad-logo.png"
+      ln -s archpad-logo.png "${destdir}/archpad-launcher.png"
+    fi
+  done
+
+  # 4. Breeze and Breeze-Dark theme icons
+  local breeze_themes=(breeze breeze-dark)
+  local breeze_sizes=(16 22 24 32 48 64)
+  local breeze_cats=(apps places)
+  for theme in "${breeze_themes[@]}"; do
+    for cat in "${breeze_cats[@]}"; do
+      for size in "${breeze_sizes[@]}"; do
+        local icon="${src}/icons/archpad-logo-${size}.png"
+        if [[ -f "$icon" ]]; then
+          local destdir="${pkgdir}/usr/share/icons/${theme}/${cat}/${size}"
+          install -Dm644 "$icon" "${destdir}/archpad-logo.png"
+          ln -s archpad-logo.png "${destdir}/archpad-launcher.png"
+        fi
+      done
+    done
+  done
+
+  # Fix permissions
+  find "${pkgdir}/usr" -type d -exec chmod 0755 {} +
+  find "${pkgdir}/usr" -type f -exec chmod 0644 {} +
+}

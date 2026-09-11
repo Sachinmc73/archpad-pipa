@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ArchPad Project <archpad@localhost>
+Date: Sat, 12 Sep 2026 02:12:00 +0530
+Subject: [PATCH] remoteproc: qcom: q6v5: disable handover irq after handover
+
+On Qualcomm SoCs such as SM8250, the Sensors Low-Power Island (SLPI) DSP
+firmware toggles SMP2P handover status bits during runtime sensor sampling
+and power state changes. Because the handover interrupt is not masked
+after the initial boot handover handshake completes, each transition
+re-enters q6v5_handover_interrupt and emits:
+  "Handover signaled, but it already happened"
+at up to 5 times per second, flooding dmesg and the system journal.
+
+Disable the handover interrupt via disable_irq_nosync() immediately once
+handover is processed. The interrupt is re-enabled in qcom_q6v5_prepare()
+on the next remoteproc start. In qcom_q6v5_unprepare(), only disable the
+interrupt if handover was not already completed to maintain balance.
+
+Signed-off-by: ArchPad Project <archpad@localhost>
+---
+ drivers/remoteproc/qcom_q6v5.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/remoteproc/qcom_q6v5.c b/drivers/remoteproc/qcom_q6v5.c
+index 24eb37452..68c4a5c37 100644
+--- a/drivers/remoteproc/qcom_q6v5.c
++++ b/drivers/remoteproc/qcom_q6v5.c
+@@ -81,7 +81,8 @@ int qcom_q6v5_prepare(struct qcom_q6v5 *q6v5)
+  */
+ int qcom_q6v5_unprepare(struct qcom_q6v5 *q6v5)
+ {
+-	disable_irq(q6v5->handover_irq);
++	if (!q6v5->handover_issued)
++		disable_irq(q6v5->handover_irq);
+ 	q6v5_load_state_toggle(q6v5, false);
+ 
+ 	/* Disable interconnect vote, in case handover never happened */
+@@ -168,6 +169,8 @@ static irqreturn_t q6v5_handover_interrupt(int irq, void *data)
+ 		return IRQ_HANDLED;
+ 	}
+ 
++	disable_irq_nosync(q6v5->handover_irq);
++
+ 	if (q6v5->handover)
+ 		q6v5->handover(q6v5);
+ 
+-- 

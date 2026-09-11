@@ -1,14 +1,15 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=12
+pkgrel=13
 pkgdesc="Device integration, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
-arch=('any')
+arch=('aarch64')
 url="https://github.com/pipa-mainline"
 license=('MIT')
 depends=('archpad-pipa-firmware>=1.0.0-2' 'hexagonrpc>=0.4.0-3'
          'iio-sensor-proxy>=3.9-2' 'libssc>=0.4.4' 'systemd' 'udev'
-         'networkmanager' 'bluez' 'bluez-utils' 'bluedevil')
+         'networkmanager' 'bluez' 'bluez-utils' 'bluedevil' 'glib2')
+makedepends=('gcc' 'pkgconf')
 source=("81-libssc-xiaomi-pipa.rules"
         "82-archpad-bluetooth.rules"
         "83-archpad-camera.rules"
@@ -26,7 +27,10 @@ source=("81-libssc-xiaomi-pipa.rules"
         "archpad-usb-gadget.service"
         "80-usb0.network"
         "archpad-wait-sensor-proxy"
-        "10-archpad-display-manager.conf")
+        "10-archpad-display-manager.conf"
+        "archpad-pwrkey.c"
+        "archpad-pwrkey.service"
+        "60-archpad-power.conf")
 sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5119335d4bb4e73b3cfe7b87fe7e9d8799b69f34fe180c425d0febba87d95c'
             'cdd3151aa5a96927ec01d9026b1150544fad78ba0d8c7c5f0eeb6559e1838bf61fa1caa36faec529ba6f0c1bdaea69e9a38b7eed61de7c4087e8294aed835ca2'
             'd73e0a550de972a572dd9bde80f405dbf546f294fd7ca771a504a91c44cd546185bfea363f980f0985a4af5cf45c88024757f0b0b1516f7ed03b1e4d96f311e3'
@@ -44,7 +48,16 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             '5daba5db23f875592052fec5c7a7ecc69c6e3f5f199ac356857097b8473888ea9c6b9308f3e33a51c467c8f265d68b1bad3b88ea1663b2c5b4936a10b8930c7a'
             '12eb2fad62feb67df26646b554e9c6ab6e6aac9ad325736578f79d4ee1ad14fc4f63653107233f9436edf10c78058da1ce24223a896186317ebcab256a3b48db'
             '50078f6bdc64b9638fa3ebc57d165226357dc219877b5d6dfdac97a162beb0de39b0afba7f770fa36a69f5dd2ca1a5e41b479aeed78aeece6f4f305aabcc40a0'
-            'd3c87de94336b90a0aa0d6d2562dc4d2547b80a2baecd43ee2b4721b3419ac2ef1e750d52097a93bb0d233e516f88c0bfc3edb951bbddc0650d8d76b80254f6b')
+            'd3c87de94336b90a0aa0d6d2562dc4d2547b80a2baecd43ee2b4721b3419ac2ef1e750d52097a93bb0d233e516f88c0bfc3edb951bbddc0650d8d76b80254f6b'
+            'b9e4fc5c3d4270c07bb5e4660bf3b46714be114cf04137ec7d7b989380ad96b6daaf21fa24d27114a3c13baab1b0df342d4b796149a08c7226ff5d4724cd7028'
+            '3367c97b784962f02fa07da19944f5b10b46997b5affbd89d07489ba7b543527531cef2a118504ce41ae4d7bd2ac4b52a79f0cf58d420c3a07583db613f63c59'
+            '25afd475836b3e77fcce6ad7b4b2ffad3b2a4ab99b8d7ef65447d48d7874b724ee713ba8a5001b5a98f6bc7f8a2cb312d4120f7f73a8a641d4086954a25b5d79')
+
+build() {
+  cd "${srcdir}"
+  cc ${CFLAGS} ${CPPFLAGS} archpad-pwrkey.c -o archpad-pwrkey \
+    $(pkg-config --cflags --libs gio-2.0 gio-unix-2.0) ${LDFLAGS}
+}
 
 package() {
   install -Dm644 "${srcdir}/81-libssc-xiaomi-pipa.rules" -t "${pkgdir}/usr/lib/udev/rules.d/"
@@ -73,6 +86,15 @@ package() {
   install -Dm755 "${srcdir}/archpad-usb-gadget" "${pkgdir}/usr/bin/archpad-usb-gadget"
   install -Dm644 "${srcdir}/archpad-usb-gadget.service" -t "${pkgdir}/usr/lib/systemd/system/"
   install -Dm644 "${srcdir}/80-usb0.network" -t "${pkgdir}/usr/lib/systemd/network/"
+
+  # Tablet power key daemon and logind policy
+  install -Dm755 "${srcdir}/archpad-pwrkey" "${pkgdir}/usr/lib/archpad/archpad-pwrkey"
+  install -Dm644 "${srcdir}/archpad-pwrkey.service" "${pkgdir}/usr/lib/systemd/user/archpad-pwrkey.service"
+  install -d "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants"
+  ln -s /usr/lib/systemd/user/archpad-pwrkey.service \
+    "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants/archpad-pwrkey.service"
+  install -Dm644 "${srcdir}/60-archpad-power.conf" \
+    "${pkgdir}/usr/lib/systemd/logind.conf.d/60-archpad-power.conf"
 
   install -d "${pkgdir}/usr/lib/systemd/system-preset"
   printf '%s\n' \
