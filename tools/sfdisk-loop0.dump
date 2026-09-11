@@ -1,0 +1,10 @@
+label: gpt
+label-id: 7C7C6BF2-F9E3-402A-B8B0-086C6B92F580
+device: /dev/loop0
+unit: sectors
+first-lba: 6
+last-lba: 27940853
+sector-size: 4096
+
+/dev/loop0p1 : start=        2048, size=      122880, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, uuid=547B0B44-018A-4AD3-BE28-1F1AA07323A8, name="primary"
+/dev/loop0p2 : start=      124928, size=    27815926, type=B921B045-1DF0-41C3-AF44-4C6F280D3FAE, uuid=C6E69B4D-FAEC-48BF-9DF7-6083807D27CB, name="primary"
