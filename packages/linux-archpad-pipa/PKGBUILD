@@ -1,13 +1,13 @@
 # Maintainer: ArchPad project
 
-pkgname=linux-archpad-pipa
+pkgbase=linux-archpad-pipa
+pkgname=('linux-archpad-pipa' 'linux-archpad-pipa-headers')
 pkgver=7.1.4
 pkgrel=10
-pkgdesc='Linux kernel for the Xiaomi Pad 6 (pipa), Tianma panel'
+pkgdesc='Linux kernel and modules for the Xiaomi Pad 6 (pipa)'
 arch=('aarch64')
 url='https://github.com/pipa-mainline'
 license=('GPL-2.0-only')
-depends=('archpad-boot>=1.1.3' 'coreutils' 'kmod')
 makedepends=(
   'bc'
   'bison'
@@ -28,8 +28,6 @@ makedepends=(
   'xz'
   'zstd'
 )
-provides=("linux=${pkgver}")
-conflicts=('linux-aarch64')
 options=('!strip')
 
 _flavor='pipa'
@@ -140,7 +138,13 @@ build() {
     KBUILD_BUILD_VERSION="${pkgrel}-archpad-${_flavor}"
 }
 
-package() {
+package_linux-archpad-pipa() {
+  pkgdesc='Linux kernel and modules for the Xiaomi Pad 6 (pipa)'
+  depends=('archpad-boot>=1.1.3' 'coreutils' 'kmod')
+  optdepends=('linux-archpad-pipa-headers: build external kernel modules with DKMS')
+  provides=("linux=${pkgver}")
+  conflicts=('linux-aarch64')
+
   cd "linux-${pkgver}"
 
   local kernelrelease
@@ -161,6 +165,7 @@ package() {
     INSTALL_MOD_STRIP=1 \
     modules_install
 
+  # Remove build and source symlinks; provided by linux-archpad-pipa-headers
   rm -f "${pkgdir}/usr/lib/modules/${kernelrelease}/build"
   rm -f "${pkgdir}/usr/lib/modules/${kernelrelease}/source"
 
@@ -168,8 +173,59 @@ package() {
   install -Dm644 \
     arch/arm64/boot/dts/qcom/sm8250-xiaomi-pipa-tianma.dtb \
     "${pkgdir}/boot/dtbs/qcom/sm8250-xiaomi-pipa-tianma.dtb"
+  install -Dm644 \
+    arch/arm64/boot/dts/qcom/sm8250-xiaomi-pipa-csot.dtb \
+    "${pkgdir}/boot/dtbs/qcom/sm8250-xiaomi-pipa-csot.dtb"
   install -Dm644 System.map "${pkgdir}/boot/System.map-${kernelrelease}"
   install -Dm644 .config "${pkgdir}/boot/config-${kernelrelease}"
   install -Dm644 include/config/kernel.release \
     "${pkgdir}/usr/share/kernel/archpad-pipa/kernel.release"
+}
+
+package_linux-archpad-pipa-headers() {
+  pkgdesc='Header files and scripts for building modules for linux-archpad-pipa'
+  depends=('clang' 'llvm' 'lld')
+  provides=("linux-headers=${pkgver}")
+  conflicts=('linux-headers')
+
+  cd "linux-${pkgver}"
+
+  local kernelrelease
+  kernelrelease="$(make -s ARCH=arm64 LLVM=1 \
+    LOCALVERSION="${_localversion}" \
+    KCFLAGS="${_debug_prefix_map}" \
+    KAFLAGS="${_debug_prefix_map}" \
+    KRUSTFLAGS="${_rust_prefix_map}" kernelrelease)"
+
+  local builddir="${pkgdir}/usr/lib/modules/${kernelrelease}/build"
+
+  install -Dt "${builddir}" -m644 .config Makefile Module.symvers System.map
+  install -Dt "${builddir}/kernel" -m644 kernel/Makefile
+  install -Dt "${builddir}/arch/arm64" -m644 arch/arm64/Makefile
+  cp -t "${builddir}" -a scripts
+
+  mkdir -p "${builddir}"/{fs/xfs,mm}
+
+  cp -t "${builddir}" -a include
+  cp -t "${builddir}/arch/arm64" -a arch/arm64/include
+  install -Dt "${builddir}/arch/arm64/kernel" -m644 arch/arm64/kernel/asm-offsets.s
+
+  install -Dt "${builddir}/drivers/md" -m644 drivers/md/*.h
+  install -Dt "${builddir}/net/mac80211" -m644 net/mac80211/*.h
+
+  find . -name 'Kconfig*' -exec install -Dm644 {} "${builddir}/{}" \;
+
+  local arch
+  for arch in "${builddir}"/arch/*/; do
+    [[ $arch == */arm64/ || $arch == */arm/ ]] && continue
+    rm -rf "$arch"
+  done
+
+  rm -rf "${builddir}/Documentation"
+  find -L "${builddir}" -type l -delete
+  find "${builddir}" -type f -name '*.o' -delete
+
+  mkdir -p "${pkgdir}/usr/src"
+  ln -sr "${builddir}" "${pkgdir}/usr/src/${pkgbase}"
+  ln -s build "${pkgdir}/usr/lib/modules/${kernelrelease}/source"
 }
