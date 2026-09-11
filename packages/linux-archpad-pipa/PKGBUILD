@@ -222,7 +222,7 @@ package_linux-archpad-pipa-headers() {
   done
 
   rm -rf "${builddir}/Documentation"
-  find -L "${builddir}" -type l -delete
+  find "${builddir}" -xtype l -delete
   find "${builddir}" -type f -name '*.o' -delete
 
   mkdir -p "${pkgdir}/usr/src"
