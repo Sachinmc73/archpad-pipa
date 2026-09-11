@@ -3,7 +3,7 @@ pkgver=0.4.3
 pkgrel=1
 pkgdesc='ArchPad touch-first Wayland session policy'
 arch=('aarch64')
-url='https://github.com/archpad/archpad'
+url='https://github.com/Sachinmc73/archpad-pipa'
 license=('GPL-3.0-only')
 depends=(
   'brightnessctl'

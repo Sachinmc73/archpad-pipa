@@ -1,4 +1,4 @@
-# ArchPad: Arch Linux ARM for Xiaomi Pad 6 (`pipa`)
+# ArchPad-Pipa: Arch Linux ARM for Xiaomi Pad 6 (`pipa`)
 
 <p align="center">
   <img src="artwork/logo-tablet.png" alt="ArchPad Logo" width="180">
