@@ -1,18 +1,21 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-camera
 pkgver=1.0.0
-pkgrel=4
-pkgdesc="libcamera configuration and sensor tuning for Xiaomi Pad 6 (pipa)"
+pkgrel=5
+pkgdesc="libcamera configuration, sensor tuning and udev rules for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
 license=('CC0-1.0')
 depends=('libcamera')
 source=("hi846.yaml"
-        "ov13b10.yaml")
+        "ov13b10.yaml"
+        "80-pipa-camera.rules")
 sha512sums=('1f6a0f8a14f8e0b818bfabdb9c8e0fa89947ee28967d3561103547a636d9af656bd477aa6cdce59e172294a9e9b2b14944a939e8d3c97f7eb3ea6c60e59eb780'
-            '41cc79ae3d6130d06aee427d667ff43b90a34bf642e7a88cf431f2b4299067db84034dc4b68b76159a1279bd89f2a1c69571a22c3d23aed852e28aefc1494b13')
+            '41cc79ae3d6130d06aee427d667ff43b90a34bf642e7a88cf431f2b4299067db84034dc4b68b76159a1279bd89f2a1c69571a22c3d23aed852e28aefc1494b13'
+            'b9e172f4bdf011ade34bc87bb3ac0607cf89fe63a9d881e8fbff57d94cf3cabfbfff0fe95e2777ce777d4bf0084e09913c413d5a0b9b94b1278c1420e0174436')
 
 package() {
   install -Dm644 "${srcdir}/hi846.yaml" -t "${pkgdir}/usr/share/libcamera/ipa/simple/"
   install -Dm644 "${srcdir}/ov13b10.yaml" -t "${pkgdir}/usr/share/libcamera/ipa/simple/"
+  install -Dm644 "${srcdir}/80-pipa-camera.rules" -t "${pkgdir}/usr/lib/udev/rules.d/"
 }

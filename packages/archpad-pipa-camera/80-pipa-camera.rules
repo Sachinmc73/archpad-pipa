@@ -1,0 +1,3 @@
+# Xiaomi Pad 6 (pipa) Camera Actuator and Subdevice permissions
+KERNEL=="i2c-20", GROUP="video", MODE="0660"
+KERNEL=="v4l-subdev*", GROUP="video", MODE="0660"

@@ -71,7 +71,7 @@ index 311d6c0..4929eea 100644
              exposureValueEnabled: root.camera.exposureValueAvailable
 diff --git a/src/contents/ui/camera/FocusSelectStrip.qml b/src/contents/ui/camera/FocusSelectStrip.qml
 new file mode 100644
-index 0000000..f70a0e9
+index 0000000..183c295
 --- /dev/null
 +++ b/src/contents/ui/camera/FocusSelectStrip.qml
 @@ -0,0 +1,69 @@
@@ -114,26 +114,26 @@ index 0000000..f70a0e9
 +
 +        QQC2.Button {
 +            text: i18n("Macro")
-+            onClicked: if (root.camera) root.camera.focusPosition = 750
++            onClicked: if (root.camera) root.camera.focusPosition = 360
 +        }
 +
 +        QQC2.Button {
 +            text: i18n("Normal")
-+            onClicked: if (root.camera) root.camera.focusPosition = 450
++            onClicked: if (root.camera) root.camera.focusPosition = 180
 +        }
 +
 +        QQC2.Button {
 +            text: i18n("Inf")
-+            onClicked: if (root.camera) root.camera.focusPosition = 50
++            onClicked: if (root.camera) root.camera.focusPosition = 40
 +        }
 +
 +        QQC2.Slider {
 +            id: focusSlider
 +            Layout.fillWidth: true
-+            from: root.camera ? root.camera.focusMin : 0
-+            to: root.camera ? root.camera.focusMax : 1023
-+            stepSize: 10
-+            value: root.camera ? root.camera.focusPosition : 450
++            from: root.camera ? root.camera.focusMin : 30
++            to: root.camera ? root.camera.focusMax : 400
++            stepSize: 5
++            value: root.camera ? root.camera.focusPosition : 180
 +            onMoved: if (root.camera) root.camera.focusPosition = Math.round(value)
 +        }
 +
@@ -176,7 +176,7 @@ index 405c20e..ffa15da 100644
  }
 \ No newline at end of file
 diff --git a/src/plasmacamera.cpp b/src/plasmacamera.cpp
-index c6c1a83..cd1b227 100644
+index c67502c..457ce6f 100644
 --- a/src/plasmacamera.cpp
 +++ b/src/plasmacamera.cpp
 @@ -5,6 +5,13 @@
@@ -210,15 +210,24 @@ index c6c1a83..cd1b227 100644
      // Cleanup signals
      m_cameraManager->cameraAdded.disconnect();
      m_cameraManager->cameraRemoved.disconnect();
-@@ -315,6 +325,7 @@ void PlasmaCamera::setCameraDevice(const QString &cameraDeviceId)
+@@ -313,6 +323,16 @@ void PlasmaCamera::setCameraDevice(const QString &cameraDeviceId)
+         return;
+     }
  
-     if (m_state == State::Running && m_camera) {
-         qDebug() << "Stopping active camera before switching to" << cameraDeviceId;
++    if (m_state == State::Running && m_camera) {
++        qDebug() << "Stopping active camera before switching to" << cameraDeviceId;
 +        cleanupFocusActuator();
-         setState(State::Stopping);
-         m_camera.reset();
-         m_cameraId = cameraDeviceId;
-@@ -523,6 +534,7 @@ void PlasmaCamera::startCameraInternal()
++        setState(State::Stopping);
++        m_camera.reset();
++        m_cameraId = cameraDeviceId;
++        QMetaObject::invokeMethod(m_cameraWorker, "unsetCamera", Qt::BlockingQueuedConnection);
++        return;
++    }
++
+     qDebug() << "Using camera: " << cameraDeviceId;
+     m_cameraId = cameraDeviceId;
+ 
+@@ -514,6 +534,7 @@ void PlasmaCamera::startCameraInternal()
  
  void PlasmaCamera::stopCameraInternal()
  {
@@ -226,7 +235,7 @@ index c6c1a83..cd1b227 100644
      setState(State::Stopping);
  
      // Clear the current camera
-@@ -616,27 +628,236 @@ bool PlasmaCamera::acquire()
+@@ -607,27 +628,354 @@ bool PlasmaCamera::acquire()
      m_settings.load(m_camera->controls());
      Q_EMIT settingsChanged(m_settings);
  
@@ -247,11 +256,7 @@ index c6c1a83..cd1b227 100644
 -        m_softwareRotationDegrees = 90;
 -        break;
 -    }
-+    // On Xiaomi Pad 6, sensors are physically mounted in landscape mode.
-+    // Default software rotation to 0 for upright display in landscape.
-+    m_softwareRotationDegrees = 0;
-+    Q_EMIT softwareRotationDegreesChanged();
- 
+-
 -    // Find whether the camera output needs to be mirrored (ex. selife cam)
 +    // Find whether the camera output needs to be mirrored (ex. selfie cam)
      std::optional<int> location = m_camera->properties().get(libcamera::properties::Location);
@@ -261,6 +266,16 @@ index c6c1a83..cd1b227 100644
 +    bool isRear = (location.value_or(-1) == libcamera::properties::CameraLocationBack)
 +                  || (m_camera->id().find("camera@10") != std::string::npos)
 +                  || (m_camera->id().find("ov13b10") != std::string::npos);
++
++    // On Xiaomi Pad 6, sensors are physically mounted in landscape mode.
++    // Back sensor (ov13b10) is upright at 0 deg.
++    // Front sensor (hi846) is mounted upside down (180 deg) relative to display.
++    bool isFront = (location.value_or(-1) == libcamera::properties::CameraLocationFront)
++                   || (m_camera->id().find("camera@20") != std::string::npos)
++                   || (m_camera->id().find("hi846") != std::string::npos);
++    m_softwareRotationDegrees = isFront ? 180 : 0;
++    Q_EMIT softwareRotationDegreesChanged();
++
 +    if (isRear) {
 +        initFocusActuator();
 +    } else {
@@ -295,23 +310,76 @@ index c6c1a83..cd1b227 100644
 +    return m_autoFocusRunning;
 +}
 +
++void PlasmaCamera::writeFocusHardware(int targetPos)
++{
++    if (m_focusFd >= 0) {
++        struct v4l2_control ctrl;
++        memset(&ctrl, 0, sizeof(ctrl));
++        ctrl.id = V4L2_CID_FOCUS_ABSOLUTE;
++        ctrl.value = targetPos;
++        ::ioctl(m_focusFd, VIDIOC_S_CTRL, &ctrl);
++    }
++
++    if (m_focusI2cFd < 0) {
++        return;
++    }
++
++    targetPos = std::clamp(targetPos, m_focusMin, m_focusMax);
++
++    if (m_hardwareFocusPos < 0) {
++        // First hardware write: activate DW9714 internal Linear Slope Control (s = 0x05)
++        uint16_t val = ((targetPos & 0x3ff) << 4) | 0x05;
++        uint8_t buf[2] = { static_cast<uint8_t>((val >> 8) & 0xff), static_cast<uint8_t>(val & 0xff) };
++        if (::write(m_focusI2cFd, buf, 2) != 2) {
++            qWarning() << "Failed to write DW9714 focus to I2C" << targetPos << ":" << strerror(errno);
++        }
++        m_hardwareFocusPos = targetPos;
++        return;
++    }
++
++    int delta = targetPos - m_hardwareFocusPos;
++    if (std::abs(delta) <= 20) {
++        // Small incremental step (e.g. fine slider drag or small AF step)
++        uint16_t val = ((targetPos & 0x3ff) << 4) | 0x05;
++        uint8_t buf[2] = { static_cast<uint8_t>((val >> 8) & 0xff), static_cast<uint8_t>(val & 0xff) };
++        if (::write(m_focusI2cFd, buf, 2) != 2) {
++            qWarning() << "Failed to write DW9714 focus to I2C" << targetPos << ":" << strerror(errno);
++        }
++        m_hardwareFocusPos = targetPos;
++    } else {
++        // Large jump (presets Macro/Normal/Inf or AF start): ramp in smooth 15-code steps
++        // with 2ms intervals to eliminate mechanical click / spring stress completely
++        int step = (delta > 0) ? 15 : -15;
++        int p = m_hardwareFocusPos;
++        while ((step > 0 && p < targetPos) || (step < 0 && p > targetPos)) {
++            p += step;
++            if ((step > 0 && p > targetPos) || (step < 0 && p < targetPos)) {
++                p = targetPos;
++            }
++            uint16_t val = ((p & 0x3ff) << 4) | 0x05;
++            uint8_t buf[2] = { static_cast<uint8_t>((val >> 8) & 0xff), static_cast<uint8_t>(val & 0xff) };
++            ::write(m_focusI2cFd, buf, 2);
++            QThread::msleep(2);
++        }
++        m_hardwareFocusPos = targetPos;
++    }
++}
++
 +void PlasmaCamera::setFocusPosition(int pos)
 +{
-+    if (m_focusFd < 0) {
++    if (m_focusFd < 0 && m_focusI2cFd < 0) {
 +        return;
 +    }
 +
 +    pos = std::clamp(pos, m_focusMin, m_focusMax);
-+    struct v4l2_control ctrl;
-+    memset(&ctrl, 0, sizeof(ctrl));
-+    ctrl.id = V4L2_CID_FOCUS_ABSOLUTE;
-+    ctrl.value = pos;
-+    if (::ioctl(m_focusFd, VIDIOC_S_CTRL, &ctrl) == 0) {
-+        m_focusPosition = pos;
-+        Q_EMIT focusPositionChanged();
-+    } else {
-+        qWarning() << "Failed to set focus position" << pos << ":" << strerror(errno);
++    m_focusPosition = pos;
++    Q_EMIT focusPositionChanged();
++
++    if (m_initialFocusPending) {
++        return;
 +    }
++
++    writeFocusHardware(pos);
 +}
 +
 +void PlasmaCamera::setSoftwareRotationDegrees(int deg)
@@ -341,7 +409,8 @@ index c6c1a83..cd1b227 100644
 +        if (nameFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 +            QString name = QString::fromUtf8(nameFile.readAll()).trimmed();
 +            nameFile.close();
-+            if (name.contains(QStringLiteral("dw9768"), Qt::CaseInsensitive) ||
++            if (name.contains(QStringLiteral("dw9714"), Qt::CaseInsensitive) ||
++                name.contains(QStringLiteral("dw9768"), Qt::CaseInsensitive) ||
 +                name.contains(QStringLiteral("vcm"), Qt::CaseInsensitive) ||
 +                name.contains(QStringLiteral("focus"), Qt::CaseInsensitive)) {
 +                vcmPath = QStringLiteral("/dev/") + subdev;
@@ -351,39 +420,53 @@ index c6c1a83..cd1b227 100644
 +        }
 +    }
 +
-+    if (vcmPath.isEmpty()) {
-+        qWarning() << "No VCM focus subdevice found";
-+        return;
++    if (!vcmPath.isEmpty()) {
++        int fd = ::open(vcmPath.toUtf8().constData(), O_RDWR | O_NONBLOCK);
++        if (fd >= 0) {
++            struct v4l2_queryctrl qctrl;
++            memset(&qctrl, 0, sizeof(qctrl));
++            qctrl.id = V4L2_CID_FOCUS_ABSOLUTE;
++            if (::ioctl(fd, VIDIOC_QUERYCTRL, &qctrl) == 0 && !(qctrl.flags & V4L2_CTRL_FLAG_DISABLED)) {
++                m_focusFd = fd;
++                m_focusMin = qctrl.minimum;
++                m_focusMax = qctrl.maximum;
++                m_focusStep = qctrl.step > 0 ? qctrl.step : 1;
++                m_focusSupported = true;
++                qInfo() << "VCM focus supported via v4l-subdev, range [" << m_focusMin << ".." << m_focusMax << "], step" << m_focusStep;
++            } else {
++                qWarning() << "V4L2_CID_FOCUS_ABSOLUTE not supported on" << vcmPath;
++                ::close(fd);
++            }
++        } else {
++            qWarning() << "Failed to open VCM device" << vcmPath << ":" << strerror(errno);
++        }
 +    }
 +
-+    int fd = ::open(vcmPath.toUtf8().constData(), O_RDWR | O_NONBLOCK);
-+    if (fd < 0) {
-+        qWarning() << "Failed to open VCM device" << vcmPath << ":" << strerror(errno);
-+        return;
++    // Direct DW9714 I2C access on Qualcomm CCI adapter (/dev/i2c-20 at 0x0c)
++    int i2cfd = ::open("/dev/i2c-20", O_RDWR | O_NONBLOCK);
++    if (i2cfd >= 0) {
++        const unsigned long I2C_SLAVE_FORCE = 0x0706;
++        if (::ioctl(i2cfd, I2C_SLAVE_FORCE, 0x0c) == 0) {
++            m_focusI2cFd = i2cfd;
++            m_focusSupported = true;
++            qInfo() << "VCM focus supported via direct DW9714 I2C on /dev/i2c-20:0x0c";
++        } else {
++            ::close(i2cfd);
++        }
 +    }
 +
-+    struct v4l2_queryctrl qctrl;
-+    memset(&qctrl, 0, sizeof(qctrl));
-+    qctrl.id = V4L2_CID_FOCUS_ABSOLUTE;
-+    if (::ioctl(fd, VIDIOC_QUERYCTRL, &qctrl) == 0 && !(qctrl.flags & V4L2_CTRL_FLAG_DISABLED)) {
-+        m_focusFd = fd;
-+        m_focusMin = qctrl.minimum;
-+        m_focusMax = qctrl.maximum;
-+        m_focusStep = qctrl.step > 0 ? qctrl.step : 1;
-+        m_focusSupported = true;
-+        qInfo() << "VCM focus supported, range [" << m_focusMin << ".." << m_focusMax << "], step" << m_focusStep;
-+
-+        // Apply default hyperfocal focus (450)
-+        setFocusPosition(m_focusPosition);
++    if (m_focusSupported) {
++        m_initialFocusPending = true;
 +        Q_EMIT focusSupportedChanged();
 +    } else {
-+        qWarning() << "V4L2_CID_FOCUS_ABSOLUTE not supported on" << vcmPath;
-+        ::close(fd);
++        qWarning() << "No working focus actuator interface found";
 +    }
 +}
 +
 +void PlasmaCamera::cleanupFocusActuator()
 +{
++    m_initialFocusPending = false;
++    m_hardwareFocusPos = -1;
 +    if (m_autoFocusRunning) {
 +        m_autoFocusRunning = false;
 +        Q_EMIT autoFocusRunningChanged();
@@ -391,6 +474,10 @@ index c6c1a83..cd1b227 100644
 +    if (m_focusFd >= 0) {
 +        ::close(m_focusFd);
 +        m_focusFd = -1;
++    }
++    if (m_focusI2cFd >= 0) {
++        ::close(m_focusI2cFd);
++        m_focusI2cFd = -1;
 +    }
 +    if (m_focusSupported) {
 +        m_focusSupported = false;
@@ -406,41 +493,48 @@ index c6c1a83..cd1b227 100644
 +
 +    int w = img.width();
 +    int h = img.height();
-+    int x0 = w * 3 / 8;
-+    int y0 = h * 3 / 8;
-+    int rw = w / 4;
-+    int rh = h / 4;
++    int rw = w * 3 / 10;
++    int rh = h * 3 / 10;
++    int x0 = (w - rw) / 2;
++    int y0 = (h - rh) / 2;
 +
 +    double sumGrad = 0.0;
++    double sumLuma = 0.0;
 +    int count = 0;
++
++    int bpp = img.depth() / 8;
++    if (bpp < 3) return 0.0;
 +
 +    for (int y = y0; y < y0 + rh - 1; y += 2) {
 +        const uchar *line1 = img.constScanLine(y);
 +        const uchar *line2 = img.constScanLine(y + 1);
-+        int bpp = img.depth() / 8;
-+        if (bpp < 3) continue;
 +        for (int x = x0; x < x0 + rw - 1; x += 2) {
-+            int p00 = line1[x * bpp + 1];
++            int p00 = line1[x * bpp + 1]; // Green channel
 +            int p01 = line1[(x + 1) * bpp + 1];
 +            int p10 = line2[x * bpp + 1];
 +            int dx = p01 - p00;
 +            int dy = p10 - p00;
 +            sumGrad += static_cast<double>(dx * dx + dy * dy);
++            sumLuma += static_cast<double>(p00);
 +            count++;
 +        }
 +    }
 +
-+    return count > 0 ? (sumGrad / count) : 0.0;
++    if (count == 0) return 0.0;
++    double meanGrad = sumGrad / count;
++    double meanLuma = sumLuma / count;
++    return meanGrad / std::max(meanLuma, 1.0);
 +}
 +
 +void PlasmaCamera::triggerAutoFocus()
 +{
-+    if (m_focusFd < 0 || m_autoFocusRunning) {
++    if ((m_focusFd < 0 && m_focusI2cFd < 0) || m_autoFocusRunning) {
 +        return;
 +    }
 +
-+    qInfo() << "Starting Auto Focus sweep...";
-+    m_afSweepPositions = { 100, 250, 400, 550, 700, 850 };
++    qInfo() << "Starting smooth Auto Focus sweep...";
++    m_afSweepPositions = { 40, 80, 120, 160, 200, 240, 280, 320, 360 };
++    m_afSharpnessValues.clear();
 +    m_afStepIndex = 0;
 +    m_afFrameSkip = 2;
 +    m_bestAfPos = m_focusPosition;
@@ -453,7 +547,12 @@ index c6c1a83..cd1b227 100644
 +
 +void PlasmaCamera::handleViewfinderFrameForAf(const QImage &frame)
 +{
-+    if (!m_autoFocusRunning || m_focusFd < 0) {
++    if (m_initialFocusPending && (m_focusFd >= 0 || m_focusI2cFd >= 0)) {
++        m_initialFocusPending = false;
++        setFocusPosition(m_focusPosition);
++    }
++
++    if (!m_autoFocusRunning || (m_focusFd < 0 && m_focusI2cFd < 0)) {
 +        return;
 +    }
 +
@@ -463,11 +562,15 @@ index c6c1a83..cd1b227 100644
 +    }
 +
 +    double sharpness = computeImageSharpness(frame);
-+    qDebug() << "AF step" << m_afStepIndex << "pos" << m_afSweepPositions.value(m_afStepIndex) << "sharpness" << sharpness;
++    m_afSharpnessValues.append(sharpness);
++    int currentStep = m_afStepIndex;
++    int currentPos = m_afSweepPositions.value(currentStep);
++
++    qDebug() << "AF step" << currentStep << "pos" << currentPos << "sharpness" << sharpness;
 +
 +    if (sharpness > m_bestAfSharpness) {
 +        m_bestAfSharpness = sharpness;
-+        m_bestAfPos = m_afSweepPositions.value(m_afStepIndex);
++        m_bestAfPos = currentPos;
 +    }
 +
 +    m_afStepIndex++;
@@ -475,14 +578,39 @@ index c6c1a83..cd1b227 100644
 +        setFocusPosition(m_afSweepPositions[m_afStepIndex]);
 +        m_afFrameSkip = 2;
 +    } else {
-+        qInfo() << "AF finished. Best position:" << m_bestAfPos << "sharpness:" << m_bestAfSharpness;
-+        setFocusPosition(m_bestAfPos);
++        int bestIdx = 0;
++        double maxSharpness = -1.0;
++        for (int i = 0; i < m_afSharpnessValues.size(); ++i) {
++            if (m_afSharpnessValues[i] > maxSharpness) {
++                maxSharpness = m_afSharpnessValues[i];
++                bestIdx = i;
++            }
++        }
++
++        int finalPos = m_afSweepPositions.value(bestIdx);
++
++        if (bestIdx > 0 && bestIdx < m_afSharpnessValues.size() - 1) {
++            double y1 = m_afSharpnessValues[bestIdx - 1];
++            double y2 = m_afSharpnessValues[bestIdx];
++            double y3 = m_afSharpnessValues[bestIdx + 1];
++            double denom = y1 - 2.0 * y2 + y3;
++            if (denom < -1e-6) {
++                double h = 40.0;
++                double delta = (h / 2.0) * (y1 - y3) / denom;
++                delta = std::clamp(delta, -h, h);
++                finalPos = std::clamp(qRound(finalPos + delta), m_focusMin, m_focusMax);
++                qInfo() << "AF parabolic peak interpolated:" << finalPos << "(delta:" << delta << ")";
++            }
++        }
++
++        qInfo() << "AF finished. Optimal position:" << finalPos << "sharpness:" << maxSharpness;
++        setFocusPosition(finalPos);
 +        m_autoFocusRunning = false;
 +        Q_EMIT autoFocusRunningChanged();
 +    }
 +}
 diff --git a/src/plasmacamera.h b/src/plasmacamera.h
-index 86af1af..1c3e124 100644
+index 86af1af..14976e7 100644
 --- a/src/plasmacamera.h
 +++ b/src/plasmacamera.h
 @@ -56,6 +56,14 @@ class PlasmaCamera : public QObject
@@ -535,12 +663,13 @@ index 86af1af..1c3e124 100644
      void setAfWindow(const QSize &afWindow);
      void resetAfWindow();
  
-@@ -270,6 +292,13 @@ private:
+@@ -270,9 +292,18 @@ private:
       */
      bool acquire();
  
 +    void initFocusActuator();
 +    void cleanupFocusActuator();
++    void writeFocusHardware(int targetPos);
 +
 +private Q_SLOTS:
 +    void handleViewfinderFrameForAf(const QImage &frame);
@@ -549,30 +678,38 @@ index 86af1af..1c3e124 100644
      bool m_error = false;
      QString m_errorString;
  
-@@ -281,6 +310,21 @@ private:
++    // Output fps
+     float m_fps = 30.0f;
+ 
+     // The amount of degrees to rotate captured input by.
+@@ -281,6 +312,25 @@ private:
      // Whether the camera output should be mirrored
      bool m_mirrorOutput = false;
  
 +    // Focus actuator
 +    int m_focusFd = -1;
++    int m_focusI2cFd = -1;
 +    bool m_focusSupported = false;
-+    int m_focusPosition = 450;
-+    int m_focusMin = 0;
-+    int m_focusMax = 1023;
++    bool m_initialFocusPending = false;
++    int m_hardwareFocusPos = -1;
++    int m_focusPosition = 180;
++    int m_focusMin = 30;
++    int m_focusMax = 400;
 +    int m_focusStep = 1;
 +
 +    bool m_autoFocusRunning = false;
 +    QList<int> m_afSweepPositions;
++    QList<double> m_afSharpnessValues;
 +    int m_afStepIndex = 0;
 +    int m_afFrameSkip = 0;
-+    int m_bestAfPos = 450;
++    int m_bestAfPos = 180;
 +    double m_bestAfSharpness = -1.0;
 +
      Settings m_settings;
  
      // Whether the camera has been requested to be active (see state for the actual camera state).
 diff --git a/src/plasmacameramanager.cpp b/src/plasmacameramanager.cpp
-index ceedb3a..c10cb47 100644
+index ceedb3a..5ba8118 100644
 --- a/src/plasmacameramanager.cpp
 +++ b/src/plasmacameramanager.cpp
 @@ -269,6 +269,11 @@ void PlasmaCameraManager::setPlasmaCamera(PlasmaCamera *plasmaCamera)
@@ -587,7 +724,55 @@ index ceedb3a..c10cb47 100644
          }
  
          Q_EMIT plasmaCameraChanged();
-@@ -689,5 +694,5 @@ int PlasmaCameraManager::captureImageInternal()
+@@ -503,27 +508,29 @@ void PlasmaCameraManager::processViewfinderFrame(const QImage &image)
+     }
+ 
+     m_currentFrame = image;
+-    QVideoFrame frame = QVideoFrame(image);
+ 
+-    // Do software rotation
+-    // From testing, most drivers don't seem to implement hardware orientation correctly (CameraConfiguration::orientation),
+-    // it either isn't supported or just crashes. So we will just use software rotation for best hardware compatibility.
+-    switch (m_plasmaCamera->softwareRotationDegrees()) {
+-    case 0:
+-        break;
+-    case 90:
+-        frame.setRotation(QtVideo::Rotation::Clockwise90);
+-        break;
+-    case 180:
+-        frame.setRotation(QtVideo::Rotation::Clockwise180);
+-        break;
+-    case 270:
+-        frame.setRotation(QtVideo::Rotation::Clockwise270);
+-        break;
++    QImage transformed = image;
++    int rotation = m_plasmaCamera ? m_plasmaCamera->softwareRotationDegrees() : 0;
++    bool mirror = m_plasmaCamera ? m_plasmaCamera->mirrorOutput() : false;
++
++    if (rotation == 180 && mirror) {
++        // 180 deg rotation + horizontal selfie mirror = vertical flip only (fast NEON memcpy)
++        transformed = image.mirrored(false, true);
++    } else if (rotation == 180 && !mirror) {
++        // 180 deg rotation without mirror = both horizontal and vertical flip
++        transformed = image.mirrored(true, true);
++    } else {
++        if (mirror) {
++            transformed = transformed.mirrored(true, false);
++        }
++        if (rotation != 0) {
++            QTransform transform;
++            transform.rotate(rotation);
++            transformed = transformed.transformed(transform);
++        }
+     }
+ 
+-    // Mirror output if requested
+-    frame.setMirrored(m_plasmaCamera->mirrorOutput());
++    QVideoFrame frame = QVideoFrame(transformed);
+ 
+     // Add to sink
+     m_videoSink->setVideoFrame(frame);
+@@ -689,5 +696,5 @@ int PlasmaCameraManager::captureImageInternal()
  
  float PlasmaCameraManager::outputOrientationDegrees() const
  {

@@ -1,13 +1,17 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 
-pkgname=plasma-camera
+_pkgname=plasma-camera
+pkgname=plasma-camera-pipa
 pkgver=26.08.0
-pkgrel=1.2
-pkgdesc='Camera application for Plasma Mobile (with pipa camera focus, orientation and deadlock fixes)'
-arch=('aarch64' 'x86_64')
+pkgrel=1.0
+pkgdesc='Camera application for Plasma Mobile (Xiaomi Pad 6 / pipa hardware edition with VCM focus and orientation fixes)'
+arch=('aarch64')
 url='https://apps.kde.org/plasma.camera/'
 license=('GPL-3.0-or-later')
 groups=('kde-applications')
+provides=("plasma-camera=${pkgver}")
+conflicts=('plasma-camera')
+replaces=('plasma-camera')
 depends=(
   exiv2
   glibc
@@ -28,21 +32,21 @@ makedepends=(
   cmake
   extra-cmake-modules
 )
-source=("https://download.kde.org/stable/release-service/${pkgver}/src/${pkgname}-${pkgver}.tar.xz"
+source=("https://download.kde.org/stable/release-service/${pkgver}/src/${_pkgname}-${pkgver}.tar.xz"
         "0001-fix-camera-switch-deadlock.patch"
         "0002-pipa-camera-focus-and-orientation.patch")
 sha256sums=('8acf6eaa0fa5ffacd8f296d942a2bd4a9ac07964fa8d69fd00b5db072c1d7023'
             '3c9060ec2501b01dcda6efd63411ed97a86a8554ab9c1a6ba8143e3ca3c31e97'
-            'f97e8d62f7e10d75e62d553c9890f84785910ba3e4e9c00e6bee7d59ef87f812')
+            '625ddc0b46e0a12a617d0f260046166293a0b1319bf27834c55038c3422deaf0')
 
 prepare() {
-  cd "${pkgname}-${pkgver}"
+  cd "${_pkgname}-${pkgver}"
   patch -Np1 -i "${srcdir}/0001-fix-camera-switch-deadlock.patch"
   patch -Np1 -i "${srcdir}/0002-pipa-camera-focus-and-orientation.patch"
 }
 
 build() {
-  cmake -B build -S "${pkgname}-${pkgver}" \
+  cmake -B build -S "${_pkgname}-${pkgver}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr
   cmake --build build
