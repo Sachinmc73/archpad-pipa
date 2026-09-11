@@ -1,18 +1,20 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-audio
 pkgver=1.0.0
-pkgrel=3
-pkgdesc="ALSA UCM audio configuration for Xiaomi Pad 6 (pipa)"
+pkgrel=4
+pkgdesc="ALSA UCM and PipeWire audio configuration for Xiaomi Pad 6 (pipa)"
 arch=('any')
 url="https://github.com/pipa-mainline"
 license=('BSD-3-Clause')
-depends=('alsa-ucm-conf')
+depends=('alsa-ucm-conf' 'swh-plugins')
 source=("pipa.conf"
         "HiFi.conf"
-        "51-pipa.conf")
+        "51-pipa.conf"
+        "10-speaker-limiter.conf")
 sha512sums=('007908c49db107dd8289a96049ed4d77a55c7846e21f76fa7f97306df953ccdec7d821cbc7732a3ff7c532285175ebf0d6a4e3f224740ac002b23f3608cbf76d'
             '4a5ee228c1ae8f0745b3fc2e4fc24867725ef04a598bf6e90f77ef868ac833496670c44d7a0cfae6510a6ed9206a6b995c45af0b3bc8c6df3ec6b3ff076b07da'
-            '3235b3a377e636642070b9d24ae374068ad38b06ebbf6a8b0723c3b7432146e137235c4cd986d8ab5d083d964be78f470f1d6bc35a8306670926609f65737b4f')
+            '74a85f32e66b4c28b68a6aa783d2dab5abdb23f7d8236205f58eadc1ca88c8436cec3d52a4a826407f4d30268398445dc90207850470307ea55cf4b4d72b6d8e'
+            '265200b34f781bded630e8feb9c08c6e2fd4eaecae802d0092e1f7d4047c603598f1f951baaa86c8e83a90bf7d3ada1f095f841d0672a305631e4a0e99d79387')
 
 package() {
   install -Dm644 "${srcdir}/pipa.conf" -t "${pkgdir}/usr/share/alsa/ucm2/Xiaomi/pipa/"
@@ -24,4 +26,7 @@ package() {
 
   install -Dm644 "${srcdir}/51-pipa.conf" \
     "${pkgdir}/usr/share/wireplumber/wireplumber.conf.d/51-pipa.conf"
+
+  install -Dm644 "${srcdir}/10-speaker-limiter.conf" \
+    "${pkgdir}/usr/share/pipewire/pipewire.conf.d/10-speaker-limiter.conf"
 }
