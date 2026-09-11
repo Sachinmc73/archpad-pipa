@@ -1,0 +1,24 @@
+From: ArchPad Project <https://github.com/pipa-mainline>
+Subject: [PATCH] iio-sensor-proxy: start polling for pre-existing clients on discovery
+
+If a D-Bus client calls ClaimAccelerometer() or another claim method
+before name_acquired_handler finishes driver initialization, the client
+is inserted into data->clients, but driver_set_polling is not invoked.
+
+Mirror the logic in sensor_changes: if clients already claimed the sensor
+type, mark sensor_startup_dbus_event_delayed and call driver_set_polling.
+---
+--- a/src/iio-sensor-proxy.c
++++ b/src/iio-sensor-proxy.c
+@@ -780,6 +780,11 @@ name_acquired_handler (GDBusConnection *connection,
+ 		}
+
+ 		DEVICE_FOR_TYPE(i) = sensor_device;
++
++		if (g_hash_table_size (data->clients[i]) > 0) {
++			data->sensor_startup_dbus_event_delayed[i] = TRUE;
++			driver_set_polling (sensor_device, TRUE);
++		}
+ 	}
+
+ 	if (!any_sensors_left (data))

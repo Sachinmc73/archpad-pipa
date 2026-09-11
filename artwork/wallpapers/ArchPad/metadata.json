@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/Wallpaper",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "info@archpad.org",
+                "Name": "ArchPad Project"
+            }
+        ],
+        "Id": "ArchPad",
+        "License": "GPL-3.0",
+        "Name": "ArchPad"
+    }
+}

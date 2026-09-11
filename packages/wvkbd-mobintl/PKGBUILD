@@ -1,0 +1,25 @@
+# Maintainer: ArchPad project
+pkgname=wvkbd-mobintl
+pkgver=0.20
+pkgrel=1
+pkgdesc='On-screen keyboard for wlroots (mobintl layout)'
+url='https://git.sr.ht/~proycon/wvkbd'
+arch=('aarch64')
+license=('GPL-3.0-only')
+depends=('wayland' 'pango' 'cairo' 'glibc' 'libxkbcommon')
+makedepends=('pkgconf' 'wayland-protocols')
+provides=('wvkbd')
+conflicts=('wvkbd')
+source=("$pkgname-$pkgver.tar.gz::https://git.sr.ht/~proycon/wvkbd/archive/v$pkgver.tar.gz")
+sha512sums=('1c5204dc00f7a3bdfd199dfa88b513c46249b7832ba546c0554940539fcc4e0d55303a9f6edd17dd82fd2893b602b86395202311b3ec851f5e8f41895f682371')
+
+build() {
+  cd "wvkbd-v$pkgver"
+  touch wvkbd.1
+  make SCDOC=true
+}
+
+package() {
+  cd "wvkbd-v$pkgver"
+  make PREFIX=/usr DESTDIR="$pkgdir" SCDOC=true install
+}

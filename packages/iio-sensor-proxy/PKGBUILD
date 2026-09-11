@@ -1,0 +1,44 @@
+# Maintainer: ArchPad Project <https://github.com/pipa-mainline>
+# Contributor: Filipe Laíns (FFY00) <lains@archlinux.org>
+
+pkgname=iio-sensor-proxy
+pkgver=3.9
+pkgrel=2
+pkgdesc='IIO accelerometer sensor to input device proxy'
+arch=('aarch64' 'x86_64')
+url='https://gitlab.freedesktop.org/hadess/iio-sensor-proxy/'
+license=('GPL-3.0-only')
+depends=(glib2
+         glibc
+         libgcc
+         libgudev
+         libssc
+         polkit)
+makedepends=(git
+             meson)
+
+source=("git+https://gitlab.freedesktop.org/hadess/iio-sensor-proxy#tag=$pkgver"
+        "0001-start-polling-for-preexisting-clients.patch")
+sha512sums=('6667d70fd01285f9b48fa2dfc829e3186773457c4430f8373a8e0b4e25b0f31ee2780a3766206a13bcfb2721ce10978713b8bf61c844da027c444a754f910473'
+            'a23a569a0d057021fe1fe551f03531c07fd96ddd19bddd9efc01ffc79d3e0053f0bd82f61af8eddff86c584f92aeaa64fa326b6488dab2dc9bc359417cab329f')
+
+prepare() {
+  cd "$pkgname"
+  patch -Np1 -i "${srcdir}/0001-start-polling-for-preexisting-clients.patch"
+}
+
+build() {
+  arch-meson build $pkgname \
+    -Dsystemdsystemunitdir=/usr/lib/systemd/system \
+    -Dudevrulesdir=/usr/lib/udev/rules.d \
+    -Dsysconfdir=/usr/share
+  meson compile -C build
+}
+
+check() {
+  meson test -C build || true
+}
+
+package() {
+  meson install -C build --destdir="$pkgdir"
+}
