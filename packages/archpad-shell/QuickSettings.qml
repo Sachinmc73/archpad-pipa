@@ -18,6 +18,8 @@ PanelWindow {
     signal dismissed()
     signal settingsRequested()
     signal unavailableRequested(string feature)
+    signal lockRequested()
+    signal powerMenuRequested()
 
     visible: expanded
     focusable: true
@@ -382,14 +384,14 @@ PanelWindow {
 
                 PanelAction {
                     label: "Lock"
-                    available: false
-                    onActivated: panel.unavailableRequested("Secure lock")
+                    available: true
+                    onActivated: panel.lockRequested()
                 }
 
                 PanelAction {
                     label: "Power"
-                    available: false
-                    onActivated: panel.unavailableRequested("Safe power menu")
+                    available: true
+                    onActivated: panel.powerMenuRequested()
                 }
             }
         }

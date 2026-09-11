@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Wayland
 
 ShellRoot {
@@ -8,6 +9,7 @@ ShellRoot {
 
     property string notice: "ArchPad"
     property bool quickSettingsOpen: false
+    property bool powerMenuOpen: false
 
     component TouchButton: Rectangle {
         id: button
@@ -65,10 +67,46 @@ ShellRoot {
         onTriggered: root.notice = "ArchPad"
     }
 
+    Process {
+        id: lockRunner
+    }
+
+    IpcHandler {
+        target: "power"
+
+        function open(): void {
+            root.quickSettingsOpen = false
+            root.powerMenuOpen = true
+        }
+
+        function close(): void {
+            root.powerMenuOpen = false
+        }
+
+        function toggle(): void {
+            root.quickSettingsOpen = false
+            root.powerMenuOpen = !root.powerMenuOpen
+        }
+    }
+
+    PowerMenu {
+        id: powerMenu
+        open: root.powerMenuOpen
+        onDismissed: root.powerMenuOpen = false
+    }
+
     QuickSettings {
         id: quickSettings
         expanded: root.quickSettingsOpen
         onDismissed: root.quickSettingsOpen = false
+        onLockRequested: {
+            root.quickSettingsOpen = false
+            lockRunner.exec(["loginctl", "lock-session"])
+        }
+        onPowerMenuRequested: {
+            root.quickSettingsOpen = false
+            root.powerMenuOpen = true
+        }
         onSettingsRequested: {
             root.quickSettingsOpen = false
             root.notice = "ArchPad Settings is the next package"
@@ -194,7 +232,7 @@ ShellRoot {
                             MouseArea {
                                 id: workspaceTouch
                                 anchors.fill: parent
-                                onClicked: Hyprland.dispatch("workspace " + modelData)
+                                onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = " + modelData + " })")
                             }
                         }
                     }
@@ -288,7 +326,7 @@ ShellRoot {
                     label: ">_"
                     detail: "Terminal"
                     accent: "#74a7ff"
-                    onActivated: Hyprland.dispatch("exec uwsm app -- foot")
+                    onActivated: Hyprland.dispatch("hl.dsp.exec_cmd('uwsm app -- foot')")
                 }
 
                 TouchButton {
