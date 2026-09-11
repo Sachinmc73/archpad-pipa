@@ -1,6 +1,6 @@
 pkgname=archpad-session
-pkgver=0.3.2
-pkgrel=5
+pkgver=0.4.3
+pkgrel=1
 pkgdesc='ArchPad touch-first Wayland session policy'
 arch=('aarch64')
 url='https://github.com/archpad/archpad'
@@ -9,12 +9,15 @@ depends=(
   'brightnessctl'
   'foot'
   'gnome-keyring'
+  'hypridle>=0.1.8'
   'hyprland>=0.56.2'
+  'hyprlock>=0.9.6'
   'hyprpolkitagent'
   'hyprshutdown'
   'iio-sensor-proxy'
   'pipewire'
   'uwsm'
+  'wvkbd-mobintl'
   'wireplumber'
   'xdg-desktop-portal'
   'xdg-desktop-portal-hyprland'
@@ -26,21 +29,36 @@ source=(
   '60-archpad-power.conf'
   'archpad-rotation.c'
   'archpad-rotation.service'
+  'archpad-pwrkey.c'
+  'archpad-pwrkey.service'
+  '70-archpad-uinput.rules'
   'hyprland.lua'
+  'hyprlock.conf'
+  'hypridle.conf'
+  'archpad-lock'
   'README.md'
 )
 sha512sums=(
   '587d78ff5c88cb4dcedc931e627a0998dc7b02934d843bf0718d6f304c89e4b841a876b703f92a1602f2eaa1cc61a87842f082b62d2a74de7bedc70379412880'
   '05d729a9762a3263dc03f861a9926c6bb1adc0df0105939548af12dc57c7dd92629dc58df20314ab9c0748fb5e0c750b34e09442aeb503c224f72c6a40f2ac16'
-  'f7634007b2d263b0236777bf9529b79e865456d7f258d8e7781e18fa8eff6208212742e771af23546390052903174557daf5b095e697b1ee8981769031af0fba'
+  '25afd475836b3e77fcce6ad7b4b2ffad3b2a4ab99b8d7ef65447d48d7874b724ee713ba8a5001b5a98f6bc7f8a2cb312d4120f7f73a8a641d4086954a25b5d79'
   '34620a30adc35a57f2944ba4cf892062e6ca91403a4438e501e17e88e35b97750d8abcb854eb738042c0c8c8df8e14b479a75de596043ea3add82d8b82d75040'
   '4621ceaf43ed7deb142ba02a29bd3b17e75cc0e9f51b8d5ec8b56990d56df2ee2661d17b1b4630de04ac2fd37b7bd7fc4febf632a196ecad072aa36d9a63a5ce'
-  '234d33eb23c901585b180c5cd5b5e4cacc61a81a9ab9c2d489e573ef04c3e47ea73a8b35a6010b972da8591d2ccfe080f609724d47ff76003511c2fb767406fe'
+  'b9e4fc5c3d4270c07bb5e4660bf3b46714be114cf04137ec7d7b989380ad96b6daaf21fa24d27114a3c13baab1b0df342d4b796149a08c7226ff5d4724cd7028'
+  'fb4d9e59a51992f71370d7ffd85c3d194793037eb176a11a065eebc7835ebd87fc82c1a9d4b5a5afc011ad291df1e260889513e540a73ef8bb658032b00e2e1f'
+  'b8d3847e7eaccf040bdcc58ceb03d42be63cb5c42dc89fa3fc9586b698ca0bed9031e8b3e9d81774fa9901bbed03635b3cee43b07918c607f2c8bd01df456560'
+  'e5704ade4dcb01a8d97ad507778f935c64efa642793698ed9ce7ec5f9845bf10115e6bc1d46cb9501ddb9bc50edcb681af105e97f591c55001430c48a6bd455f'
+  '467f37d095b964c72d23a7877fdcf39de7b4ef70d51d706920eb5ef8100e9886ff11cd4587e12c37595fd0388872f950a0455ba452e8c371525298965b16c9e6'
+  '3246aa6c854c3017ab09738be02e02ff71d6211d9fc74794cea78977d1936600d9ddb0fba3e6460ca5463a0731dfe1cbef0648299a3e4a799d80a6bec8e05038'
+  'e7ed2a0f310dfb9f63ca445a2bee0fcefd56d08cad3a021889842f9acffe18633dd17feb79efecc98e3234ae52009beec7097f55f2d66cc84219ede80946bb93'
   '9b808a16ad89bccfc27d71ca9dcd251d4c0163ee5aaa14c3837b5a5d33750a258745f792da87f0fc4e3af2b7df40c9d6997b4aeda3acf5301324a22d49432735'
 )
 
 build() {
   cc ${CFLAGS} ${CPPFLAGS} archpad-rotation.c -o archpad-rotation \
+    $(pkg-config --cflags --libs gio-2.0 gio-unix-2.0) ${LDFLAGS}
+
+  cc ${CFLAGS} ${CPPFLAGS} archpad-pwrkey.c -o archpad-pwrkey \
     $(pkg-config --cflags --libs gio-2.0 gio-unix-2.0) ${LDFLAGS}
 }
 
@@ -54,14 +72,37 @@ package() {
     "$pkgdir/usr/share/archpad-session/hyprland.lua"
   install -Dm644 README.md \
     "$pkgdir/usr/share/doc/archpad-session/README.md"
+
+  # Sensor rotation
   install -Dm755 archpad-rotation \
     "$pkgdir/usr/lib/archpad-session/archpad-rotation"
   install -Dm644 archpad-rotation.service \
     "$pkgdir/usr/lib/systemd/user/archpad-rotation.service"
 
+  # Power key management
+  install -Dm755 archpad-pwrkey \
+    "$pkgdir/usr/lib/archpad-session/archpad-pwrkey"
+  install -Dm644 archpad-pwrkey.service \
+    "$pkgdir/usr/lib/systemd/user/archpad-pwrkey.service"
+  install -Dm644 70-archpad-uinput.rules \
+    "$pkgdir/usr/lib/udev/rules.d/70-archpad-uinput.rules"
+
+  # Lock screen and idle integration
+  install -Dm644 hyprlock.conf \
+    "$pkgdir/etc/xdg/hypr/hyprlock.conf"
+  install -Dm644 hypridle.conf \
+    "$pkgdir/etc/xdg/hypr/hypridle.conf"
+  install -Dm755 archpad-lock \
+    "$pkgdir/usr/lib/archpad-session/archpad-lock"
+
+  # Auto-start user services with graphical session
   install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
   ln -s /usr/lib/systemd/user/hyprpolkitagent.service \
     "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/hyprpolkitagent.service"
   ln -s /usr/lib/systemd/user/archpad-rotation.service \
     "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-rotation.service"
+  ln -s /usr/lib/systemd/user/archpad-pwrkey.service \
+    "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-pwrkey.service"
+  ln -s /usr/lib/systemd/user/hypridle.service \
+    "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/hypridle.service"
 }

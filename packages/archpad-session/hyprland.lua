@@ -54,6 +54,7 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,
         disable_hyprland_logo   = true,
+        disable_autoreload      = true,
     },
 })
 
@@ -104,3 +105,10 @@ hl.bind("XF86MonBrightnessUp",
 hl.bind("XF86MonBrightnessDown",
     hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),
     { locked = true, repeating = true })
+
+-- On-screen keyboard must render above the lock surface and accept
+-- touch input so the user can type their password.
+hl.layer_rule({
+    match = { namespace = "wvkbd" },
+    above_lock = 2,
+})

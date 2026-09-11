@@ -1,0 +1,18 @@
+#!/bin/sh
+# archpad-lock — launch wvkbd + hyprlock for touch-based lock screen
+# Called by hypridle lock_cmd.  Caller should guard with pidof.
+set -eu
+
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
+
+# Start virtual keyboard immediately (lock screen has only the
+# password field — keyboard must be visible for touch input).
+/usr/bin/wvkbd-mobintl -L 360 -H 450 -R 16 \
+    --bg 0d1522 --fg 1b2638 --fg-sp 263248 \
+    --text f4f7ff --text-sp aebbd0 &
+KBD_PID=$!
+
+cleanup() { kill "$KBD_PID" 2>/dev/null || true; }
+trap cleanup EXIT INT TERM
+
+/usr/bin/hyprlock
