@@ -1,0 +1,21 @@
+post_install() {
+  systemctl --no-reload preset \
+    archpad-audio-reprobe.service \
+    archpad-hexagonrpcd-sdsp.service \
+    archpad-usb-gadget.service \
+    NetworkManager.service \
+    bluetooth.service 2>/dev/null || true
+  udevadm control --reload 2>/dev/null || true
+  udevadm trigger -s misc 2>/dev/null || true
+}
+
+post_upgrade() {
+  systemctl --no-reload preset \
+    archpad-audio-reprobe.service \
+    archpad-hexagonrpcd-sdsp.service \
+    archpad-usb-gadget.service \
+    NetworkManager.service \
+    bluetooth.service 2>/dev/null || true
+  udevadm control --reload 2>/dev/null || true
+  udevadm trigger -s misc 2>/dev/null || true
+}
