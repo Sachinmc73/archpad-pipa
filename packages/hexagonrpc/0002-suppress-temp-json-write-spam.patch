@@ -1,0 +1,24 @@
+From: ArchPad Project <https://github.com/pipa-mainline>
+Subject: [PATCH] apps_std: suppress expected temp.json write rejection spam
+
+Qualcomm sensor DSP firmware periodically probes write capability by attempting
+to open <registry>/../temp.json. HexagonFS is read-only by design. Suppress
+logging this expected denial so the system journal is not flooded with thousands
+of repetitive log messages.
+---
+--- a/hexagonrpcd/apps_std.c
++++ b/hexagonrpcd/apps_std.c
+@@ -204,8 +204,11 @@ static uint32_t apps_std_fopen_with_env(void *data,
+
+ 	rw_mode = ((const char *) inbufs[4].p)[0];
+ 	if (rw_mode == 'w' || rw_mode == 'a') {
+-		fprintf(stderr, "Tried to open %s for writing\n",
+-				(const char *) inbufs[3].p);
++		const char *path = (const char *) inbufs[3].p;
++		if (!strstr(path, "temp.json")) {
++			fprintf(stderr, "Tried to open %s for writing\n",
++					path);
++		}
+ 		return AEE_EUNSUPPORTED;
+ 	}
+
