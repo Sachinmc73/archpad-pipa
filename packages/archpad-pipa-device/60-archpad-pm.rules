@@ -1,0 +1,6 @@
+# ArchPad pipa: Hardware power optimizations
+# Enable runtime power management for PCIe bus and devices (Qualcomm WCN6855)
+ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
+
+# Configure PCIe Active State Power Management (ASPM) to powersupersave
+ACTION=="add", SUBSYSTEM=="module", KERNEL=="pcie_aspm", ATTR{parameters/policy}="powersupersave"

@@ -3,7 +3,9 @@ polkit.addRule(function(action, subject) {
     if ((action.id == "org.freedesktop.login1.suspend" ||
          action.id == "org.freedesktop.login1.suspend-multiple-sessions" ||
          action.id == "org.freedesktop.login1.power-off" ||
-         action.id == "org.freedesktop.login1.reboot") &&
+         action.id == "org.freedesktop.login1.reboot" ||
+         action.id == "net.hadess.PowerProfiles.switch-profile" ||
+         action.id == "org.freedesktop.UPower.PowerProfiles.switch-profile") &&
         subject.isInGroup("users")) {
         return polkit.Result.YES;
     }
