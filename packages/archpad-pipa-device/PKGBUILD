@@ -1,7 +1,7 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=18
+pkgrel=19
 pkgdesc="Device integration, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('aarch64')
 url="https://github.com/pipa-mainline"
@@ -32,7 +32,10 @@ source=("81-libssc-xiaomi-pipa.rules"
         "archpad-pwrkey.c"
         "archpad-pwrkey.service"
         "60-archpad-power.conf"
-        "99-archpad-vm.conf")
+        "99-archpad-vm.conf"
+        "10-archpad-sensors-sleep.sh"
+        "60-archpad-powerdevil.conf"
+        "10-archpad-power.rules")
 sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5119335d4bb4e73b3cfe7b87fe7e9d8799b69f34fe180c425d0febba87d95c'
             'cdd3151aa5a96927ec01d9026b1150544fad78ba0d8c7c5f0eeb6559e1838bf61fa1caa36faec529ba6f0c1bdaea69e9a38b7eed61de7c4087e8294aed835ca2'
             'd73e0a550de972a572dd9bde80f405dbf546f294fd7ca771a504a91c44cd546185bfea363f980f0985a4af5cf45c88024757f0b0b1516f7ed03b1e4d96f311e3'
@@ -41,8 +44,8 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             'e947e7a6bd1b44ba9d8369f5d8a64b17a336ed0189326dc88cf7b5a8209faef2712126ab3b05ce938247173da971fccd33a7c101ddf6b545cebeb9a9e65e87e8'
             'b195dacf1cae36ed7a3cf1671071785aff2fd53df3e24b74ae0e9061d734d8d35ef74e7cfdacbf3eba94bad0bc1262afbbc2a208cf67e1bfa61884f08949704e'
             'bea1b1a792cb5d7d41b82551fb0da5a8380bf3fd4eb0e6392dac7c215a3661a4f6106444767a8c4e8609c6effb96228bb1d71f0d2f2ae9ad1e49553b83828e81'
-            '13231fd872ffbae2da5d6f8b2ab1f2c270c8014736b227300ebb67630d0b14fb45695791123896e96a46cab5532fc69587d7397030ad948ccab0dab5b4197242'
-            'cc5f42b291d0442b83b73455c890d132811df0191a3ba2f2da8115364dcea1c066b80b7b90c44ff1840c32b5e701a69307d0d922c65d4c8b575d504391844587'
+            '77bc7af7f94dda35e6ee0107cbf60750473e79fb57c6e70db94b245592a5b2f89ba43de0cba146ab29be99ffa51458de59d7c1d59e38cdff21c097e9012065fc'
+            '4c6b6e835dec4f1273014d77b9367dd965d8efda9dd0a4f826e778e6c056ce28c8bd8401cb401a32bb351694b66effab84d4222fc7d8725cf9a58824dd7e66d6'
             '4eba36422f3d3b0b4b49094b678cd2bfb7442228959a4ec55ba586a5bb7b1a5a5ac9d6c466c3c351ef66aef049bfdb30cefac0e0dfe461f22ce9fdb2238cf230'
             '9434e59ecdac22f2622b2c1f5cd26fd6ab3a75317001de56bd5a0689f816e4b77686ce455658a33fd905bfda0a76005885d05a31f5bf5bf52b45991345c7f1f0'
             'a3a9385d32fc42ab89f1299f9f486f87798fd62efce766a9a03ed3451f1164764da3eeeaafb04a3154ddfc2e57f68ed84546df459e602b86d7597eeefc35f7bc'
@@ -51,10 +54,13 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             '5daba5db23f875592052fec5c7a7ecc69c6e3f5f199ac356857097b8473888ea9c6b9308f3e33a51c467c8f265d68b1bad3b88ea1663b2c5b4936a10b8930c7a'
             '12eb2fad62feb67df26646b554e9c6ab6e6aac9ad325736578f79d4ee1ad14fc4f63653107233f9436edf10c78058da1ce24223a896186317ebcab256a3b48db'
             '50078f6bdc64b9638fa3ebc57d165226357dc219877b5d6dfdac97a162beb0de39b0afba7f770fa36a69f5dd2ca1a5e41b479aeed78aeece6f4f305aabcc40a0'
-            'ff520224b59f36c53aefd1f13947b380d0e28fe245dd27dda581a550d68c402d3fb6dfa5495629df012722e9264f41120fc1cbd0674c3dd21efa519b5f112743'
+            '1bb4c2d04023a28976e172f5135dbc71b644e19a3f71bb9582d5d2b99047d44db77179a8960cdcdf9aeeffb9bbf5321db1fd4d480a9227a091d9fc4de7289f07'
             '3367c97b784962f02fa07da19944f5b10b46997b5affbd89d07489ba7b543527531cef2a118504ce41ae4d7bd2ac4b52a79f0cf58d420c3a07583db613f63c59'
             '25afd475836b3e77fcce6ad7b4b2ffad3b2a4ab99b8d7ef65447d48d7874b724ee713ba8a5001b5a98f6bc7f8a2cb312d4120f7f73a8a641d4086954a25b5d79'
-            '2410144601eedcde53fb2c50e216d60bd2be0215c8b8012dec12a5c383bdd8ab66247e70380e90e613ae1d05a7e860ea5b3bbf9388a872200c3d1b39c6eb77ff')
+            '2410144601eedcde53fb2c50e216d60bd2be0215c8b8012dec12a5c383bdd8ab66247e70380e90e613ae1d05a7e860ea5b3bbf9388a872200c3d1b39c6eb77ff'
+            'bad0259a8ae868dbbeb63fb8f00eb4ece8f1a511815676dcb5022d7e5e4a9311c2d9a621ac75f21d03137ae6d8e118f3c6cef13939259ce596f0f75166432ef4'
+            '2c8413f0c47c15b959e51c525cbbba3d7b5597775a1e5d9b0c6fade2957c47afc42853295c7c0f2c1e4bf705bdb651adc9e46dffe8584c49e293074d425e5a1f'
+            '660d12aa50a82276d760822758422f45103f777c0444c5a16f5a1ef5b00ceccb98a1a4d565eb530f0b29816187dd044ce221ee378cdde782a2848ecb58c8e393')
 
 build() {
   cd "${srcdir}"
@@ -87,6 +93,14 @@ package() {
   install -Dm644 "${srcdir}/archpad-usb-gadget.service" -t "${pkgdir}/usr/lib/systemd/system/"
   install -Dm644 "${srcdir}/80-usb0.network" -t "${pkgdir}/usr/lib/systemd/network/"
   install -Dm644 "${srcdir}/99-archpad-vm.conf" -t "${pkgdir}/usr/lib/sysctl.d/"
+
+  # Standby & Suspend power management
+  install -Dm755 "${srcdir}/10-archpad-sensors-sleep.sh" \
+    "${pkgdir}/usr/lib/systemd/system-sleep/10-archpad-sensors-sleep.sh"
+  install -Dm644 "${srcdir}/60-archpad-powerdevil.conf" \
+    "${pkgdir}/etc/xdg/powerdevilrc"
+  install -Dm644 "${srcdir}/10-archpad-power.rules" \
+    "${pkgdir}/usr/share/polkit-1/rules.d/10-archpad-power.rules"
 
   # Tablet power key daemon and logind policy
   install -Dm755 "${srcdir}/archpad-pwrkey" "${pkgdir}/usr/lib/archpad/archpad-pwrkey"

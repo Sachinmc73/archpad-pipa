@@ -3,12 +3,15 @@
  *
  * Provides native tablet power key behavior:
  * - Short press (< 750ms):
- *     If screen is ON  -> Lock session and turn screen OFF.
+ *     If screen is ON  -> Lock session and suspend system (s2idle).
  *     If screen is OFF -> Wake screen immediately.
  * - Long press (>= 750ms):
  *     Opens the full-screen Power / Shutdown Menu.
+ * - Wake key debounce:
+ *     Tracks system resume from sleep via org.freedesktop.login1.Manager.PrepareForSleep
+ *     and ignores the wake key release so it doesn't immediately re-suspend.
  *
- * Multi-DE compatible: Uses Linux evdev + FreeDesktop / DE standards.
+ * Multi-DE compatible: Uses Linux evdev + FreeDesktop / systemd-logind standards.
  */
 
 #define _GNU_SOURCE
@@ -30,9 +33,11 @@
 #include <gio/gio.h>
 
 #define LONG_PRESS_MS 750
+#define RESUME_DEBOUNCE_MS 1200
 #define PWRKEY_DEV_NAME "pm8941_pwrkey"
 
 static volatile sig_atomic_t g_running = 1;
+static uint64_t g_last_resume_time_ms = 0;
 
 static void sig_handler(int sig)
 {
@@ -175,15 +180,15 @@ static bool is_screen_on(void)
     return true; // Default fallback assume ON
 }
 
-static void lock_and_turn_off_screen(GDBusConnection *bus)
+static void lock_and_suspend(GDBusConnection *session_bus, GDBusConnection *system_bus)
 {
-    g_message("Action: Locking session and turning off screen");
+    g_message("Action: Locking session and suspending system (s2idle)");
 
     // 1. Lock session via systemd loginctl and standard FreeDesktop API
     system("loginctl lock-session 2>/dev/null || true");
-    if (bus) {
+    if (session_bus) {
         g_dbus_connection_call(
-            bus,
+            session_bus,
             "org.freedesktop.ScreenSaver",
             "/ScreenSaver",
             "org.freedesktop.ScreenSaver",
@@ -191,39 +196,31 @@ static void lock_and_turn_off_screen(GDBusConnection *bus)
             NULL,
             NULL,
             G_DBUS_CALL_FLAGS_NONE,
-            1000,
+            500,
             NULL,
             NULL,
             NULL
         );
     }
 
-    // 2. Turn off display according to desktop environment
-    const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
-    if (!desktop)
-        desktop = "";
-
-    if (g_strrstr(desktop, "KDE") || g_strrstr(desktop, "Plasma")) {
-        if (bus) {
-            g_dbus_connection_call(
-                bus,
-                "org.kde.kglobalaccel",
-                "/component/org_kde_powerdevil",
-                "org.kde.kglobalaccel.Component",
-                "invokeShortcut",
-                g_variant_new("(s)", "Turn Off Screen"),
-                NULL,
-                G_DBUS_CALL_FLAGS_NONE,
-                1000,
-                NULL,
-                NULL,
-                NULL
-            );
-        }
-    } else if (g_strrstr(desktop, "GNOME")) {
-        system("busctl --user set-property org.gnome.Mutter.DisplayConfig /org/gnome/Mutter/DisplayConfig org.gnome.Mutter.DisplayConfig PowerSaveMode i 3 2>/dev/null || true");
+    // 2. Trigger suspend via systemd-logind or systemctl
+    if (system_bus) {
+        g_dbus_connection_call(
+            system_bus,
+            "org.freedesktop.login1",
+            "/org/freedesktop/login1",
+            "org.freedesktop.login1.Manager",
+            "Suspend",
+            g_variant_new("(b)", FALSE),
+            NULL,
+            G_DBUS_CALL_FLAGS_NONE,
+            2000,
+            NULL,
+            NULL,
+            NULL
+        );
     } else {
-        system("hyprctl dispatch dpms off 2>/dev/null || wlopm --off 2>/dev/null || true");
+        system("systemctl suspend &");
     }
 }
 
@@ -293,6 +290,28 @@ static void trigger_power_menu(GDBusConnection *bus)
     }
 }
 
+/* Systemd logind PrepareForSleep signal handler */
+static void on_prepare_for_sleep(GDBusConnection *connection,
+                                 const gchar *sender_name,
+                                 const gchar *object_path,
+                                 const gchar *interface_name,
+                                 const gchar *signal_name,
+                                 GVariant *parameters,
+                                 gpointer user_data)
+{
+    (void)connection; (void)sender_name; (void)object_path;
+    (void)interface_name; (void)signal_name; (void)user_data;
+
+    gboolean going_to_sleep = FALSE;
+    g_variant_get(parameters, "(b)", &going_to_sleep);
+
+    if (!going_to_sleep) {
+        g_last_resume_time_ms = get_time_ms();
+        g_message("System resumed from sleep (wake recorded at %llu ms)",
+                  (unsigned long long)g_last_resume_time_ms);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     (void)argc;
@@ -305,10 +324,31 @@ int main(int argc, char *argv[])
 
     // Connect to user session D-Bus
     GError *error = NULL;
-    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
-    if (!bus) {
+    GDBusConnection *session_bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+    if (!session_bus) {
         g_warning("Failed to connect to session bus: %s (will retry on demand)",
                   error ? error->message : "unknown");
+        g_clear_error(&error);
+    }
+
+    // Connect to system D-Bus for logind suspend and sleep signals
+    GDBusConnection *system_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
+    if (system_bus) {
+        g_dbus_connection_signal_subscribe(
+            system_bus,
+            "org.freedesktop.login1",
+            "org.freedesktop.login1.Manager",
+            "PrepareForSleep",
+            "/org/freedesktop/login1",
+            NULL,
+            G_DBUS_SIGNAL_FLAGS_NONE,
+            on_prepare_for_sleep,
+            NULL,
+            NULL
+        );
+        g_message("Subscribed to systemd-logind PrepareForSleep signals");
+    } else {
+        g_warning("Failed to connect to system bus: %s", error ? error->message : "unknown");
         g_clear_error(&error);
     }
 
@@ -349,11 +389,14 @@ int main(int argc, char *argv[])
     pfd.events = POLLIN;
 
     while (g_running) {
+        // Pump GLib event loop to dispatch D-Bus signals (PrepareForSleep, etc.)
+        while (g_main_context_iteration(NULL, FALSE));
+
         // Reconnect session bus if disconnected
-        if (!bus || g_dbus_connection_is_closed(bus)) {
-            if (bus)
-                g_object_unref(bus);
-            bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+        if (!session_bus || g_dbus_connection_is_closed(session_bus)) {
+            if (session_bus)
+                g_object_unref(session_bus);
+            session_bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
         }
 
         int timeout_ms = -1;
@@ -361,7 +404,7 @@ int main(int argc, char *argv[])
             uint64_t elapsed = get_time_ms() - press_start_ms;
             if (elapsed >= LONG_PRESS_MS) {
                 // Long press timeout reached while button is held
-                trigger_power_menu(bus);
+                trigger_power_menu(session_bus);
                 long_press_handled = true;
                 timeout_ms = -1;
             } else {
@@ -380,7 +423,7 @@ int main(int argc, char *argv[])
         if (ret == 0) {
             // Timeout fired while button is down
             if (button_down && !long_press_handled) {
-                trigger_power_menu(bus);
+                trigger_power_menu(session_bus);
                 long_press_handled = true;
             }
             continue;
@@ -416,11 +459,18 @@ int main(int argc, char *argv[])
                     if (button_down) {
                         button_down = false;
                         if (!long_press_handled) {
-                            // Short Press!
-                            if (is_screen_on()) {
-                                lock_and_turn_off_screen(bus);
+                            uint64_t now = get_time_ms();
+                            // If we just resumed from sleep in the last RESUME_DEBOUNCE_MS,
+                            // this button release is from the wake action - do NOT re-suspend!
+                            if (g_last_resume_time_ms > 0 && (now - g_last_resume_time_ms < RESUME_DEBOUNCE_MS)) {
+                                g_message("Ignored power button release: system just resumed (%llu ms ago)",
+                                          (unsigned long long)(now - g_last_resume_time_ms));
                             } else {
-                                wake_screen(bus, uinput_fd);
+                                if (is_screen_on()) {
+                                    lock_and_suspend(session_bus, system_bus);
+                                } else {
+                                    wake_screen(session_bus, uinput_fd);
+                                }
                             }
                         }
                     }
@@ -439,8 +489,10 @@ int main(int argc, char *argv[])
         ioctl(uinput_fd, UI_DEV_DESTROY);
         close(uinput_fd);
     }
-    if (bus)
-        g_object_unref(bus);
+    if (session_bus)
+        g_object_unref(session_bus);
+    if (system_bus)
+        g_object_unref(system_bus);
 
     return 0;
 }

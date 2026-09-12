@@ -8,7 +8,7 @@ ConditionPathIsDirectory=/usr/share/qcom/sm8250/Xiaomi/pipa/sensors/registry
 [Service]
 Type=simple
 ExecStart=/usr/bin/hexagonrpcd -f /dev/fastrpc-sdsp -d sdsp -s -R /usr/share/qcom/sm8250/Xiaomi/pipa
-Restart=on-failure
+Restart=always
 RestartSec=2
 NoNewPrivileges=true
 ProtectSystem=strict

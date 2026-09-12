@@ -1,0 +1,10 @@
+/* ArchPad pipa: Allow users in the users group to suspend, reboot, and power-off without password prompts */
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.login1.suspend" ||
+         action.id == "org.freedesktop.login1.suspend-multiple-sessions" ||
+         action.id == "org.freedesktop.login1.power-off" ||
+         action.id == "org.freedesktop.login1.reboot") &&
+        subject.isInGroup("users")) {
+        return polkit.Result.YES;
+    }
+});

@@ -4,7 +4,7 @@ set -eu
 
 attempt=1
 while [ "$attempt" -le 60 ]; do
-    if /usr/bin/ssccli --sensor accelerometer --timeout 1 >/dev/null 2>&1; then
+    if timeout 2 /usr/bin/ssccli --sensor accelerometer --timeout 1 >/dev/null 2>&1; then
         printf '%s\n' "Sensor DSP accelerometer ready after attempt ${attempt}"
         exit 0
     fi
