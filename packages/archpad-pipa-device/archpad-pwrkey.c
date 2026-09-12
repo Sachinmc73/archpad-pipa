@@ -179,7 +179,8 @@ static void lock_and_turn_off_screen(GDBusConnection *bus)
 {
     g_message("Action: Locking session and turning off screen");
 
-    // 1. Lock screen via standard FreeDesktop API
+    // 1. Lock session via systemd loginctl and standard FreeDesktop API
+    system("loginctl lock-session 2>/dev/null || true");
     if (bus) {
         g_dbus_connection_call(
             bus,
@@ -220,7 +221,7 @@ static void lock_and_turn_off_screen(GDBusConnection *bus)
             );
         }
     } else if (g_strrstr(desktop, "GNOME")) {
-        system("dbus-send --session --dest=org.gnome.Mutter.DisplayConfig /org/gnome/Mutter/DisplayConfig org.gnome.Mutter.DisplayConfig.SetPowerState int32:0 2>/dev/null || true");
+        system("busctl --user set-property org.gnome.Mutter.DisplayConfig /org/gnome/Mutter/DisplayConfig org.gnome.Mutter.DisplayConfig PowerSaveMode i 3 2>/dev/null || true");
     } else {
         system("hyprctl dispatch dpms off 2>/dev/null || wlopm --off 2>/dev/null || true");
     }
@@ -232,6 +233,14 @@ static void wake_screen(GDBusConnection *bus, int uinput_fd)
 
     // 1. Send hardware KEY_POWER through uinput virtual device
     emit_uinput_key(uinput_fd, KEY_POWER);
+
+    const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
+    if (!desktop)
+        desktop = "";
+
+    if (g_strrstr(desktop, "GNOME")) {
+        system("busctl --user set-property org.gnome.Mutter.DisplayConfig /org/gnome/Mutter/DisplayConfig org.gnome.Mutter.DisplayConfig PowerSaveMode i 0 2>/dev/null || true");
+    }
 
     // 2. Also simulate activity via ScreenSaver D-Bus
     if (bus) {
