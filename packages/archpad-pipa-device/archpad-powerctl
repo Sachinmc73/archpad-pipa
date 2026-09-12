@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-only
+# ArchPad Power Control CLI (archpad-powerctl)
+
+import os
+import sys
+import shutil
+from gi.repository import Gio, GLib
+
+CONF_FILE = "/etc/archpad/power.conf"
+DEFAULT_CONF_FILE = "/usr/share/archpad/power.conf.default"
+
+def get_dbus_proxy():
+    try:
+        con = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+        proxy = Gio.DBusProxy.new_sync(
+            con,
+            Gio.DBusProxyFlags.NONE,
+            None,
+            "net.hadess.PowerProfiles",
+            "/net/hadess/PowerProfiles",
+            "net.hadess.PowerProfiles",
+            None
+        )
+        return proxy
+    except Exception as e:
+        sys.stderr.write(f"Error connecting to archpad-powerd over D-Bus: {e}\n")
+        sys.exit(1)
+
+def cmd_get(proxy):
+    prop = proxy.get_cached_property("ActiveProfile")
+    if prop:
+        print(prop.get_string())
+    else:
+        # Fallback to direct D-Bus call
+        val = proxy.call_sync("org.freedesktop.DBus.Properties.Get",
+                              GLib.Variant("(ss)", ("net.hadess.PowerProfiles", "ActiveProfile")),
+                              Gio.DBusCallFlags.NONE, -1, None)
+        active_prof = val.unpack()[0]
+        print(active_prof)
+
+def cmd_set(proxy, profile):
+    valid_profiles = ["power-saver", "balanced", "performance"]
+    if profile not in valid_profiles:
+        sys.stderr.write(f"Error: Invalid profile '{profile}'. Valid options: {', '.join(valid_profiles)}\n")
+        sys.exit(1)
+
+    try:
+        proxy.call_sync(
+            "org.freedesktop.DBus.Properties.Set",
+            GLib.Variant("(ssv)", ("net.hadess.PowerProfiles", "ActiveProfile", GLib.Variant("s", profile))),
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None
+        )
+        print(f"Switched active power profile to: {profile}")
+    except Exception as e:
+        sys.stderr.write(f"Failed to set profile: {e}\n")
+        sys.exit(1)
+
+def read_file(path, default="N/A"):
+    try:
+        with open(path, "r") as f:
+            return f.read().strip()
+    except Exception:
+        return default
+
+def cmd_status(proxy):
+    # Active Profile
+    try:
+        val = proxy.call_sync("org.freedesktop.DBus.Properties.Get",
+                              GLib.Variant("(ss)", ("net.hadess.PowerProfiles", "ActiveProfile")),
+                              Gio.DBusCallFlags.NONE, -1, None)
+        active_prof = val.unpack()[0]
+    except Exception:
+        active_prof = "unknown"
+
+    print("=" * 55)
+    print(f" ArchPad Power Status (Xiaomi Pad 6 / Snapdragon 870)")
+    print("=" * 55)
+    print(f" Active Profile : \033[1;32m{active_prof.upper()}\033[0m")
+    print(f" Backend Driver : qcom-sm8250 (net.hadess.PowerProfiles)")
+    print("-" * 55)
+    print(" CPU Clusters:")
+    
+    # Silver
+    silv_cur = int(read_file("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq", 0)) // 1000
+    silv_max = int(read_file("/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq", 0)) // 1000
+    print(f"   Silver (Cores 0-3, A55) : {silv_cur:4d} MHz  (max: {silv_max:4d} MHz)")
+
+    # Gold
+    gold_cur = int(read_file("/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq", 0)) // 1000
+    gold_max = int(read_file("/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq", 0)) // 1000
+    print(f"   Gold   (Cores 4-6, A77) : {gold_cur:4d} MHz  (max: {gold_max:4d} MHz)")
+
+    # Prime
+    prime_cur = int(read_file("/sys/devices/system/cpu/cpufreq/policy7/scaling_cur_freq", 0)) // 1000
+    prime_max = int(read_file("/sys/devices/system/cpu/cpufreq/policy7/scaling_max_freq", 0)) // 1000
+    print(f"   Prime  (Core 7,    A77) : {prime_cur:4d} MHz  (max: {prime_max:4d} MHz)")
+
+    rate_limit = read_file("/sys/devices/system/cpu/cpufreq/policy0/schedutil/rate_limit_us", "N/A")
+    print(f"   Scheduler Rate Limit    : {rate_limit} us")
+
+    print("-" * 55)
+    # GPU
+    gpu_cur = int(read_file("/sys/class/devfreq/3d00000.gpu/cur_freq", 0)) // 1000000
+    gpu_max = int(read_file("/sys/class/devfreq/3d00000.gpu/max_freq", 0)) // 1000000
+    print(f" Adreno 650 GPU            : {gpu_cur:3d} MHz  (max: {gpu_max:3d} MHz)")
+
+    # PCIe ASPM
+    aspm = read_file("/sys/module/pcie_aspm/parameters/policy", "N/A")
+    print(f" PCIe ASPM Policy          : {aspm}")
+
+    # Battery
+    batt_pct = read_file("/sys/class/power_supply/qcom-battery/capacity", "N/A")
+    batt_stat = read_file("/sys/class/power_supply/qcom-battery/status", "N/A")
+    volt_raw = int(read_file("/sys/class/power_supply/qcom-battery/voltage_now", 0))
+    curr_raw = int(read_file("/sys/class/power_supply/qcom-battery/current_now", 0))
+    
+    volts = volt_raw / 1_000_000
+    curr_ma = curr_raw / 1_000
+    watts = abs(volts * (curr_raw / 1_000_000))
+
+    print("-" * 55)
+    print(f" Battery Status            : {batt_stat} ({batt_pct}%)")
+    print(f" Voltage / Current         : {volts:.2f} V / {curr_ma:+.1f} mA")
+    print(f" Power Draw                : {watts:.2f} W")
+    print("=" * 55)
+
+def cmd_reload(proxy):
+    try:
+        proxy.call_sync("ReloadConfig", None, Gio.DBusCallFlags.NONE, -1, None)
+        print("Successfully reloaded /etc/archpad/power.conf in archpad-powerd.")
+    except Exception as e:
+        sys.stderr.write(f"Failed to reload config: {e}\n")
+        sys.exit(1)
+
+def cmd_reset(proxy):
+    if not os.path.exists(DEFAULT_CONF_FILE):
+        sys.stderr.write(f"Default config template {DEFAULT_CONF_FILE} not found!\n")
+        sys.exit(1)
+    try:
+        shutil.copyfile(DEFAULT_CONF_FILE, CONF_FILE)
+        print(f"Restored {CONF_FILE} to factory defaults.")
+        cmd_reload(proxy)
+    except Exception as e:
+        sys.stderr.write(f"Failed to reset config: {e}\n")
+        sys.exit(1)
+
+def print_help():
+    print("Usage: archpad-powerctl <command> [arguments]")
+    print("\nCommands:")
+    print("  status                  Show active profile, live hardware frequencies, and power draw")
+    print("  get                     Print current active profile name")
+    print("  set <profile>           Switch profile (power-saver | balanced | performance)")
+    print("  reload                  Instruct archpad-powerd to reload /etc/archpad/power.conf")
+    print("  reset                   Restore /etc/archpad/power.conf to factory defaults")
+    print("  help                    Show this help message")
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
+        print_help()
+        sys.exit(0)
+
+    cmd = sys.argv[1]
+    proxy = get_dbus_proxy()
+
+    if cmd == "status":
+        cmd_status(proxy)
+    elif cmd == "get":
+        cmd_get(proxy)
+    elif cmd == "set":
+        if len(sys.argv) < 3:
+            sys.stderr.write("Error: Missing profile argument. Usage: archpad-powerctl set <power-saver|balanced|performance>\n")
+            sys.exit(1)
+        cmd_set(proxy, sys.argv[2])
+    elif cmd == "reload":
+        cmd_reload(proxy)
+    elif cmd == "reset":
+        cmd_reset(proxy)
+    else:
+        sys.stderr.write(f"Unknown command: '{cmd}'. Run 'archpad-powerctl help' for usage.\n")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

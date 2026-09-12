@@ -1,0 +1,403 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-only
+# ArchPad Power Management Daemon (archpad-powerd)
+# Implements Freedesktop net.hadess.PowerProfiles backed by Snapdragon 870 sysfs
+
+import os
+import sys
+import signal
+import logging
+import configparser
+from gi.repository import Gio, GLib
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [archpad-powerd] %(levelname)s: %(message)s"
+)
+log = logging.getLogger("archpad-powerd")
+
+CONFIG_FILE = "/etc/archpad/power.conf"
+STATE_DIR = "/var/lib/archpad"
+STATE_FILE = os.path.join(STATE_DIR, "power-profile")
+
+HARDWARE_LIMITS = {
+    "cpu_silver_max_freq": (300000, 1804800),
+    "cpu_gold_max_freq": (710400, 2419200),
+    "cpu_prime_max_freq": (844800, 3187200),
+    "gpu_max_freq": (305000000, 670000000),
+    "schedutil_rate_limit_us": (500, 100000),
+    "pcie_aspm_policy": ["powersupersave", "powersave", "default", "performance"],
+}
+
+FACTORY_DEFAULTS = {
+    "power-saver": {
+        "cpu_silver_max_freq": 1420800,
+        "cpu_gold_max_freq": 1478400,
+        "cpu_prime_max_freq": 1747200,
+        "gpu_max_freq": 400000000,
+        "schedutil_rate_limit_us": 20000,
+        "pcie_aspm_policy": "powersupersave",
+    },
+    "balanced": {
+        "cpu_silver_max_freq": 1804800,
+        "cpu_gold_max_freq": 2419200,
+        "cpu_prime_max_freq": 2841600,
+        "gpu_max_freq": 670000000,
+        "schedutil_rate_limit_us": 10000,
+        "pcie_aspm_policy": "powersupersave",
+    },
+    "performance": {
+        "cpu_silver_max_freq": 1804800,
+        "cpu_gold_max_freq": 2419200,
+        "cpu_prime_max_freq": 3187200,
+        "gpu_max_freq": 670000000,
+        "schedutil_rate_limit_us": 1000,
+        "pcie_aspm_policy": "default",
+    },
+}
+
+DBUS_INTROSPECTION_XML = """
+<?xml version="1.0" encoding="UTF-8"?>
+<node>
+  <interface name="net.hadess.PowerProfiles">
+    <method name="HoldProfile">
+      <arg type="s" name="profile" direction="in"/>
+      <arg type="s" name="reason" direction="in"/>
+      <arg type="s" name="application_id" direction="in"/>
+      <arg type="u" name="cookie" direction="out"/>
+    </method>
+    <method name="ReleaseProfile">
+      <arg type="u" name="cookie" direction="in"/>
+    </method>
+    <method name="ReloadConfig">
+    </method>
+    <property type="s" name="ActiveProfile" access="readwrite"/>
+    <property type="aa{sv}" name="Profiles" access="read"/>
+    <property type="aa{sv}" name="ActiveProfileHolds" access="read"/>
+    <property type="as" name="Actions" access="read"/>
+    <property type="s" name="PerformanceInhibited" access="read"/>
+    <property type="s" name="PerformanceDegraded" access="read"/>
+    <property type="s" name="Version" access="read"/>
+    <signal name="ProfileReleased">
+      <arg type="u" name="cookie"/>
+    </signal>
+  </interface>
+  <interface name="org.freedesktop.UPower.PowerProfiles">
+    <method name="HoldProfile">
+      <arg type="s" name="profile" direction="in"/>
+      <arg type="s" name="reason" direction="in"/>
+      <arg type="s" name="application_id" direction="in"/>
+      <arg type="u" name="cookie" direction="out"/>
+    </method>
+    <method name="ReleaseProfile">
+      <arg type="u" name="cookie" direction="in"/>
+    </method>
+    <property type="s" name="ActiveProfile" access="readwrite"/>
+    <property type="aa{sv}" name="Profiles" access="read"/>
+    <property type="aa{sv}" name="ActiveProfileHolds" access="read"/>
+    <property type="as" name="Actions" access="read"/>
+    <property type="s" name="PerformanceInhibited" access="read"/>
+    <property type="s" name="PerformanceDegraded" access="read"/>
+    <property type="s" name="Version" access="read"/>
+    <signal name="ProfileReleased">
+      <arg type="u" name="cookie"/>
+    </signal>
+  </interface>
+</node>
+"""
+
+class ArchpadPowerDaemon:
+    def __init__(self):
+        self.profiles_config = {}
+        self.active_profile = "balanced"
+        self.holds = {}
+        self.next_cookie = 1
+        self.dbus_con = None
+        self.objects_registered = False
+
+        self.load_configuration()
+        self.load_persisted_state()
+        self.apply_hardware_profile(self.active_profile)
+
+    def write_sysfs(self, path, value):
+        if not os.path.exists(path):
+            log.debug("Sysfs path does not exist: %s", path)
+            return False
+        try:
+            with open(path, "w") as f:
+                f.write(str(value))
+            return True
+        except Exception as e:
+            log.warning("Failed to write %s to %s: %s", value, path, e)
+            return False
+
+    def load_configuration(self):
+        """Loads and validates /etc/archpad/power.conf with strict safety clamps and factory fallback."""
+        config = configparser.ConfigParser()
+        new_profiles = {}
+        use_factory = False
+
+        if not os.path.isfile(CONFIG_FILE):
+            log.info("Config file %s not found. Using safe factory defaults.", CONFIG_FILE)
+            use_factory = True
+        else:
+            try:
+                read_ok = config.read(CONFIG_FILE)
+                if not read_ok:
+                    raise ValueError("Could not read or parse config file")
+            except Exception as e:
+                log.warning("Configuration file %s is corrupt or invalid: %s. Reverting to factory defaults.", CONFIG_FILE, e)
+                use_factory = True
+
+        for prof in ["power-saver", "balanced", "performance"]:
+            new_profiles[prof] = {}
+            factory_prof = FACTORY_DEFAULTS[prof]
+
+            for key, (h_min, h_max) in [
+                ("cpu_silver_max_freq", HARDWARE_LIMITS["cpu_silver_max_freq"]),
+                ("cpu_gold_max_freq", HARDWARE_LIMITS["cpu_gold_max_freq"]),
+                ("cpu_prime_max_freq", HARDWARE_LIMITS["cpu_prime_max_freq"]),
+                ("gpu_max_freq", HARDWARE_LIMITS["gpu_max_freq"]),
+                ("schedutil_rate_limit_us", HARDWARE_LIMITS["schedutil_rate_limit_us"]),
+            ]:
+                if use_factory or not config.has_option(prof, key):
+                    new_profiles[prof][key] = factory_prof[key]
+                else:
+                    try:
+                        raw_val = int(config.get(prof, key).strip())
+                        # Strict hardware clamp
+                        clamped_val = max(h_min, min(h_max, raw_val))
+                        if clamped_val != raw_val:
+                            log.warning("[%s] %s=%d out of bounds [%d, %d]. Clamped to %d", prof, key, raw_val, h_min, h_max, clamped_val)
+                        new_profiles[prof][key] = clamped_val
+                    except Exception as e:
+                        log.warning("[%s] Invalid value for %s: %s. Reverting to factory default %d", prof, key, e, factory_prof[key])
+                        new_profiles[prof][key] = factory_prof[key]
+
+            # ASPM validation
+            aspm_key = "pcie_aspm_policy"
+            valid_aspm = HARDWARE_LIMITS[aspm_key]
+            if use_factory or not config.has_option(prof, aspm_key):
+                new_profiles[prof][aspm_key] = factory_prof[aspm_key]
+            else:
+                val = config.get(prof, aspm_key).strip().lower()
+                if val in valid_aspm:
+                    new_profiles[prof][aspm_key] = val
+                else:
+                    log.warning("[%s] Invalid pcie_aspm_policy '%s'. Reverting to factory default '%s'", prof, val, factory_prof[aspm_key])
+                    new_profiles[prof][aspm_key] = factory_prof[aspm_key]
+
+        self.profiles_config = new_profiles
+        log.info("Loaded and verified power profiles successfully.")
+
+    def load_persisted_state(self):
+        if os.path.isfile(STATE_FILE):
+            try:
+                with open(STATE_FILE, "r") as f:
+                    saved = f.read().strip()
+                if saved in self.profiles_config:
+                    self.active_profile = saved
+                    log.info("Restored persisted active profile: %s", self.active_profile)
+                    return
+            except Exception as e:
+                log.warning("Could not read %s: %s", STATE_FILE, e)
+        self.active_profile = "balanced"
+
+    def persist_state(self):
+        try:
+            os.makedirs(STATE_DIR, exist_ok=True)
+            with open(STATE_FILE, "w") as f:
+                f.write(self.active_profile + "\n")
+        except Exception as e:
+            log.warning("Failed to persist profile state: %s", e)
+
+    def apply_hardware_profile(self, prof_name):
+        if prof_name not in self.profiles_config:
+            log.warning("Unknown profile '%s', falling back to balanced", prof_name)
+            prof_name = "balanced"
+
+        cfg = self.profiles_config[prof_name]
+        log.info("Applying profile '%s': Silver=%d kHz, Gold=%d kHz, Prime=%d kHz, GPU=%d Hz, ASPM=%s",
+                 prof_name, cfg["cpu_silver_max_freq"], cfg["cpu_gold_max_freq"], cfg["cpu_prime_max_freq"],
+                 cfg["gpu_max_freq"], cfg["pcie_aspm_policy"])
+
+        # CPU scaling limits
+        self.write_sysfs("/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq", cfg["cpu_silver_max_freq"])
+        self.write_sysfs("/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq", cfg["cpu_gold_max_freq"])
+        self.write_sysfs("/sys/devices/system/cpu/cpufreq/policy7/scaling_max_freq", cfg["cpu_prime_max_freq"])
+
+        # Schedutil transition rate limit
+        self.write_sysfs("/sys/devices/system/cpu/cpufreq/policy0/schedutil/rate_limit_us", cfg["schedutil_rate_limit_us"])
+        self.write_sysfs("/sys/devices/system/cpu/cpufreq/policy4/schedutil/rate_limit_us", cfg["schedutil_rate_limit_us"])
+        self.write_sysfs("/sys/devices/system/cpu/cpufreq/policy7/schedutil/rate_limit_us", cfg["schedutil_rate_limit_us"])
+
+        # GPU devfreq
+        self.write_sysfs("/sys/class/devfreq/3d00000.gpu/max_freq", cfg["gpu_max_freq"])
+
+        # PCIe ASPM policy
+        self.write_sysfs("/sys/module/pcie_aspm/parameters/policy", cfg["pcie_aspm_policy"])
+
+    def set_active_profile(self, new_prof):
+        if new_prof not in self.profiles_config:
+            log.warning("Rejecting invalid profile: %s", new_prof)
+            return False
+
+        if self.active_profile == new_prof:
+            return True
+
+        self.active_profile = new_prof
+        self.persist_state()
+        self.apply_hardware_profile(new_prof)
+        self.emit_properties_changed("ActiveProfile", GLib.Variant("s", self.active_profile))
+        return True
+
+    def emit_properties_changed(self, prop_name, glib_val):
+        if not self.dbus_con:
+            return
+        for iface in ["net.hadess.PowerProfiles", "org.freedesktop.UPower.PowerProfiles"]:
+            var = GLib.Variant("(sa{sv}as)", (iface, {prop_name: glib_val}, []))
+            self.dbus_con.emit_signal(
+                None,
+                "/net/hadess/PowerProfiles",
+                "org.freedesktop.DBus.Properties",
+                "PropertiesChanged",
+                var
+            )
+            self.dbus_con.emit_signal(
+                None,
+                "/org/freedesktop/UPower/PowerProfiles",
+                "org.freedesktop.DBus.Properties",
+                "PropertiesChanged",
+                var
+            )
+
+    def get_profiles_variant(self):
+        profiles_list = [
+            {"Profile": GLib.Variant("s", "power-saver"), "Driver": GLib.Variant("s", "qcom-sm8250"), "PlatformDriver": GLib.Variant("s", "qcom-sm8250")},
+            {"Profile": GLib.Variant("s", "balanced"), "Driver": GLib.Variant("s", "qcom-sm8250"), "PlatformDriver": GLib.Variant("s", "qcom-sm8250")},
+            {"Profile": GLib.Variant("s", "performance"), "Driver": GLib.Variant("s", "qcom-sm8250"), "PlatformDriver": GLib.Variant("s", "qcom-sm8250")},
+        ]
+        return GLib.Variant("aa{sv}", profiles_list)
+
+    def handle_method_call(self, con, sender, path, iface, method, params, invocation):
+        if method == "HoldProfile":
+            prof, reason, app_id = params.unpack()
+            cookie = self.next_cookie
+            self.next_cookie += 1
+            self.holds[cookie] = {"Profile": prof, "Reason": reason, "ApplicationId": app_id, "Sender": sender}
+            log.info("Profile held: '%s' by %s (%s) [cookie=%d]", prof, app_id, reason, cookie)
+            self.set_active_profile(prof)
+            invocation.return_value(GLib.Variant("(u)", (cookie,)))
+        elif method == "ReleaseProfile":
+            (cookie,) = params.unpack()
+            if cookie in self.holds:
+                del self.holds[cookie]
+                log.info("Profile hold released: cookie=%d", cookie)
+                if not self.holds:
+                    self.load_persisted_state()
+                    self.apply_hardware_profile(self.active_profile)
+                    self.emit_properties_changed("ActiveProfile", GLib.Variant("s", self.active_profile))
+            invocation.return_value(None)
+        elif method == "ReloadConfig":
+            log.info("ReloadConfig requested via D-Bus")
+            self.load_configuration()
+            self.apply_hardware_profile(self.active_profile)
+            invocation.return_value(None)
+        else:
+            invocation.return_error_literal(Gio.dbus_error_quark(), Gio.DBusError.UNKNOWN_METHOD, "Unknown method")
+
+    def handle_get_property(self, con, sender, path, iface, prop):
+        if prop == "ActiveProfile":
+            return GLib.Variant("s", self.active_profile)
+        elif prop == "Profiles":
+            return self.get_profiles_variant()
+        elif prop == "ActiveProfileHolds":
+            holds_list = []
+            for cookie, h in self.holds.items():
+                holds_list.append({
+                    "Profile": GLib.Variant("s", h["Profile"]),
+                    "Reason": GLib.Variant("s", h["Reason"]),
+                    "ApplicationId": GLib.Variant("s", h["ApplicationId"]),
+                    "Cookie": GLib.Variant("u", cookie)
+                })
+            return GLib.Variant("aa{sv}", holds_list)
+        elif prop == "Actions":
+            return GLib.Variant("as", [])
+        elif prop == "PerformanceInhibited":
+            return GLib.Variant("s", "")
+        elif prop == "PerformanceDegraded":
+            return GLib.Variant("s", "")
+        elif prop == "Version":
+            return GLib.Variant("s", "0.30")
+        return None
+
+    def handle_set_property(self, con, sender, path, iface, prop, val):
+        if prop == "ActiveProfile":
+            new_prof = val.get_string()
+            log.info("D-Bus request: set ActiveProfile to '%s'", new_prof)
+            return self.set_active_profile(new_prof)
+        return False
+
+    def on_bus_acquired(self, con, name):
+        self.dbus_con = con
+        if self.objects_registered:
+            return
+        self.objects_registered = True
+        node_info = Gio.DBusNodeInfo.new_for_xml(DBUS_INTROSPECTION_XML)
+        
+        for iface_node in node_info.interfaces:
+            for path in ["/net/hadess/PowerProfiles", "/org/freedesktop/UPower/PowerProfiles"]:
+                con.register_object(
+                    path,
+                    iface_node,
+                    self.handle_method_call,
+                    self.handle_get_property,
+                    self.handle_set_property
+                )
+        log.info("Registered D-Bus objects on /net/hadess/PowerProfiles and /org/freedesktop/UPower/PowerProfiles")
+
+def main():
+    daemon = ArchpadPowerDaemon()
+
+    def handle_sighup(signum, frame):
+        log.info("SIGHUP received, reloading configuration...")
+        daemon.load_configuration()
+        daemon.apply_hardware_profile(daemon.active_profile)
+
+    signal.signal(signal.SIGHUP, handle_sighup)
+
+    loop = GLib.MainLoop()
+
+    def handle_sigterm(signum, frame):
+        log.info("Termination signal received, exiting...")
+        loop.quit()
+
+    signal.signal(signal.SIGINT, handle_sigterm)
+    signal.signal(signal.SIGTERM, handle_sigterm)
+
+    # Own net.hadess.PowerProfiles
+    Gio.bus_own_name(
+        Gio.BusType.SYSTEM,
+        "net.hadess.PowerProfiles",
+        Gio.BusNameOwnerFlags.REPLACE,
+        daemon.on_bus_acquired,
+        None,
+        None
+    )
+
+    # Also own org.freedesktop.UPower.PowerProfiles legacy alias
+    Gio.bus_own_name(
+        Gio.BusType.SYSTEM,
+        "org.freedesktop.UPower.PowerProfiles",
+        Gio.BusNameOwnerFlags.REPLACE,
+        daemon.on_bus_acquired,
+        None,
+        None
+    )
+
+    log.info("Starting ArchPad Power Daemon event loop...")
+    loop.run()
+    log.info("Daemon exited.")
+
+if __name__ == "__main__":
+    main()

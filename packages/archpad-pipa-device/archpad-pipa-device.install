@@ -1,22 +1,28 @@
 post_install() {
+  systemctl stop power-profiles-daemon.service 2>/dev/null || true
   systemctl --no-reload preset \
     archpad-audio-reprobe.service \
     archpad-hexagonrpcd-sdsp.service \
     archpad-usb-gadget.service \
     NetworkManager.service \
-    bluetooth.service 2>/dev/null || true
+    bluetooth.service \
+    archpad-powerd.service 2>/dev/null || true
+  systemctl start archpad-powerd.service 2>/dev/null || true
   systemctl mask systemd-rfkill.service systemd-rfkill.socket 2>/dev/null || true
   udevadm control --reload 2>/dev/null || true
   udevadm trigger -s misc 2>/dev/null || true
 }
 
 post_upgrade() {
+  systemctl stop power-profiles-daemon.service 2>/dev/null || true
   systemctl --no-reload preset \
     archpad-audio-reprobe.service \
     archpad-hexagonrpcd-sdsp.service \
     archpad-usb-gadget.service \
     NetworkManager.service \
-    bluetooth.service 2>/dev/null || true
+    bluetooth.service \
+    archpad-powerd.service 2>/dev/null || true
+  systemctl restart archpad-powerd.service 2>/dev/null || true
   systemctl mask systemd-rfkill.service systemd-rfkill.socket 2>/dev/null || true
   udevadm control --reload 2>/dev/null || true
   udevadm trigger -s misc 2>/dev/null || true

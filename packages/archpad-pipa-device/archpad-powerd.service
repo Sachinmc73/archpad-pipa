@@ -1,0 +1,18 @@
+[Unit]
+Description=ArchPad Hardware Power Management Daemon
+Documentation=https://github.com/pipa-mainline
+After=dbus.service sys-devices-system-cpu.device
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/archpad-powerd
+Restart=on-failure
+RestartSec=2
+ProtectHome=true
+ProtectSystem=full
+ConfigurationDirectory=archpad
+StateDirectory=archpad
+
+[Install]
+WantedBy=multi-user.target
+Alias=power-profiles-daemon.service

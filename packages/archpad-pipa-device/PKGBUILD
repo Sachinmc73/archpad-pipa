@@ -1,8 +1,8 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=21
-pkgdesc="Device integration, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
+pkgrel=22
+pkgdesc="Device integration, power management daemon, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('aarch64')
 url="https://github.com/pipa-mainline"
 license=('MIT')
@@ -10,7 +10,9 @@ install=archpad-pipa-device.install
 depends=('archpad-pipa-firmware>=1.0.0-2' 'hexagonrpc>=0.4.0-3'
          'iio-sensor-proxy>=3.9-2' 'libssc>=0.4.4' 'systemd' 'udev'
          'networkmanager' 'bluez' 'bluez-utils' 'bluedevil' 'glib2'
-         'power-profiles-daemon')
+         'python' 'python-gobject')
+provides=('power-profiles-daemon')
+conflicts=('power-profiles-daemon')
 makedepends=('gcc' 'pkgconf')
 source=("81-libssc-xiaomi-pipa.rules"
         "82-archpad-bluetooth.rules"
@@ -37,7 +39,12 @@ source=("81-libssc-xiaomi-pipa.rules"
         "10-archpad-sensors-sleep.sh"
         "60-archpad-powerdevil.conf"
         "10-archpad-power.rules"
-        "60-archpad-pm.rules")
+        "60-archpad-pm.rules"
+        "archpad-power.conf"
+        "archpad-powerd"
+        "archpad-powerctl"
+        "archpad-powerd.service"
+        "net.hadess.PowerProfiles.conf")
 sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5119335d4bb4e73b3cfe7b87fe7e9d8799b69f34fe180c425d0febba87d95c'
             'cdd3151aa5a96927ec01d9026b1150544fad78ba0d8c7c5f0eeb6559e1838bf61fa1caa36faec529ba6f0c1bdaea69e9a38b7eed61de7c4087e8294aed835ca2'
             'd73e0a550de972a572dd9bde80f405dbf546f294fd7ca771a504a91c44cd546185bfea363f980f0985a4af5cf45c88024757f0b0b1516f7ed03b1e4d96f311e3'
@@ -63,7 +70,12 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             'bad0259a8ae868dbbeb63fb8f00eb4ece8f1a511815676dcb5022d7e5e4a9311c2d9a621ac75f21d03137ae6d8e118f3c6cef13939259ce596f0f75166432ef4'
             '2c8413f0c47c15b959e51c525cbbba3d7b5597775a1e5d9b0c6fade2957c47afc42853295c7c0f2c1e4bf705bdb651adc9e46dffe8584c49e293074d425e5a1f'
             '72087cf7e7fc1f445610a4307954ff07cae6ef6bba4085d207985d6ac32dafb80005fe28d2db0e1f4fdd9368cf840b2bb31cf6bb04231bd11fcf90e19e977c8d'
-            '83c9822e1f44c013ca0481dd8cbb0e4d1e67535e0ac69df16905f37e406ccbb35591aacc8b62feee5c064f5c7f3dc5ab7589b885c9339f03da8fd2a3643293a3')
+            '83c9822e1f44c013ca0481dd8cbb0e4d1e67535e0ac69df16905f37e406ccbb35591aacc8b62feee5c064f5c7f3dc5ab7589b885c9339f03da8fd2a3643293a3'
+            '4017c7b8a9e1cc0a7e5180f1ead80e330d92af4564ae7dc1a1f61654cccfcda4b6918a0d02e4d15af9d5fc0bc472eee27320a788e9e240d147a7766db157d605'
+            '5f2d7076bb49190840eecafe386234dff7b8db02479b576496ad38a39fba7db6cb06556aedff52a1108e7564bda34606e78bc8ca1dc2c09a73c2578352843b59'
+            '2a1e8ca219d74cb42837bcc464c4c5945b5e6c8b1c0624c32477ce5dad5584a7f9a480306a042de6301a376c1a9ecb9b9ba8b955146402a6cde93a85402fffe5'
+            '0d8b22d06ee44c6debc0ef59e014a0d5049883666a5a16174920a3ccb5263841afc296445491db4c7eb6bce8530ff8924f2a5fa5c42856ef138a71922bfce888'
+            'd7020b46169f88f57871a8d804b627a29121fc6454e986cd157dae30047fe302381f954fbef594c478e0d0163affe400ca2ef8a2343509c9e6b969c7d0c0589e')
 
 build() {
   cd "${srcdir}"
@@ -106,6 +118,15 @@ package() {
   install -Dm644 "${srcdir}/10-archpad-power.rules" \
     "${pkgdir}/usr/share/polkit-1/rules.d/10-archpad-power.rules"
 
+  # ArchPad Power Management Daemon & CLI (archpad-powerd / archpad-powerctl)
+  install -Dm755 "${srcdir}/archpad-powerd" "${pkgdir}/usr/bin/archpad-powerd"
+  install -Dm755 "${srcdir}/archpad-powerctl" "${pkgdir}/usr/bin/archpad-powerctl"
+  ln -sf /usr/bin/archpad-powerctl "${pkgdir}/usr/bin/powerprofilesctl"
+  install -Dm644 "${srcdir}/archpad-power.conf" "${pkgdir}/etc/archpad/power.conf"
+  install -Dm644 "${srcdir}/archpad-power.conf" "${pkgdir}/usr/share/archpad/power.conf.default"
+  install -Dm644 "${srcdir}/archpad-powerd.service" "${pkgdir}/usr/lib/systemd/system/archpad-powerd.service"
+  install -Dm644 "${srcdir}/net.hadess.PowerProfiles.conf" "${pkgdir}/usr/share/dbus-1/system.d/net.hadess.PowerProfiles.conf"
+
   # Tablet power key daemon and logind policy
   install -Dm755 "${srcdir}/archpad-pwrkey" "${pkgdir}/usr/lib/archpad/archpad-pwrkey"
   install -Dm644 "${srcdir}/archpad-pwrkey.service" "${pkgdir}/usr/lib/systemd/user/archpad-pwrkey.service"
@@ -122,6 +143,6 @@ package() {
     'enable archpad-usb-gadget.service' \
     'enable NetworkManager.service' \
     'enable bluetooth.service' \
-    'enable power-profiles-daemon.service' \
+    'enable archpad-powerd.service' \
     > "${pkgdir}/usr/lib/systemd/system-preset/50-archpad-pipa.preset"
 }
