@@ -15,6 +15,7 @@
 int main(int argc, char **argv)
 {
     qputenv("QT_QPA_PLATFORM", QByteArray("wayland"));
+    qputenv("QSG_RENDER_LOOP", QByteArray("basic"));
 
     QGuiApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("archpad-keyboard"));

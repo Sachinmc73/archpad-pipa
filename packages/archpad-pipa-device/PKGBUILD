@@ -1,7 +1,7 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=30
+pkgrel=31
 pkgdesc="Device integration, power management daemon, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('aarch64')
 url="https://github.com/pipa-mainline"
@@ -45,7 +45,10 @@ source=("81-libssc-xiaomi-pipa.rules"
         "archpad-powerd"
         "archpad-powerctl"
         "archpad-powerd.service"
-        "net.hadess.PowerProfiles.conf")
+        "net.hadess.PowerProfiles.conf"
+        "ArchpadLockKeyboard.qml"
+        "archpad-lockscreen-patch"
+        "96-archpad-lockscreen-keyboard.hook")
 sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5119335d4bb4e73b3cfe7b87fe7e9d8799b69f34fe180c425d0febba87d95c'
             'cdd3151aa5a96927ec01d9026b1150544fad78ba0d8c7c5f0eeb6559e1838bf61fa1caa36faec529ba6f0c1bdaea69e9a38b7eed61de7c4087e8294aed835ca2'
             'd73e0a550de972a572dd9bde80f405dbf546f294fd7ca771a504a91c44cd546185bfea363f980f0985a4af5cf45c88024757f0b0b1516f7ed03b1e4d96f311e3'
@@ -76,7 +79,10 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             'bb23b63eed32255ab5618092f1f60f561f6cd344143f43ec6354b5e8bc594fbe55cd91e79865a6786777402418a581284e7ee649e4f4f5c5f076cffce95437db'
             '4418b379d13dae21abe60802ac7c35d16d89ba68ad07ee9832c16d1361f616de2725312f2226e7e2838865d45179cf9055a187fef75a6880bea147e44f82a2b2'
             '53d461bdd299f4457e426fbb331f29859bf8deaa2af5289fa252059a7d4b584f712d04436f80b61575779c0e490690023ae4af7fd3905a4410274ff05bcfe3d4'
-            'd7020b46169f88f57871a8d804b627a29121fc6454e986cd157dae30047fe302381f954fbef594c478e0d0163affe400ca2ef8a2343509c9e6b969c7d0c0589e')
+            'd7020b46169f88f57871a8d804b627a29121fc6454e986cd157dae30047fe302381f954fbef594c478e0d0163affe400ca2ef8a2343509c9e6b969c7d0c0589e'
+            '22e5c8a2d8042a3905ab049697106d95e4247bb83117bf2fa579f237648539cea26d1b92e62274012b76aefe23525cd91eb4b8dd184da4397ae9e4e3bf0f583b'
+            '95e4e9b92fd7c331d214debdc245dabfa91e27736a4ea6ba3cc774ef3572a53528623c97c02d2992d781eeec0a76e34a5b72bf11e2f4990f3fdf680436f26ef4'
+            'adc97fa38afeeda9aeeb34a7efc57244c87c6d3110a432a0d01990b94110615422bdb107f5ca805de665374c449a1c78369602507f29a07cb54ec26ffc904cca')
 
 build() {
   cd "${srcdir}"
@@ -136,6 +142,14 @@ package() {
     "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants/archpad-pwrkey.service"
   install -Dm644 "${srcdir}/60-archpad-power.conf" \
     "${pkgdir}/usr/lib/systemd/logind.conf.d/60-archpad-power.conf"
+
+  # Lockscreen Virtual Keyboard integration
+  install -Dm644 "${srcdir}/ArchpadLockKeyboard.qml" \
+    "${pkgdir}/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/ArchpadLockKeyboard.qml"
+  install -Dm755 "${srcdir}/archpad-lockscreen-patch" \
+    "${pkgdir}/usr/lib/archpad/archpad-lockscreen-patch"
+  install -Dm644 "${srcdir}/96-archpad-lockscreen-keyboard.hook" \
+    "${pkgdir}/usr/share/libalpm/hooks/96-archpad-lockscreen-keyboard.hook"
 
   install -d "${pkgdir}/usr/lib/systemd/system-preset"
   printf '%s\n' \
