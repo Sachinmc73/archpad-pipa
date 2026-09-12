@@ -8,6 +8,8 @@ import sys
 import signal
 import logging
 import configparser
+import subprocess
+import pwd
 from gi.repository import Gio, GLib
 
 logging.basicConfig(
@@ -27,6 +29,7 @@ HARDWARE_LIMITS = {
     "gpu_max_freq": (305000000, 670000000),
     "schedutil_rate_limit_us": (500, 100000),
     "pcie_aspm_policy": ["powersupersave", "powersave", "default", "performance"],
+    "display_refresh_rate": [0, 30, 48, 60, 90, 120],
 }
 
 FACTORY_DEFAULTS = {
@@ -37,6 +40,7 @@ FACTORY_DEFAULTS = {
         "gpu_max_freq": 400000000,
         "schedutil_rate_limit_us": 20000,
         "pcie_aspm_policy": "powersupersave",
+        "display_refresh_rate": 60,
     },
     "balanced": {
         "cpu_silver_max_freq": 1804800,
@@ -45,6 +49,7 @@ FACTORY_DEFAULTS = {
         "gpu_max_freq": 670000000,
         "schedutil_rate_limit_us": 10000,
         "pcie_aspm_policy": "powersupersave",
+        "display_refresh_rate": 120,
     },
     "performance": {
         "cpu_silver_max_freq": 1804800,
@@ -53,6 +58,7 @@ FACTORY_DEFAULTS = {
         "gpu_max_freq": 670000000,
         "schedutil_rate_limit_us": 1000,
         "pcie_aspm_policy": "default",
+        "display_refresh_rate": 120,
     },
 }
 
@@ -187,6 +193,24 @@ class ArchpadPowerDaemon:
                     log.warning("[%s] Invalid pcie_aspm_policy '%s'. Reverting to factory default '%s'", prof, val, factory_prof[aspm_key])
                     new_profiles[prof][aspm_key] = factory_prof[aspm_key]
 
+            # Display refresh rate validation
+            disp_key = "display_refresh_rate"
+            valid_rates = HARDWARE_LIMITS[disp_key]
+            if use_factory or not config.has_option(prof, disp_key):
+                new_profiles[prof][disp_key] = factory_prof[disp_key]
+            else:
+                try:
+                    val = int(config.get(prof, disp_key).strip())
+                    if val in valid_rates:
+                        new_profiles[prof][disp_key] = val
+                    else:
+                        log.warning("[%s] Invalid display_refresh_rate %d (must be one of %s). Reverting to factory default %d",
+                                    prof, val, valid_rates, factory_prof[disp_key])
+                        new_profiles[prof][disp_key] = factory_prof[disp_key]
+                except Exception as e:
+                    log.warning("[%s] Invalid display_refresh_rate: %s. Reverting to factory default %d",
+                                prof, e, factory_prof[disp_key])
+                    new_profiles[prof][disp_key] = factory_prof[disp_key]
         self.profiles_config = new_profiles
         log.info("Loaded and verified power profiles successfully.")
 
@@ -211,15 +235,55 @@ class ArchpadPowerDaemon:
         except Exception as e:
             log.warning("Failed to persist profile state: %s", e)
 
+    def apply_display_refresh_rate(self, rate):
+        if rate == 0:
+            log.debug("Display refresh rate management disabled (rate=0)")
+            return
+
+        valid_rates = (30, 48, 60, 90, 120)
+        if rate not in valid_rates:
+            log.warning("Invalid display refresh rate requested: %s (must be one of %s)", rate, valid_rates)
+            return
+
+        mode_str = f"output.DSI-1.mode.1800x2880@{rate}"
+        if not os.path.exists("/run/user"):
+            return
+
+        try:
+            for entry in os.scandir("/run/user"):
+                if entry.is_dir() and entry.name.isdigit():
+                    uid = int(entry.name)
+                    runtime_dir = entry.path
+                    wayland_sockets = [s for s in os.listdir(runtime_dir) if s.startswith("wayland-") and not s.endswith(".lock")]
+                    for wsock in wayland_sockets:
+                        try:
+                            user_info = pwd.getpwuid(uid)
+                            username = user_info.pw_name
+                            cmd = [
+                                "su", "-s", "/bin/sh", username, "-c",
+                                f"WAYLAND_DISPLAY={wsock} XDG_RUNTIME_DIR={runtime_dir} kscreen-doctor {mode_str}"
+                            ]
+                            res = subprocess.run(cmd, capture_output=True, text=True, timeout=3)
+                            if res.returncode == 0:
+                                log.info("Switched display refresh rate to %d Hz for user %s (%s)", rate, username, wsock)
+                            else:
+                                log.warning("kscreen-doctor returned code %d: %s", res.returncode, res.stderr.strip())
+                        except Exception as e:
+                            log.warning("Failed to invoke kscreen-doctor for user %d: %s", uid, e)
+        except Exception as e:
+            log.warning("Error scanning user sessions for display refresh rate: %s", e)
+
     def apply_hardware_profile(self, prof_name):
         if prof_name not in self.profiles_config:
             log.warning("Unknown profile '%s', falling back to balanced", prof_name)
             prof_name = "balanced"
 
         cfg = self.profiles_config[prof_name]
-        log.info("Applying profile '%s': Silver=%d kHz, Gold=%d kHz, Prime=%d kHz, GPU=%d Hz, ASPM=%s",
+        disp_rate = cfg.get("display_refresh_rate", 0)
+        disp_str = f"{disp_rate} Hz" if disp_rate else "unmanaged"
+        log.info("Applying profile '%s': Silver=%d kHz, Gold=%d kHz, Prime=%d kHz, GPU=%d Hz, ASPM=%s, Display=%s",
                  prof_name, cfg["cpu_silver_max_freq"], cfg["cpu_gold_max_freq"], cfg["cpu_prime_max_freq"],
-                 cfg["gpu_max_freq"], cfg["pcie_aspm_policy"])
+                 cfg["gpu_max_freq"], cfg["pcie_aspm_policy"], disp_str)
 
         # CPU scaling limits
         self.write_sysfs("/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq", cfg["cpu_silver_max_freq"])
@@ -236,6 +300,9 @@ class ArchpadPowerDaemon:
 
         # PCIe ASPM policy
         self.write_sysfs("/sys/module/pcie_aspm/parameters/policy", cfg["pcie_aspm_policy"])
+
+        # Display refresh rate
+        self.apply_display_refresh_rate(disp_rate)
 
     def set_active_profile(self, new_prof):
         if new_prof not in self.profiles_config:

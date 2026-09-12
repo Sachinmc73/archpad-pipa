@@ -5,10 +5,10 @@ After=dbus.service sys-devices-system-cpu.device
 
 [Service]
 Type=simple
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/archpad-powerd
 Restart=on-failure
 RestartSec=2
-ProtectHome=true
 ProtectSystem=full
 ConfigurationDirectory=archpad
 StateDirectory=archpad

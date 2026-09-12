@@ -1,7 +1,7 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=22
+pkgrel=28
 pkgdesc="Device integration, power management daemon, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('aarch64')
 url="https://github.com/pipa-mainline"
@@ -11,6 +11,7 @@ depends=('archpad-pipa-firmware>=1.0.0-2' 'hexagonrpc>=0.4.0-3'
          'iio-sensor-proxy>=3.9-2' 'libssc>=0.4.4' 'systemd' 'udev'
          'networkmanager' 'bluez' 'bluez-utils' 'bluedevil' 'glib2'
          'python' 'python-gobject')
+optdepends=('libkscreen: dynamic display refresh rate switching under Wayland')
 provides=('power-profiles-daemon')
 conflicts=('power-profiles-daemon')
 makedepends=('gcc' 'pkgconf')
@@ -71,10 +72,10 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             '2c8413f0c47c15b959e51c525cbbba3d7b5597775a1e5d9b0c6fade2957c47afc42853295c7c0f2c1e4bf705bdb651adc9e46dffe8584c49e293074d425e5a1f'
             '72087cf7e7fc1f445610a4307954ff07cae6ef6bba4085d207985d6ac32dafb80005fe28d2db0e1f4fdd9368cf840b2bb31cf6bb04231bd11fcf90e19e977c8d'
             '83c9822e1f44c013ca0481dd8cbb0e4d1e67535e0ac69df16905f37e406ccbb35591aacc8b62feee5c064f5c7f3dc5ab7589b885c9339f03da8fd2a3643293a3'
-            '4017c7b8a9e1cc0a7e5180f1ead80e330d92af4564ae7dc1a1f61654cccfcda4b6918a0d02e4d15af9d5fc0bc472eee27320a788e9e240d147a7766db157d605'
-            '5f2d7076bb49190840eecafe386234dff7b8db02479b576496ad38a39fba7db6cb06556aedff52a1108e7564bda34606e78bc8ca1dc2c09a73c2578352843b59'
-            '2a1e8ca219d74cb42837bcc464c4c5945b5e6c8b1c0624c32477ce5dad5584a7f9a480306a042de6301a376c1a9ecb9b9ba8b955146402a6cde93a85402fffe5'
-            '0d8b22d06ee44c6debc0ef59e014a0d5049883666a5a16174920a3ccb5263841afc296445491db4c7eb6bce8530ff8924f2a5fa5c42856ef138a71922bfce888'
+            'cd20e1d1d45a554226a6a4a290e701e61c623fe1a8ebfbf1e4aa6860887e4ff32320c6df7510156c0f0c0b09505adaa63a79a375c24fda903b121a351f370a75'
+            'bb23b63eed32255ab5618092f1f60f561f6cd344143f43ec6354b5e8bc594fbe55cd91e79865a6786777402418a581284e7ee649e4f4f5c5f076cffce95437db'
+            '4418b379d13dae21abe60802ac7c35d16d89ba68ad07ee9832c16d1361f616de2725312f2226e7e2838865d45179cf9055a187fef75a6880bea147e44f82a2b2'
+            '53d461bdd299f4457e426fbb331f29859bf8deaa2af5289fa252059a7d4b584f712d04436f80b61575779c0e490690023ae4af7fd3905a4410274ff05bcfe3d4'
             'd7020b46169f88f57871a8d804b627a29121fc6454e986cd157dae30047fe302381f954fbef594c478e0d0163affe400ca2ef8a2343509c9e6b969c7d0c0589e')
 
 build() {

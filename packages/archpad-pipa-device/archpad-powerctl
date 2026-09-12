@@ -5,6 +5,8 @@
 import os
 import sys
 import shutil
+import subprocess
+import json
 from gi.repository import Gio, GLib
 
 CONF_FILE = "/etc/archpad/power.conf"
@@ -111,6 +113,10 @@ def cmd_status(proxy):
     aspm = read_file("/sys/module/pcie_aspm/parameters/policy", "N/A")
     print(f" PCIe ASPM Policy          : {aspm}")
 
+    # Display Refresh Rate
+    disp_info = get_display_info()
+    print(f" Display Refresh Rate      : {disp_info}")
+
     # Battery
     batt_pct = read_file("/sys/class/power_supply/qcom-battery/capacity", "N/A")
     batt_stat = read_file("/sys/class/power_supply/qcom-battery/status", "N/A")
@@ -126,6 +132,42 @@ def cmd_status(proxy):
     print(f" Voltage / Current         : {volts:.2f} V / {curr_ma:+.1f} mA")
     print(f" Power Draw                : {watts:.2f} W")
     print("=" * 55)
+
+def get_display_info():
+    # 1. Try reading debugfs (if run as root or accessible)
+    for p in ["/sys/kernel/debug/dri/1/kms", "/sys/kernel/debug/dri/0/kms"]:
+        if os.path.exists(p):
+            try:
+                with open(p, "r") as f:
+                    for line in f:
+                        if 'mode: "1800x2880":' in line:
+                            parts = line.strip().split()
+                            if len(parts) >= 3:
+                                return f"{parts[2]} Hz"
+            except Exception:
+                pass
+    # 2. Query kscreen-doctor over Wayland
+    try:
+        env = os.environ.copy()
+        if "XDG_RUNTIME_DIR" not in env or "WAYLAND_DISPLAY" not in env:
+            if os.path.exists("/run/user"):
+                for uid in os.listdir("/run/user"):
+                    rdir = f"/run/user/{uid}"
+                    if os.path.isdir(rdir) and os.path.exists(os.path.join(rdir, "wayland-0")):
+                        env["XDG_RUNTIME_DIR"] = rdir
+                        env["WAYLAND_DISPLAY"] = "wayland-0"
+                        break
+        res = subprocess.run(["kscreen-doctor", "-j"], capture_output=True, text=True, env=env, timeout=2)
+        if res.returncode == 0:
+            data = json.loads(res.stdout)
+            for out in data.get("outputs", []):
+                cur_id = str(out.get("currentModeId"))
+                for m in out.get("modes", []):
+                    if str(m.get("id")) == cur_id:
+                        return f"{m.get('refreshRate')} Hz"
+    except Exception:
+        pass
+    return "Unknown"
 
 def cmd_reload(proxy):
     try:
@@ -184,3 +226,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
