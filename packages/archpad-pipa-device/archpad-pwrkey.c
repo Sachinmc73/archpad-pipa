@@ -18,7 +18,7 @@
 #include <gio/gio.h>
 
 #define LONG_PRESS_MS 750
-#define RESUME_DEBOUNCE_MS 1200
+#define RESUME_DEBOUNCE_MS 4000
 #define PWRKEY_DEV_NAME "pm8941_pwrkey"
 
 typedef struct {
@@ -31,6 +31,7 @@ typedef struct {
     bool button_down;
     bool long_press_handled;
     bool wake_in_progress;
+    bool is_suspending;
     uint64_t press_start_ms;
     uint64_t last_sleep_delta;
 } DaemonContext;
@@ -206,16 +207,19 @@ static bool is_screen_on(void)
     return false; // Fail safe: default to false to prevent unwanted suspend loops
 }
 
-static void lock_and_suspend(GDBusConnection *session_bus, GDBusConnection *system_bus)
+static void lock_and_suspend(DaemonContext *ctx)
 {
-    g_message("Action: Instant screen off, session lock, and system suspend (s2idle)");
+    g_message("Action: Locking session and requesting system suspend (s2idle)");
 
-    system("kscreen-doctor --dpms off 2>/dev/null &");
+    ctx->is_suspending = true;
+    ctx->button_down = false;
+    ctx->long_press_handled = false;
+
     system("loginctl lock-session 2>/dev/null &");
 
-    if (session_bus) {
+    if (ctx->session_bus) {
         g_dbus_connection_call(
-            session_bus,
+            ctx->session_bus,
             "org.freedesktop.ScreenSaver",
             "/ScreenSaver",
             "org.freedesktop.ScreenSaver",
@@ -230,9 +234,9 @@ static void lock_and_suspend(GDBusConnection *session_bus, GDBusConnection *syst
         );
     }
 
-    if (system_bus) {
+    if (ctx->system_bus) {
         g_dbus_connection_call(
-            system_bus,
+            ctx->system_bus,
             "org.freedesktop.login1",
             "/org/freedesktop/login1",
             "org.freedesktop.login1.Manager",
@@ -252,15 +256,9 @@ static void lock_and_suspend(GDBusConnection *session_bus, GDBusConnection *syst
 
 static void wake_screen(GDBusConnection *bus, int uinput_fd)
 {
-    g_message("Action: Waking screen");
+    g_message("Action: Waking screen (simulating user activity)");
 
-    system("kscreen-doctor --dpms on 2>/dev/null &");
     emit_uinput_key(uinput_fd, KEY_WAKEUP);
-
-    const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
-    if (desktop && g_strrstr(desktop, "GNOME")) {
-        system("busctl --user set-property org.gnome.Mutter.DisplayConfig /org/gnome/Mutter/DisplayConfig org.gnome.Mutter.DisplayConfig PowerSaveMode i 0 2>/dev/null || true");
-    }
 
     if (bus) {
         g_dbus_connection_call(
@@ -341,6 +339,7 @@ static void on_prepare_for_sleep(GDBusConnection *connection,
 
     if (going_to_sleep) {
         if (ctx) {
+            ctx->is_suspending = true;
             if (ctx->long_press_timer_id > 0) {
                 g_source_remove(ctx->long_press_timer_id);
                 ctx->long_press_timer_id = 0;
@@ -351,6 +350,8 @@ static void on_prepare_for_sleep(GDBusConnection *connection,
     } else {
         g_last_resume_time_ms = get_time_ms();
         if (ctx) {
+            ctx->is_suspending = false;
+            ctx->wake_in_progress = false;
             ctx->last_sleep_delta = get_boottime_ms() - get_time_ms();
             if (ctx->long_press_timer_id > 0) {
                 g_source_remove(ctx->long_press_timer_id);
@@ -358,10 +359,10 @@ static void on_prepare_for_sleep(GDBusConnection *connection,
             }
             ctx->button_down = false;
             ctx->long_press_handled = false;
+            wake_screen(ctx->session_bus, ctx->uinput_fd);
         }
         g_message("System resumed from sleep (wake recorded at %llu ms)",
                   (unsigned long long)g_last_resume_time_ms);
-        system("kscreen-doctor --dpms on 2>/dev/null &");
     }
 }
 
@@ -396,6 +397,7 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition, gpoi
             uint64_t delta_diff = current_sleep_delta - ctx->last_sleep_delta;
             ctx->last_sleep_delta = current_sleep_delta;
             ctx->wake_in_progress = true;
+            ctx->is_suspending = false;
             g_last_resume_time_ms = get_time_ms();
             if (ctx->long_press_timer_id > 0) {
                 g_source_remove(ctx->long_press_timer_id);
@@ -403,13 +405,25 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition, gpoi
             }
             ctx->button_down = false;
             ctx->long_press_handled = false;
+            wake_screen(ctx->session_bus, ctx->uinput_fd);
             g_message("Wake detected via kernel clock delta (+%llu ms)",
                       (unsigned long long)delta_diff);
         }
 
+        if (ctx->is_suspending) {
+            g_message("Ignored power key event (val=%d): system is transitioning to suspend", ev[i].value);
+            continue;
+        }
+
+        uint64_t now = get_time_ms();
+        bool in_wake_protection = ctx->wake_in_progress ||
+            (g_last_resume_time_ms > 0 && (now - g_last_resume_time_ms < RESUME_DEBOUNCE_MS));
+
         if (ev[i].value == 1) {
-            if (ctx->wake_in_progress) {
-                g_message("Ignored power button press: system is waking up");
+            if (in_wake_protection) {
+                g_message("Ignored power button press: in post-wake protection window (%llu ms remaining)",
+                          (unsigned long long)(RESUME_DEBOUNCE_MS - (now - g_last_resume_time_ms)));
+                wake_screen(ctx->session_bus, ctx->uinput_fd);
                 continue;
             }
 
@@ -428,28 +442,21 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition, gpoi
                 ctx->long_press_timer_id = 0;
             }
 
-            if (ctx->wake_in_progress) {
+            if (in_wake_protection) {
                 ctx->wake_in_progress = false;
                 ctx->button_down = false;
-                g_message("Ignored power button release: system just woke from sleep");
-                system("kscreen-doctor --dpms on 2>/dev/null &");
+                g_message("Ignored power button release: in post-wake protection window");
+                wake_screen(ctx->session_bus, ctx->uinput_fd);
                 continue;
             }
 
             if (ctx->button_down) {
                 ctx->button_down = false;
                 if (!ctx->long_press_handled) {
-                    uint64_t now = get_time_ms();
-                    if (g_last_resume_time_ms > 0 && (now - g_last_resume_time_ms < RESUME_DEBOUNCE_MS)) {
-                        g_message("Ignored power button release: system just resumed (%llu ms ago)",
-                                  (unsigned long long)(now - g_last_resume_time_ms));
-                        system("kscreen-doctor --dpms on 2>/dev/null &");
+                    if (is_screen_on()) {
+                        lock_and_suspend(ctx);
                     } else {
-                        if (is_screen_on()) {
-                            lock_and_suspend(ctx->session_bus, ctx->system_bus);
-                        } else {
-                            wake_screen(ctx->session_bus, ctx->uinput_fd);
-                        }
+                        wake_screen(ctx->session_bus, ctx->uinput_fd);
                     }
                 }
             }
