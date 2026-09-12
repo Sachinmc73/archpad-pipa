@@ -1,18 +1,17 @@
-From 2004321a59de1889325505efbf3af46762d368af Mon Sep 17 00:00:00 2001
-From: Arseniy Velikanov <me@adomerle.pw>
-Date: Wed, 11 Feb 2026 21:05:40 +0700
-Subject: [PATCH 06/12] drm/panel: Add support for Novatek NT36532 panel
+From 4fdfa0aa4c3ca198d009b0b633b429d20c5c464e Mon Sep 17 00:00:00 2001
+From: Luka Panio <lukapanio@gmail.com>
+Date: Fri, 4 Oct 2024 18:24:26 +0200
+Subject: [PATCH 06/33] drm/panel: Add support for Novatek NT36532 panel
 
-Add a driver for panels using the Novatek NT36532 Display Driver IC,
-including support for the CSOT panel used in the Xiaomi Pad 6 tablets.
+Add support for Novatek NT36532 panel.
 
-Co-developed-by: Ryo Kenrie Wongso <developer@damillora.com>
+Signed-off-by: Luka Panio <lukapanio@gmail.com>
 Signed-off-by: Ryo Kenrie Wongso <developer@damillora.com>
 ---
  drivers/gpu/drm/panel/Kconfig                 |  10 +
  drivers/gpu/drm/panel/Makefile                |   1 +
- drivers/gpu/drm/panel/panel-novatek-nt36532.c | 609 ++++++++++++++++++
- 3 files changed, 620 insertions(+)
+ drivers/gpu/drm/panel/panel-novatek-nt36532.c | 689 ++++++++++++++++++
+ 3 files changed, 700 insertions(+)
  create mode 100644 drivers/gpu/drm/panel/panel-novatek-nt36532.c
 
 diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
@@ -53,7 +52,7 @@ new file mode 100644
 index 000000000000..cf0c92766f89
 --- /dev/null
 +++ b/drivers/gpu/drm/panel/panel-novatek-nt36532.c
-@@ -0,0 +1,609 @@
+@@ -0,0 +1,689 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Copyright (c) 2024 Luka Panio <lukapanio@gmail.com>
 +
@@ -94,7 +93,8 @@ index 000000000000..cf0c92766f89
 +	enum mipi_dsi_pixel_format format;
 +	unsigned long mode_flags;
 +
-+	const struct drm_display_mode display_mode;
++	const struct drm_display_mode *display_modes;
++	unsigned int num_modes;
 +
 +	const struct mipi_dsi_device_info dsi_info;
 +
@@ -344,19 +344,82 @@ index 000000000000..cf0c92766f89
 +	return 0;
 +}
 +
-+static const struct drm_display_mode pipa_display_mode = {
-+	.clock = (1800 + 200 + 4 + 92) * (2880 + 26 + 2 + 214) * 120 / 1000,
-+	.hdisplay = 1800,
-+	.hsync_start = 1800 + 200,
-+	.hsync_end = 1800 + 200 + 4,
-+	.htotal = 1800 + 200 + 4 + 92,
-+	.vdisplay = 2880,
-+	.vsync_start = 2880 + 26,
-+	.vsync_end = 2880 + 26 + 2,
-+	.vtotal = 2880 + 26 + 2 + 214,
-+	.width_mm = 148,
-+	.height_mm = 237,
-+	.type = DRM_MODE_TYPE_DRIVER,
++static const struct drm_display_mode pipa_display_modes[] = {
++	{
++		/* 120 Hz - Native Mode */
++		.clock = 785244,
++		.hdisplay = 1800,
++		.hsync_start = 1800 + 200,
++		.hsync_end = 1800 + 200 + 4,
++		.htotal = 1800 + 200 + 4 + 92,
++		.vdisplay = 2880,
++		.vsync_start = 2880 + 26,
++		.vsync_end = 2880 + 26 + 2,
++		.vtotal = 2880 + 26 + 2 + 214,
++		.width_mm = 148,
++		.height_mm = 237,
++		.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
++	},
++	{
++		/* 90 Hz - VFP Porch Stretching Mode */
++		.clock = 785244,
++		.hdisplay = 1800,
++		.hsync_start = 1800 + 200,
++		.hsync_end = 1800 + 200 + 4,
++		.htotal = 1800 + 200 + 4 + 92,
++		.vdisplay = 2880,
++		.vsync_start = 2880 + 1067,
++		.vsync_end = 2880 + 1067 + 2,
++		.vtotal = 2880 + 1067 + 2 + 214,
++		.width_mm = 148,
++		.height_mm = 237,
++		.type = DRM_MODE_TYPE_DRIVER,
++	},
++	{
++		/* 60 Hz - VFP Porch Stretching Mode */
++		.clock = 785244,
++		.hdisplay = 1800,
++		.hsync_start = 1800 + 200,
++		.hsync_end = 1800 + 200 + 4,
++		.htotal = 1800 + 200 + 4 + 92,
++		.vdisplay = 2880,
++		.vsync_start = 2880 + 3148,
++		.vsync_end = 2880 + 3148 + 2,
++		.vtotal = 2880 + 3148 + 2 + 214,
++		.width_mm = 148,
++		.height_mm = 237,
++		.type = DRM_MODE_TYPE_DRIVER,
++	},
++	{
++		/* 48 Hz - VFP Porch Stretching Mode */
++		.clock = 785244,
++		.hdisplay = 1800,
++		.hsync_start = 1800 + 200,
++		.hsync_end = 1800 + 200 + 4,
++		.htotal = 1800 + 200 + 4 + 92,
++		.vdisplay = 2880,
++		.vsync_start = 2880 + 4709,
++		.vsync_end = 2880 + 4709 + 2,
++		.vtotal = 2880 + 4709 + 2 + 214,
++		.width_mm = 148,
++		.height_mm = 237,
++		.type = DRM_MODE_TYPE_DRIVER,
++	},
++	{
++		/* 30 Hz - VFP Porch Stretching Mode */
++		.clock = 785244,
++		.hdisplay = 1800,
++		.hsync_start = 1800 + 200,
++		.hsync_end = 1800 + 200 + 4,
++		.htotal = 1800 + 200 + 4 + 92,
++		.vdisplay = 2880,
++		.vsync_start = 2880 + 9392,
++		.vsync_end = 2880 + 9392 + 2,
++		.vtotal = 2880 + 9392 + 2 + 214,
++		.width_mm = 148,
++		.height_mm = 237,
++		.type = DRM_MODE_TYPE_DRIVER,
++	},
 +};
 +
 +static struct drm_dsc_config pipa_dsc_cfg = {
@@ -379,7 +442,8 @@ index 000000000000..cf0c92766f89
 +	.lanes = 4,
 +	.format = MIPI_DSI_FMT_RGB888,
 +	.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_CLOCK_NON_CONTINUOUS | MIPI_DSI_MODE_LPM,
-+	.display_mode = pipa_display_mode,
++	.display_modes = pipa_display_modes,
++	.num_modes = ARRAY_SIZE(pipa_display_modes),
 +	.dsc_cfg = &pipa_dsc_cfg,
 +	.init_sequence = pipa_init_sequence,
 +};
@@ -392,7 +456,8 @@ index 000000000000..cf0c92766f89
 +	.lanes = 4,
 +	.format = MIPI_DSI_FMT_RGB888,
 +	.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_CLOCK_NON_CONTINUOUS | MIPI_DSI_MODE_LPM,
-+	.display_mode = pipa_display_mode,
++	.display_modes = pipa_display_modes,
++	.num_modes = ARRAY_SIZE(pipa_display_modes),
 +	.dsc_cfg = &pipa_dsc_cfg,
 +	.init_sequence = pipa_init_sequence,
 +};
@@ -523,11 +588,26 @@ index 000000000000..cf0c92766f89
 +}
 +
 +static int nt36532_get_modes(struct drm_panel *panel,
-+					struct drm_connector *connector)
++			     struct drm_connector *connector)
 +{
 +	struct nt36532 *ctx = to_nt36532(panel);
 +	const struct panel_desc *desc = ctx->desc;
-+	return drm_connector_helper_get_modes_fixed(connector, &desc->display_mode);
++	struct drm_display_mode *mode;
++	unsigned int i, count = 0;
++	for (i = 0; i < desc->num_modes; i++) {
++		mode = drm_mode_duplicate(connector->dev, &desc->display_modes[i]);
++		if (!mode)
++			return -ENOMEM;
++
++		drm_mode_set_name(mode);
++		drm_mode_probed_add(connector, mode);
++		count++;
++	}
++
++	connector->display_info.width_mm = desc->display_modes[0].width_mm;
++	connector->display_info.height_mm = desc->display_modes[0].height_mm;
++
++	return count;
 +}
 +
 +static const struct drm_panel_funcs nt36532_panel_funcs = {
@@ -566,7 +646,6 @@ index 000000000000..cf0c92766f89
 +	ctx->desc = of_device_get_match_data(dev);
 +	if (!ctx->desc)
 +		return -ENODEV;
-+
 +	dsi_sec = of_graph_get_remote_node(dsi->dev.of_node, 1, -1);
 +
 +	if (dsi_sec) {
@@ -665,4 +744,3 @@ index 000000000000..cf0c92766f89
 +MODULE_LICENSE("GPL");
 -- 
 2.52.0
-
