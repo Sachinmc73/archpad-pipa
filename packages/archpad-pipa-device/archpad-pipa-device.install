@@ -5,6 +5,7 @@ post_install() {
     archpad-usb-gadget.service \
     NetworkManager.service \
     bluetooth.service 2>/dev/null || true
+  systemctl mask systemd-rfkill.service systemd-rfkill.socket 2>/dev/null || true
   udevadm control --reload 2>/dev/null || true
   udevadm trigger -s misc 2>/dev/null || true
 }
@@ -16,6 +17,7 @@ post_upgrade() {
     archpad-usb-gadget.service \
     NetworkManager.service \
     bluetooth.service 2>/dev/null || true
+  systemctl mask systemd-rfkill.service systemd-rfkill.socket 2>/dev/null || true
   udevadm control --reload 2>/dev/null || true
   udevadm trigger -s misc 2>/dev/null || true
 }

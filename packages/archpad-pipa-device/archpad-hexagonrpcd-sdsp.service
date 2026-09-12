@@ -8,10 +8,8 @@ ConditionPathIsDirectory=/usr/share/qcom/sm8250/Xiaomi/pipa/sensors/registry
 [Service]
 Type=simple
 ExecStart=/usr/bin/hexagonrpcd -f /dev/fastrpc-sdsp -d sdsp -s -R /usr/share/qcom/sm8250/Xiaomi/pipa
-ExecStartPost=/usr/lib/archpad/archpad-wait-ssc
 Restart=on-failure
 RestartSec=2
-TimeoutStartSec=130
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
