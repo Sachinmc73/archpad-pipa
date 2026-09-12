@@ -1,7 +1,7 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=19
+pkgrel=20
 pkgdesc="Device integration, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('aarch64')
 url="https://github.com/pipa-mainline"
@@ -54,7 +54,7 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             '5daba5db23f875592052fec5c7a7ecc69c6e3f5f199ac356857097b8473888ea9c6b9308f3e33a51c467c8f265d68b1bad3b88ea1663b2c5b4936a10b8930c7a'
             '12eb2fad62feb67df26646b554e9c6ab6e6aac9ad325736578f79d4ee1ad14fc4f63653107233f9436edf10c78058da1ce24223a896186317ebcab256a3b48db'
             '50078f6bdc64b9638fa3ebc57d165226357dc219877b5d6dfdac97a162beb0de39b0afba7f770fa36a69f5dd2ca1a5e41b479aeed78aeece6f4f305aabcc40a0'
-            '1bb4c2d04023a28976e172f5135dbc71b644e19a3f71bb9582d5d2b99047d44db77179a8960cdcdf9aeeffb9bbf5321db1fd4d480a9227a091d9fc4de7289f07'
+            'e0bae94befcf053af847add7af598e8cd0915aeef8b4e02aeed3d78926443dc799ad88e33055231b2a9415be0110b06351b0b0e4921e4f0335b48c92f58f5bbe'
             '3367c97b784962f02fa07da19944f5b10b46997b5affbd89d07489ba7b543527531cef2a118504ce41ae4d7bd2ac4b52a79f0cf58d420c3a07583db613f63c59'
             '25afd475836b3e77fcce6ad7b4b2ffad3b2a4ab99b8d7ef65447d48d7874b724ee713ba8a5001b5a98f6bc7f8a2cb312d4120f7f73a8a641d4086954a25b5d79'
             '2410144601eedcde53fb2c50e216d60bd2be0215c8b8012dec12a5c383bdd8ab66247e70380e90e613ae1d05a7e860ea5b3bbf9388a872200c3d1b39c6eb77ff'
