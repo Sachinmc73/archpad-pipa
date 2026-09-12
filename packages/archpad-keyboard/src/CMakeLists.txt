@@ -1,0 +1,42 @@
+cmake_minimum_required(VERSION 3.20)
+project(archpad-keyboard VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+# Optimization flags
+set(CMAKE_BUILD_TYPE Release)
+add_compile_options(-O3 -flto -fvisibility=hidden -fvisibility-inlines-hidden)
+add_link_options(-flto -Wl,--as-needed -Wl,--gc-sections)
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml DBus)
+find_package(LayerShellQt REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CANBERRA REQUIRED libcanberra)
+
+add_executable(archpad-keyboard
+    main.cpp
+    keyboardmanager.h
+    keyboardmanager.cpp
+    resources.qrc
+)
+
+target_include_directories(archpad-keyboard PRIVATE ${CANBERRA_INCLUDE_DIRS})
+
+target_link_libraries(archpad-keyboard PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Quick
+    Qt6::Qml
+    Qt6::DBus
+    ${CANBERRA_LIBRARIES}
+    LayerShellQt::Interface
+)
+
+include(GNUInstallDirs)
+
+install(TARGETS archpad-keyboard DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../archpad-keyboard.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES sounds/tick.wav DESTINATION ${CMAKE_INSTALL_DATADIR}/archpad-keyboard/sounds)

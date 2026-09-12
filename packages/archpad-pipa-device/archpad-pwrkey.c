@@ -30,7 +30,9 @@ typedef struct {
     guint long_press_timer_id;
     bool button_down;
     bool long_press_handled;
+    bool wake_in_progress;
     uint64_t press_start_ms;
+    uint64_t last_sleep_delta;
 } DaemonContext;
 
 static uint64_t g_last_resume_time_ms = 0;
@@ -39,6 +41,13 @@ static uint64_t get_time_ms(void)
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
+}
+
+static uint64_t get_boottime_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_BOOTTIME, &ts);
     return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
 }
 
@@ -143,29 +152,58 @@ static void emit_uinput_key(int uinput_fd, int key)
 
 static bool is_screen_on(void)
 {
-    const char *paths[] = {
-        "/sys/class/drm/card1-DSI-1/dpms",
-        "/sys/class/drm/card0-DSI-1/dpms",
-        NULL
-    };
+    // Check backlight brightness first (definitive hardware display state)
+    DIR *dir = opendir("/sys/class/backlight");
+    if (dir) {
+        struct dirent *ent;
+        while ((ent = readdir(dir)) != NULL) {
+            if (ent->d_name[0] == '.')
+                continue;
 
-    for (int i = 0; paths[i]; i++) {
-        FILE *f = fopen(paths[i], "r");
-        if (!f)
-            continue;
-
-        char buf[32] = {0};
-        if (fgets(buf, sizeof(buf), f)) {
-            fclose(f);
-            if (strncmp(buf, "On", 2) == 0)
-                return true;
-            if (strncmp(buf, "Off", 3) == 0)
-                return false;
-        } else {
-            fclose(f);
+            char path[512];
+            snprintf(path, sizeof(path), "/sys/class/backlight/%s/brightness", ent->d_name);
+            FILE *f = fopen(path, "r");
+            if (f) {
+                int brightness = -1;
+                if (fscanf(f, "%d", &brightness) == 1) {
+                    fclose(f);
+                    closedir(dir);
+                    return brightness > 0;
+                }
+                fclose(f);
+            }
         }
+        closedir(dir);
     }
-    return true;
+
+    // Check DRM connector status
+    dir = opendir("/sys/class/drm");
+    if (dir) {
+        struct dirent *ent;
+        while ((ent = readdir(dir)) != NULL) {
+            if (strstr(ent->d_name, "DSI") != NULL || strstr(ent->d_name, "eDP") != NULL) {
+                char path[512];
+                snprintf(path, sizeof(path), "/sys/class/drm/%s/enabled", ent->d_name);
+                FILE *f = fopen(path, "r");
+                if (f) {
+                    char buf[32] = {0};
+                    if (fgets(buf, sizeof(buf), f)) {
+                        fclose(f);
+                        closedir(dir);
+                        if (strncmp(buf, "enabled", 7) == 0)
+                            return true;
+                        if (strncmp(buf, "disabled", 8) == 0)
+                            return false;
+                    } else {
+                        fclose(f);
+                    }
+                }
+            }
+        }
+        closedir(dir);
+    }
+
+    return false; // Fail safe: default to false to prevent unwanted suspend loops
 }
 
 static void lock_and_suspend(GDBusConnection *session_bus, GDBusConnection *system_bus)
@@ -217,7 +255,7 @@ static void wake_screen(GDBusConnection *bus, int uinput_fd)
     g_message("Action: Waking screen");
 
     system("kscreen-doctor --dpms on 2>/dev/null &");
-    emit_uinput_key(uinput_fd, KEY_POWER);
+    emit_uinput_key(uinput_fd, KEY_WAKEUP);
 
     const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
     if (desktop && g_strrstr(desktop, "GNOME")) {
@@ -295,13 +333,32 @@ static void on_prepare_for_sleep(GDBusConnection *connection,
                                  gpointer user_data)
 {
     (void)connection; (void)sender_name; (void)object_path;
-    (void)interface_name; (void)signal_name; (void)user_data;
+    (void)interface_name; (void)signal_name;
+    DaemonContext *ctx = (DaemonContext *)user_data;
 
     gboolean going_to_sleep = FALSE;
     g_variant_get(parameters, "(b)", &going_to_sleep);
 
-    if (!going_to_sleep) {
+    if (going_to_sleep) {
+        if (ctx) {
+            if (ctx->long_press_timer_id > 0) {
+                g_source_remove(ctx->long_press_timer_id);
+                ctx->long_press_timer_id = 0;
+            }
+            ctx->button_down = false;
+            ctx->long_press_handled = false;
+        }
+    } else {
         g_last_resume_time_ms = get_time_ms();
+        if (ctx) {
+            ctx->last_sleep_delta = get_boottime_ms() - get_time_ms();
+            if (ctx->long_press_timer_id > 0) {
+                g_source_remove(ctx->long_press_timer_id);
+                ctx->long_press_timer_id = 0;
+            }
+            ctx->button_down = false;
+            ctx->long_press_handled = false;
+        }
         g_message("System resumed from sleep (wake recorded at %llu ms)",
                   (unsigned long long)g_last_resume_time_ms);
         system("kscreen-doctor --dpms on 2>/dev/null &");
@@ -334,7 +391,28 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition, gpoi
         if (ev[i].type != EV_KEY || ev[i].code != KEY_POWER)
             continue;
 
+        uint64_t current_sleep_delta = get_boottime_ms() - get_time_ms();
+        if (current_sleep_delta > ctx->last_sleep_delta + 250) {
+            uint64_t delta_diff = current_sleep_delta - ctx->last_sleep_delta;
+            ctx->last_sleep_delta = current_sleep_delta;
+            ctx->wake_in_progress = true;
+            g_last_resume_time_ms = get_time_ms();
+            if (ctx->long_press_timer_id > 0) {
+                g_source_remove(ctx->long_press_timer_id);
+                ctx->long_press_timer_id = 0;
+            }
+            ctx->button_down = false;
+            ctx->long_press_handled = false;
+            g_message("Wake detected via kernel clock delta (+%llu ms)",
+                      (unsigned long long)delta_diff);
+        }
+
         if (ev[i].value == 1) {
+            if (ctx->wake_in_progress) {
+                g_message("Ignored power button press: system is waking up");
+                continue;
+            }
+
             ctx->button_down = true;
             ctx->press_start_ms = get_time_ms();
             ctx->long_press_handled = false;
@@ -348,6 +426,14 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition, gpoi
             if (ctx->long_press_timer_id > 0) {
                 g_source_remove(ctx->long_press_timer_id);
                 ctx->long_press_timer_id = 0;
+            }
+
+            if (ctx->wake_in_progress) {
+                ctx->wake_in_progress = false;
+                ctx->button_down = false;
+                g_message("Ignored power button release: system just woke from sleep");
+                system("kscreen-doctor --dpms on 2>/dev/null &");
+                continue;
             }
 
             if (ctx->button_down) {
@@ -391,6 +477,7 @@ int main(int argc, char *argv[])
     DaemonContext ctx;
     memset(&ctx, 0, sizeof(ctx));
     ctx.loop = g_main_loop_new(NULL, FALSE);
+    ctx.last_sleep_delta = get_boottime_ms() - get_time_ms();
 
     g_unix_signal_add(SIGTERM, on_unix_signal, ctx.loop);
     g_unix_signal_add(SIGINT, on_unix_signal, ctx.loop);

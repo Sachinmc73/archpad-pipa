@@ -1,0 +1,36 @@
+# Maintainer: ArchPad project
+pkgname=archpad-keyboard
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Ultra-lightweight on-screen keyboard for ArchPad (Xiaomi Pad 6)"
+arch=('aarch64')
+url="https://github.com/Sachinmc73/archpad-pipa"
+license=('GPL-3.0-or-later')
+depends=(
+    'glibc'
+    'libstdc++'
+    'qt6-base'
+    'qt6-declarative'
+    'libcanberra'
+    'layer-shell-qt'
+)
+makedepends=(
+    'cmake'
+    'extra-cmake-modules'
+    'pkgconf'
+)
+
+build() {
+    cmake -B build -S "$startdir/src" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -Dm644 "$startdir/archpad-keyboard.service" "$pkgdir/usr/lib/systemd/user/archpad-keyboard.service"
+    install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
+    ln -s /usr/lib/systemd/user/archpad-keyboard.service \
+        "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-keyboard.service"
+}
