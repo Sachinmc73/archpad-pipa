@@ -263,24 +263,28 @@ ColumnLayout {
         KeyButton {
             iconName: "arrow-left"
             weight: 1.0
+            autoRepeat: true
             customKeyColor: theme.keySpecialColor
             onClicked: km.tapNavKey("Left")
         }
         KeyButton {
             iconName: "arrow-up"
             weight: 1.0
+            autoRepeat: true
             customKeyColor: theme.keySpecialColor
             onClicked: km.tapNavKey("Up")
         }
         KeyButton {
             iconName: "arrow-down"
             weight: 1.0
+            autoRepeat: true
             customKeyColor: theme.keySpecialColor
             onClicked: km.tapNavKey("Down")
         }
         KeyButton {
             iconName: "arrow-right"
             weight: 1.0
+            autoRepeat: true
             customKeyColor: theme.keySpecialColor
             onClicked: km.tapNavKey("Right")
         }

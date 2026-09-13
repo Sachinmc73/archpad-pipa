@@ -106,8 +106,17 @@ Item {
                 touchArea.longPressed = false
                 if (root.autoRepeat) {
                     repeatTimer.interval = 380
+                    root.clicked()
+                } else if (root.secondaryText === "") {
+                    root.clicked()
                 }
-                root.clicked()
+            }
+
+            onClicked: {
+                if (root.secondaryText !== "" && !touchArea.longPressed && !root.autoRepeat) {
+                    root.clicked()
+                }
+                touchArea.longPressed = false
             }
 
             onReleased: {
@@ -122,6 +131,7 @@ Item {
                     repeatTimer.stop()
                     repeatTimer.interval = 380
                 }
+                touchArea.longPressed = false
             }
         }
     }

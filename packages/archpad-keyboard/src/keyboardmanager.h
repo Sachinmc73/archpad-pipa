@@ -130,6 +130,7 @@ public Q_SLOTS:
     void TapText(const QString &text) { tapText(text); }
     void TapKey(int keycode) { tapKey(keycode); }
     void TapNavKey(const QString &navKey) { tapNavKey(navKey); }
+    void TapSymbol(const QString &symbol) { tapSymbol(symbol); }
 
     // KWin VirtualKeyboard sync slots
     void onKWinActiveChanged();
@@ -160,6 +161,7 @@ private:
     void emitRawEvent(int type, int code, int value);
     void emitKey(int code, int value);
     void emitKeyPressAndRelease(int code);
+    void emitKeyWithActiveModifiers(int keycode, bool forceShift = false);
 
     bool detectSystemDark();
     void updateResolvedDark();
@@ -174,6 +176,7 @@ private:
     bool m_metaActive = false;
     bool m_isFloating = false;
     bool m_isVisible = false;
+    bool m_manuallyShown = false;
     bool m_soundEnabled = true;
     bool m_optionsVisible = false;
     

@@ -39,16 +39,16 @@ ColumnLayout {
         Layout.fillHeight: true
         spacing: 1
 
-        KeyButton { text: l("q"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("q")) }
-        KeyButton { text: l("w"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("w")) }
-        KeyButton { text: l("e"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("e")) }
-        KeyButton { text: l("r"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("r")) }
-        KeyButton { text: l("t"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("t")) }
-        KeyButton { text: l("y"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("y")) }
-        KeyButton { text: l("u"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("u")) }
-        KeyButton { text: l("i"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("i")) }
-        KeyButton { text: l("o"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("o")) }
-        KeyButton { text: l("p"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("p")) }
+        KeyButton { text: root.symbolMode ? "+" : l("q"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "+" : l("q")) }
+        KeyButton { text: root.symbolMode ? "×" : l("w"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "*" : l("w")) }
+        KeyButton { text: root.symbolMode ? "÷" : l("e"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "/" : l("e")) }
+        KeyButton { text: root.symbolMode ? "=" : l("r"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "=" : l("r")) }
+        KeyButton { text: root.symbolMode ? "/" : l("t"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "/" : l("t")) }
+        KeyButton { text: root.symbolMode ? "_" : l("y"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "_" : l("y")) }
+        KeyButton { text: root.symbolMode ? "<" : l("u"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "<" : l("u")) }
+        KeyButton { text: root.symbolMode ? ">" : l("i"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? ">" : l("i")) }
+        KeyButton { text: root.symbolMode ? "[" : l("o"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "[" : l("o")) }
+        KeyButton { text: root.symbolMode ? "]" : l("p"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "]" : l("p")) }
     }
 
     // Row 3: A S D F G H J K L
@@ -58,15 +58,15 @@ ColumnLayout {
         spacing: 1
 
         Item { Layout.fillWidth: true; Layout.preferredWidth: 10 }
-        KeyButton { text: l("a"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("a")) }
-        KeyButton { text: l("s"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("s")) }
-        KeyButton { text: l("d"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("d")) }
-        KeyButton { text: l("f"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("f")) }
-        KeyButton { text: l("g"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("g")) }
-        KeyButton { text: l("h"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("h")) }
-        KeyButton { text: l("j"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("j")) }
-        KeyButton { text: l("k"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("k")) }
-        KeyButton { text: l("l"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("l")) }
+        KeyButton { text: root.symbolMode ? "!" : l("a"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "!" : l("a")) }
+        KeyButton { text: root.symbolMode ? "@" : l("s"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "@" : l("s")) }
+        KeyButton { text: root.symbolMode ? "#" : l("d"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "#" : l("d")) }
+        KeyButton { text: root.symbolMode ? "$" : l("f"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "$" : l("f")) }
+        KeyButton { text: root.symbolMode ? "%" : l("g"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "%" : l("g")) }
+        KeyButton { text: root.symbolMode ? "^" : l("h"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "^" : l("h")) }
+        KeyButton { text: root.symbolMode ? "&" : l("j"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "&" : l("j")) }
+        KeyButton { text: root.symbolMode ? "*" : l("k"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "*" : l("k")) }
+        KeyButton { text: root.symbolMode ? "(" : l("l"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "(" : l("l")) }
         Item { Layout.fillWidth: true; Layout.preferredWidth: 10 }
     }
 
@@ -93,13 +93,13 @@ ColumnLayout {
                 }
             }
         }
-        KeyButton { text: l("z"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("z")) }
-        KeyButton { text: l("x"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("x")) }
-        KeyButton { text: l("c"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("c")) }
-        KeyButton { text: l("v"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("v")) }
-        KeyButton { text: l("b"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("b")) }
-        KeyButton { text: l("n"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("n")) }
-        KeyButton { text: l("m"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(l("m")) }
+        KeyButton { text: root.symbolMode ? "`" : l("z"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "`" : l("z")) }
+        KeyButton { text: root.symbolMode ? "~" : l("x"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "~" : l("x")) }
+        KeyButton { text: root.symbolMode ? "{" : l("c"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "{" : l("c")) }
+        KeyButton { text: root.symbolMode ? "}" : l("v"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "}" : l("v")) }
+        KeyButton { text: root.symbolMode ? ":" : l("b"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? ":" : l("b")) }
+        KeyButton { text: root.symbolMode ? ";" : l("n"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? ";" : l("n")) }
+        KeyButton { text: root.symbolMode ? "'" : l("m"); weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol(root.symbolMode ? "'" : l("m")) }
         KeyButton {
             text: "⌫"
             weight: 1.4
@@ -117,7 +117,7 @@ ColumnLayout {
         spacing: 1
 
         KeyButton {
-            text: "?123"
+            text: root.symbolMode ? "ABC" : "?123"
             weight: 1.3
             customKeyColor: theme.keySpecialColor
             customFontSize: theme.fontSizeSmall

@@ -416,15 +416,16 @@ void KeyboardManager::setSplitPinned(bool pinned)
     }
 }
 
-void KeyboardManager::tapKey(int keycode)
+void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift)
 {
     playClick();
 
-    bool needsShift = m_shiftActive || m_capsLockActive;
+    bool needsShift = forceShift || m_shiftActive || m_capsLockActive;
 
-    if (needsShift) {
-        emitKey(KEY_LEFTSHIFT, 1);
-    }
+    if (m_ctrlActive) emitKey(KEY_LEFTCTRL, 1);
+    if (m_altActive) emitKey(KEY_LEFTALT, 1);
+    if (m_metaActive) emitKey(KEY_LEFTMETA, 1);
+    if (needsShift) emitKey(KEY_LEFTSHIFT, 1);
 
     emitKeyPressAndRelease(keycode);
 
@@ -434,17 +435,23 @@ void KeyboardManager::tapKey(int keycode)
             setShiftActive(false);
         }
     }
-
-    // Auto-release sticky Ctrl, Alt, Meta after a keypress
-    if (m_ctrlActive) {
-        setCtrlActive(false);
-    }
-    if (m_altActive) {
-        setAltActive(false);
-    }
     if (m_metaActive) {
+        emitKey(KEY_LEFTMETA, 0);
         setMetaActive(false);
     }
+    if (m_altActive) {
+        emitKey(KEY_LEFTALT, 0);
+        setAltActive(false);
+    }
+    if (m_ctrlActive) {
+        emitKey(KEY_LEFTCTRL, 0);
+        setCtrlActive(false);
+    }
+}
+
+void KeyboardManager::tapKey(int keycode)
+{
+    emitKeyWithActiveModifiers(keycode, false);
 }
 
 void KeyboardManager::tapKeyWithModifiers(int keycode, bool shift, bool ctrl, bool alt)
@@ -464,24 +471,39 @@ void KeyboardManager::tapKeyWithModifiers(int keycode, bool shift, bool ctrl, bo
 
 void KeyboardManager::tapNavKey(const QString &navKey)
 {
-    playClick();
-
+    int keycode = 0;
     if (navKey == QLatin1String("Esc")) {
-        emitKeyPressAndRelease(KEY_ESC);
+        keycode = KEY_ESC;
     } else if (navKey == QLatin1String("Tab")) {
-        emitKeyPressAndRelease(KEY_TAB);
-    } else if (navKey == QLatin1String("Left")) {
-        emitKeyPressAndRelease(KEY_LEFT);
-    } else if (navKey == QLatin1String("Right")) {
-        emitKeyPressAndRelease(KEY_RIGHT);
-    } else if (navKey == QLatin1String("Up")) {
-        emitKeyPressAndRelease(KEY_UP);
-    } else if (navKey == QLatin1String("Down")) {
-        emitKeyPressAndRelease(KEY_DOWN);
+        keycode = KEY_TAB;
+    } else if (navKey == QLatin1String("Space")) {
+        keycode = KEY_SPACE;
     } else if (navKey == QLatin1String("Backspace")) {
-        emitKeyPressAndRelease(KEY_BACKSPACE);
-    } else if (navKey == QLatin1String("Enter")) {
-        emitKeyPressAndRelease(KEY_ENTER);
+        keycode = KEY_BACKSPACE;
+    } else if (navKey == QLatin1String("Delete") || navKey == QLatin1String("Del")) {
+        keycode = KEY_DELETE;
+    } else if (navKey == QLatin1String("Enter") || navKey == QLatin1String("Return")) {
+        keycode = KEY_ENTER;
+    } else if (navKey == QLatin1String("Left")) {
+        keycode = KEY_LEFT;
+    } else if (navKey == QLatin1String("Right")) {
+        keycode = KEY_RIGHT;
+    } else if (navKey == QLatin1String("Up")) {
+        keycode = KEY_UP;
+    } else if (navKey == QLatin1String("Down")) {
+        keycode = KEY_DOWN;
+    } else if (navKey == QLatin1String("Home")) {
+        keycode = KEY_HOME;
+    } else if (navKey == QLatin1String("End")) {
+        keycode = KEY_END;
+    } else if (navKey == QLatin1String("PageUp")) {
+        keycode = KEY_PAGEUP;
+    } else if (navKey == QLatin1String("PageDown")) {
+        keycode = KEY_PAGEDOWN;
+    }
+
+    if (keycode != 0) {
+        emitKeyWithActiveModifiers(keycode, false);
     }
 }
 
@@ -545,15 +567,7 @@ void KeyboardManager::tapSymbol(const QString &symbol)
         }
     }
 
-    playClick();
-
-    if (shift) emitKey(KEY_LEFTSHIFT, 1);
-    emitKeyPressAndRelease(keycode);
-    if (shift) emitKey(KEY_LEFTSHIFT, 0);
-
-    if (m_shiftActive && !m_capsLockActive) {
-        setShiftActive(false);
-    }
+    emitKeyWithActiveModifiers(keycode, shift);
 }
 
 void KeyboardManager::tapText(const QString &text)
@@ -565,18 +579,13 @@ void KeyboardManager::tapText(const QString &text)
 
 void KeyboardManager::Show()
 {
+    m_manuallyShown = true;
     setIsVisible(true);
-    QDBusInterface kwinVk(QStringLiteral("org.kde.KWin"),
-                          QStringLiteral("/VirtualKeyboard"),
-                          QStringLiteral("org.kde.kwin.VirtualKeyboard"),
-                          QDBusConnection::sessionBus());
-    if (kwinVk.isValid()) {
-        kwinVk.setProperty("active", true);
-    }
 }
 
 void KeyboardManager::Hide()
 {
+    m_manuallyShown = false;
     setIsVisible(false);
     QDBusInterface kwinVk(QStringLiteral("org.kde.KWin"),
                           QStringLiteral("/VirtualKeyboard"),
@@ -603,9 +612,14 @@ void KeyboardManager::onKWinActiveChanged()
                           QStringLiteral("org.kde.kwin.VirtualKeyboard"),
                           QDBusConnection::sessionBus());
     if (kwinVk.isValid()) {
-        bool active = kwinVk.property("active").toBool();
         bool visible = kwinVk.property("visible").toBool();
-        setIsVisible(active || visible);
+        bool active = kwinVk.property("active").toBool();
+        if (visible || active) {
+            m_manuallyShown = false;
+            setIsVisible(true);
+        } else if (!m_manuallyShown) {
+            setIsVisible(false);
+        }
     }
 }
 
