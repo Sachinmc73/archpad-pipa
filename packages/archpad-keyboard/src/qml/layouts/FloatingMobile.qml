@@ -10,7 +10,6 @@ ColumnLayout {
 
     readonly property bool isShifted: km.shiftActive || km.capsLockActive
     property bool symbolMode: false
-    property bool moreSymbols: false
 
     function l(letter) {
         return isShifted ? letter.toUpperCase() : letter.toLowerCase()
@@ -73,83 +72,83 @@ ColumnLayout {
         spacing: 1
 
         KeyButton {
-            text: !root.symbolMode ? l("q") : (!root.moreSymbols ? "@" : "~")
+            text: !root.symbolMode ? l("q") : "@"
             secondaryText: !root.symbolMode ? "~" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("q") : (!root.moreSymbols ? "@" : "~"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("q") : "@")
             onHeld: km.tapSymbol(!root.symbolMode ? "~" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("w") : (!root.moreSymbols ? "#" : "\\")
+            text: !root.symbolMode ? l("w") : "#"
             secondaryText: !root.symbolMode ? "|" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("w") : (!root.moreSymbols ? "#" : "\\"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("w") : "#")
             onHeld: km.tapSymbol(!root.symbolMode ? "|" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("e") : (!root.moreSymbols ? "₹" : "|")
+            text: !root.symbolMode ? l("e") : "₹"
             secondaryText: !root.symbolMode ? "\\" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("e") : (!root.moreSymbols ? "₹" : "|"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("e") : "₹")
             onHeld: km.tapSymbol(!root.symbolMode ? "\\" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("r") : (!root.moreSymbols ? "$" : "•")
+            text: !root.symbolMode ? l("r") : "$"
             secondaryText: !root.symbolMode ? "/" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("r") : (!root.moreSymbols ? "$" : "•"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("r") : "$")
             onHeld: km.tapSymbol(!root.symbolMode ? "/" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("t") : (!root.moreSymbols ? "%" : "÷")
+            text: !root.symbolMode ? l("t") : "%"
             secondaryText: !root.symbolMode ? "_" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("t") : (!root.moreSymbols ? "%" : "÷"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("t") : "%")
             onHeld: km.tapSymbol(!root.symbolMode ? "_" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("y") : (!root.moreSymbols ? "&" : "×")
+            text: !root.symbolMode ? l("y") : "&"
             secondaryText: !root.symbolMode ? "<" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("y") : (!root.moreSymbols ? "&" : "×"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("y") : "&")
             onHeld: km.tapSymbol(!root.symbolMode ? "<" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("u") : (!root.moreSymbols ? "-" : "°")
+            text: !root.symbolMode ? l("u") : "-"
             secondaryText: !root.symbolMode ? ">" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("u") : (!root.moreSymbols ? "-" : "°"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("u") : "-")
             onHeld: km.tapSymbol(!root.symbolMode ? ">" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("i") : (!root.moreSymbols ? "+" : "=")
+            text: !root.symbolMode ? l("i") : "+"
             secondaryText: !root.symbolMode ? "[" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("i") : (!root.moreSymbols ? "+" : "="))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("i") : "+")
             onHeld: km.tapSymbol(!root.symbolMode ? "[" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("o") : (!root.moreSymbols ? "(" : "{")
+            text: !root.symbolMode ? l("o") : "("
             secondaryText: !root.symbolMode ? "]" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("o") : (!root.moreSymbols ? "(" : "{"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("o") : "(")
             onHeld: km.tapSymbol(!root.symbolMode ? "]" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("p") : (!root.moreSymbols ? ")" : "}")
+            text: !root.symbolMode ? l("p") : ")"
             secondaryText: !root.symbolMode ? "=" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("p") : (!root.moreSymbols ? ")" : "}"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("p") : ")")
             onHeld: km.tapSymbol(!root.symbolMode ? "=" : "")
         }
     }
@@ -163,93 +162,93 @@ ColumnLayout {
         Item { Layout.preferredWidth: 8; Layout.fillHeight: true }
 
         KeyButton {
-            text: !root.symbolMode ? l("a") : (!root.moreSymbols ? "*" : "€")
+            text: !root.symbolMode ? l("a") : "*"
             secondaryText: !root.symbolMode ? "!" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("a") : (!root.moreSymbols ? "*" : "€"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("a") : "*")
             onHeld: km.tapSymbol(!root.symbolMode ? "!" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("s") : (!root.moreSymbols ? "\"" : "£")
+            text: !root.symbolMode ? l("s") : "\""
             secondaryText: !root.symbolMode ? "@" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("s") : (!root.moreSymbols ? "\"" : "£"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("s") : "\"")
             onHeld: km.tapSymbol(!root.symbolMode ? "@" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("d") : (!root.moreSymbols ? "'" : "¥")
+            text: !root.symbolMode ? l("d") : "'"
             secondaryText: !root.symbolMode ? "#" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("d") : (!root.moreSymbols ? "'" : "¥"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("d") : "'")
             onHeld: km.tapSymbol(!root.symbolMode ? "#" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("f") : (!root.moreSymbols ? ":" : "¢")
+            text: !root.symbolMode ? l("f") : ":"
             secondaryText: !root.symbolMode ? "$" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("f") : (!root.moreSymbols ? ":" : "¢"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("f") : ":")
             onHeld: km.tapSymbol(!root.symbolMode ? "$" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("g") : (!root.moreSymbols ? ";" : "^")
+            text: !root.symbolMode ? l("g") : ";"
             secondaryText: !root.symbolMode ? "%" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("g") : (!root.moreSymbols ? ";" : "^"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("g") : ";")
             onHeld: km.tapSymbol(!root.symbolMode ? "%" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("h") : (!root.moreSymbols ? "!" : "[")
+            text: !root.symbolMode ? l("h") : "!"
             secondaryText: !root.symbolMode ? "^" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("h") : (!root.moreSymbols ? "!" : "["))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("h") : "!")
             onHeld: km.tapSymbol(!root.symbolMode ? "^" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("j") : (!root.moreSymbols ? "?" : "]")
+            text: !root.symbolMode ? l("j") : "?"
             secondaryText: !root.symbolMode ? "&" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("j") : (!root.moreSymbols ? "?" : "]"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("j") : "?")
             onHeld: km.tapSymbol(!root.symbolMode ? "&" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("k") : (!root.moreSymbols ? "/" : "<")
+            text: !root.symbolMode ? l("k") : "/"
             secondaryText: !root.symbolMode ? "*" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("k") : (!root.moreSymbols ? "/" : "<"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("k") : "/")
             onHeld: km.tapSymbol(!root.symbolMode ? "*" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("l") : (!root.moreSymbols ? "\\" : ">")
+            text: !root.symbolMode ? l("l") : "\\"
             secondaryText: !root.symbolMode ? "?" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("l") : (!root.moreSymbols ? "\\" : ">"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("l") : "\\")
             onHeld: km.tapSymbol(!root.symbolMode ? "?" : "")
         }
 
         Item { Layout.preferredWidth: 8; Layout.fillHeight: true }
     }
 
-    // 5. Row 4: Shift (or More Symbols), Z-M, Backspace
+    // 5. Row 4: Shift (or _ in symbols), Z-M, Backspace
     RowLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         spacing: 1
 
-        // Left key: Shift in QWERTY, "=\<" / "?12" in symbol mode
+        // Left key: Shift in QWERTY, "_" in symbol mode
         Loader {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.preferredWidth: 140
-            sourceComponent: !root.symbolMode ? shiftKeyComp : moreSymbolsKeyComp
+            sourceComponent: !root.symbolMode ? shiftKeyComp : symbolExtraKeyComp
         }
 
         Component {
@@ -274,71 +273,73 @@ ColumnLayout {
         }
 
         Component {
-            id: moreSymbolsKeyComp
+            id: symbolExtraKeyComp
             KeyButton {
-                text: !root.moreSymbols ? "=\\<" : "?12"
+                text: "_"
+                secondaryText: "~"
                 weight: 1.4
                 customKeyColor: theme.keySpecialColor
                 customFontSize: theme.fontSizeSmall
-                onClicked: root.moreSymbols = !root.moreSymbols
+                onClicked: km.tapSymbol("_")
+                onHeld: km.tapSymbol("~")
             }
         }
 
         KeyButton {
-            text: !root.symbolMode ? l("z") : (!root.moreSymbols ? "_" : "©")
-            secondaryText: !root.symbolMode ? "`" : ""
+            text: !root.symbolMode ? l("z") : "<"
+            secondaryText: !root.symbolMode ? "`" : "`"
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("z") : (!root.moreSymbols ? "_" : "©"))
-            onHeld: km.tapSymbol(!root.symbolMode ? "`" : "")
+            onClicked: km.tapSymbol(!root.symbolMode ? l("z") : "<")
+            onHeld: km.tapSymbol("`")
         }
         KeyButton {
-            text: !root.symbolMode ? l("x") : (!root.moreSymbols ? "~" : "®")
-            secondaryText: !root.symbolMode ? "+" : ""
+            text: !root.symbolMode ? l("x") : ">"
+            secondaryText: !root.symbolMode ? "+" : "|"
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("x") : (!root.moreSymbols ? "~" : "®"))
-            onHeld: km.tapSymbol(!root.symbolMode ? "+" : "")
+            onClicked: km.tapSymbol(!root.symbolMode ? l("x") : ">")
+            onHeld: km.tapSymbol(!root.symbolMode ? "+" : "|")
         }
         KeyButton {
-            text: !root.symbolMode ? l("c") : (!root.moreSymbols ? "<" : "™")
-            secondaryText: !root.symbolMode ? "-" : ""
+            text: !root.symbolMode ? l("c") : "["
+            secondaryText: !root.symbolMode ? "-" : "{"
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("c") : (!root.moreSymbols ? "<" : "™"))
-            onHeld: km.tapSymbol(!root.symbolMode ? "-" : "")
+            onClicked: km.tapSymbol(!root.symbolMode ? l("c") : "[")
+            onHeld: km.tapSymbol(!root.symbolMode ? "-" : "{")
         }
         KeyButton {
-            text: !root.symbolMode ? l("v") : (!root.moreSymbols ? ">" : "✓")
-            secondaryText: !root.symbolMode ? "{" : ""
+            text: !root.symbolMode ? l("v") : "]"
+            secondaryText: !root.symbolMode ? "{" : "}"
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("v") : (!root.moreSymbols ? ">" : "✓"))
-            onHeld: km.tapSymbol(!root.symbolMode ? "{" : "")
+            onClicked: km.tapSymbol(!root.symbolMode ? l("v") : "]")
+            onHeld: km.tapSymbol(!root.symbolMode ? "{" : "}")
         }
         KeyButton {
-            text: !root.symbolMode ? l("b") : (!root.moreSymbols ? "{" : "§")
+            text: !root.symbolMode ? l("b") : "{"
             secondaryText: !root.symbolMode ? "}" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("b") : (!root.moreSymbols ? "{" : "§"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("b") : "{")
             onHeld: km.tapSymbol(!root.symbolMode ? "}" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("n") : (!root.moreSymbols ? "}" : "±")
+            text: !root.symbolMode ? l("n") : "}"
             secondaryText: !root.symbolMode ? ":" : ""
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("n") : (!root.moreSymbols ? "}" : "±"))
+            onClicked: km.tapSymbol(!root.symbolMode ? l("n") : "}")
             onHeld: km.tapSymbol(!root.symbolMode ? ":" : "")
         }
         KeyButton {
-            text: !root.symbolMode ? l("m") : (!root.moreSymbols ? "=" : "...")
-            secondaryText: !root.symbolMode ? ";" : ""
+            text: !root.symbolMode ? l("m") : "="
+            secondaryText: !root.symbolMode ? ";" : "+"
             weight: 1.0
             customFontSize: theme.fontSizeSmall
-            onClicked: km.tapSymbol(!root.symbolMode ? l("m") : (!root.moreSymbols ? "=" : "..."))
-            onHeld: km.tapSymbol(!root.symbolMode ? ";" : "")
+            onClicked: km.tapSymbol(!root.symbolMode ? l("m") : "=")
+            onHeld: km.tapSymbol(!root.symbolMode ? ";" : "+")
         }
 
         KeyButton {
@@ -362,10 +363,7 @@ ColumnLayout {
             weight: 1.3
             customKeyColor: theme.keySpecialColor
             customFontSize: theme.fontSizeSmall
-            onClicked: {
-                root.symbolMode = !root.symbolMode
-                root.moreSymbols = false
-            }
+            onClicked: root.symbolMode = !root.symbolMode
         }
         KeyButton {
             text: ","
