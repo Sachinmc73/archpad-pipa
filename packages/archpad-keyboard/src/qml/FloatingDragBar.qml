@@ -48,21 +48,34 @@ Rectangle {
 
             property real pinnedRight: 0
             property real grabOffsetX: 0
+            property double lastTime: 0
 
             onPressed: (mouse) => {
                 let p = mapToItem(null, mouse.x, mouse.y)
                 pinnedRight = root.windowX + root.windowWidth
                 grabOffsetX = p.x
+                lastTime = Date.now()
             }
 
             onPositionChanged: (mouse) => {
                 if (pressed) {
+                    let now = Date.now()
+                    let dt = Math.min(0.050, Math.max(0.001, (now - lastTime) / 1000.0))
+                    lastTime = now
+
                     let p = mapToItem(null, mouse.x, mouse.y)
                     let errX = p.x - grabOffsetX
 
-                    // Damped proportional tracking (alpha = 0.50):
-                    // Prevents buffer allocation thrashing and limit-cycle oscillation
-                    const alpha = 0.50
+                    // Deadband filter: suppress sub-pixel capacitive sensor noise
+                    if (Math.abs(errX) < 0.5) {
+                        errX = 0
+                    }
+
+                    // Continuous time-delta exponential damping:
+                    // alpha(dt) = 1.0 - exp(-lambda * dt) with lambda = 80 s^-1
+                    // Guarantees identical convergence time across 60Hz, 90Hz, 120Hz, 144Hz
+                    const lambda = 80.0
+                    const alpha = 1.0 - Math.exp(-lambda * dt)
                     let targetW = root.windowWidth - (errX * alpha)
 
                     const minW = 340.0
@@ -105,23 +118,37 @@ Rectangle {
 
             property real grabOffsetX: 0
             property real grabOffsetY: 0
+            property double lastTime: 0
 
             onPressed: (mouse) => {
                 let p = mapToItem(null, mouse.x, mouse.y)
                 grabOffsetX = p.x
                 grabOffsetY = root.windowHeight - p.y
+                lastTime = Date.now()
             }
 
             onPositionChanged: (mouse) => {
                 if (pressed) {
+                    let now = Date.now()
+                    let dt = Math.min(0.050, Math.max(0.001, (now - lastTime) / 1000.0))
+                    lastTime = now
+
                     let p = mapToItem(null, mouse.x, mouse.y)
                     let errX = p.x - grabOffsetX
                     let errY = (root.windowHeight - p.y) - grabOffsetY
 
-                    // Critically damped proportional tracking (alpha = 0.55):
-                    // Places the discrete closed-loop pole at z = 1 - alpha = +0.45.
-                    // Strictly positive real pole guarantees zero oscillation and smooth glide.
-                    const alpha = 0.55
+                    // Deadband filter: suppress sub-pixel capacitive sensor noise when stationary
+                    if (Math.abs(errX) < 0.5) errX = 0
+                    if (Math.abs(errY) < 0.5) errY = 0
+
+                    // Continuous time-delta exponential damping:
+                    // alpha(dt) = 1.0 - exp(-lambda * dt) with lambda = 96 s^-1
+                    // At 120Hz (dt = 8.3ms), alpha is ~0.55
+                    // At 60Hz (dt = 16.7ms), alpha adjusts smoothly to ~0.80
+                    // Convergence rate per unit of physical time is strictly invariant across refresh rates
+                    const lambda = 96.0
+                    const alpha = 1.0 - Math.exp(-lambda * dt)
+
                     let targetX = root.windowX + (errX * alpha)
                     let targetBottom = root.windowY + (errY * alpha)
 
