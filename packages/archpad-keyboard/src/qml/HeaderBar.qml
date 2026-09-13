@@ -70,7 +70,7 @@ Rectangle {
             }
         }
 
-        // 3. Split Mode Toggle (Only visible if pinned AND in Landscape mode)
+        // 2. Split Mode Toggle (Only visible if pinned AND in Landscape mode)
         Rectangle {
             id: splitBtn
             visible: km.splitPinned && root.isLandscape
@@ -97,7 +97,7 @@ Rectangle {
             }
         }
 
-        // 4. Theme Mode Switcher (Only visible if pinned)
+        // 3. Theme Mode Switcher (Only visible if pinned)
         Rectangle {
             id: themeBtn
             visible: km.themePinned
@@ -124,7 +124,7 @@ Rectangle {
             }
         }
 
-        // 5. Audio Click Feedback (Only visible if pinned)
+        // 4. Audio Click Feedback (Only visible if pinned)
         Rectangle {
             id: soundBtn
             visible: km.soundPinned
@@ -151,7 +151,7 @@ Rectangle {
             }
         }
 
-        // 6. Settings Gear Icon (Always Pinned)
+        // 5. Settings Gear Icon (Always Pinned)
         Rectangle {
             id: gearBtn
             width: 34
@@ -177,7 +177,7 @@ Rectangle {
             }
         }
 
-        // 7. Hide Keyboard Button (Always Pinned)
+        // 6. Hide Keyboard Button (Always Pinned)
         Rectangle {
             id: hideBtn
             width: 34

@@ -78,7 +78,7 @@ Rectangle {
             color: theme.dividerColor
         }
 
-        // 2x3 Grid of Feature Cards
+        // 5 Feature Cards Grid
         GridLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -91,12 +91,12 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: theme.keyRadius
-                color: km.isFloating ? Qt.darker(theme.keyActiveColor, 2.0) : (card2Area.pressed ? theme.keyPressedColor : theme.keyColor)
+                color: km.isFloating ? Qt.darker(theme.keyActiveColor, 2.0) : (cardFloatArea.pressed ? theme.keyPressedColor : theme.keyColor)
                 border.color: km.isFloating ? theme.keyActiveColor : theme.borderColor
                 border.width: 1
 
                 MouseArea {
-                    id: card2Area
+                    id: cardFloatArea
                     anchors.fill: parent
                     onClicked: {
                         km.isFloating = !km.isFloating
@@ -155,18 +155,18 @@ Rectangle {
                 }
             }
 
-            // 3. Split Mode (Pinnable, Landscape Only)
+            // 2. Split Mode (Pinnable, Landscape Only)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: theme.keyRadius
                 opacity: root.isLandscape ? 1.0 : 0.5
-                color: (km.splitMode && root.isLandscape) ? Qt.darker(theme.keyActiveColor, 2.0) : (card3Area.pressed ? theme.keyPressedColor : theme.keyColor)
+                color: (km.splitMode && root.isLandscape) ? Qt.darker(theme.keyActiveColor, 2.0) : (cardSplitArea.pressed ? theme.keyPressedColor : theme.keyColor)
                 border.color: (km.splitMode && root.isLandscape) ? theme.keyActiveColor : theme.borderColor
                 border.width: 1
 
                 MouseArea {
-                    id: card3Area
+                    id: cardSplitArea
                     anchors.fill: parent
                     onClicked: {
                         if (root.isLandscape) {
@@ -245,7 +245,7 @@ Rectangle {
                 }
             }
 
-            // 4. Theme Mode (Pinnable, 3-Way: Follow System, Light, Dark)
+            // 3. Theme Mode (Pinnable, 3-Way: Follow System, Light, Dark)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -349,17 +349,17 @@ Rectangle {
                 }
             }
 
-            // 5. Sound Feedback (Pinnable)
+            // 4. Sound Feedback (Pinnable)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: theme.keyRadius
-                color: card5Area.pressed ? theme.keyPressedColor : theme.keyColor
+                color: cardSoundArea.pressed ? theme.keyPressedColor : theme.keyColor
                 border.color: theme.borderColor
                 border.width: 1
 
                 MouseArea {
-                    id: card5Area
+                    id: cardSoundArea
                     anchors.fill: parent
                     onClicked: km.soundEnabled = !km.soundEnabled
                 }
@@ -434,7 +434,7 @@ Rectangle {
                 }
             }
 
-            // 6. Keyboard Height Customization (Docked)
+            // 5. Keyboard Height Customization (Docked)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true

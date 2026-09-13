@@ -37,9 +37,6 @@ Item {
                         return "M5 17 L12 5 L19 17 Z"
                     case "arrow-down":
                         return "M5 7 L12 19 L19 7 Z"
-                    case "push-up":
-                        // Ceiling bar + upward arrow
-                        return "M4 4 h16 M12 20 V8 M7 13 l5-5 5 5"
                     case "pop-out":
                     case "floating":
                         // Pop-out / Detach window
