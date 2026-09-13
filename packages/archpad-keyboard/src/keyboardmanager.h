@@ -183,7 +183,7 @@ private:
     bool m_isVisible = true;
     bool m_soundEnabled = true;
     bool m_optionsVisible = false;
-    bool m_pushWindows = false; // Default: Overlay
+    bool m_pushWindows = true; // Default: Push Windows (Displace Apps)
     
     int m_themeMode = 0; // 0 = Follow System, 1 = Light, 2 = Dark
     bool m_cachedSystemDark = true;

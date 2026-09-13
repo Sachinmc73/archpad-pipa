@@ -16,8 +16,8 @@ QtWindow.Window {
     property real floatingX: Math.max(20, Screen.width - km.floatingWidth - 30)
     property real floatingY: 40
 
-    // Dynamic LayerShell configuration
-    LayerShell.Window.layer: LayerShell.Window.LayerOverlay
+    // Dynamic LayerShell configuration: LayerTop when pushing windows (so KWin treats it as a bottom panel strut), LayerOverlay when floating
+    LayerShell.Window.layer: (km.pushWindows && !km.isFloating) ? LayerShell.Window.LayerTop : LayerShell.Window.LayerOverlay
     LayerShell.Window.scope: "archpad-keyboard"
     LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityNone
 
@@ -26,8 +26,8 @@ QtWindow.Window {
         (LayerShell.Window.AnchorBottom | LayerShell.Window.AnchorLeft) :
         (LayerShell.Window.AnchorBottom | LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorRight)
 
-    // Window pushing: only on-demand when km.pushWindows is enabled (default: -1 = cover dock completely at screen bottom)
-    LayerShell.Window.exclusionZone: (km.pushWindows && !km.isFloating) ? root.height : -1
+    // Window pushing: only active when keyboard is actually VISIBLE and pushWindows is enabled
+    LayerShell.Window.exclusionZone: (root.visible && km.pushWindows && !km.isFloating) ? root.height : -1
 
     LayerShell.Window.margins.left: km.isFloating ? Math.max(0, Math.min(Screen.width - root.width, floatingX)) : 0
     LayerShell.Window.margins.bottom: km.isFloating ? Math.max(0, Math.min(Screen.height - root.height, floatingY)) : 0
