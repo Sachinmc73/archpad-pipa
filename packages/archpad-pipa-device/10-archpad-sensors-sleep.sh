@@ -9,8 +9,8 @@ case "$1/$2" in
         systemctl stop iio-sensor-proxy.service 2>/dev/null || true
         ;;
     post/*)
-        # Post-resume: Restart sensor proxy in the background.
-        # archpad-wait-ssc will verify sensor DSP readiness before launching.
-        systemctl start iio-sensor-proxy.service 2>/dev/null &
+        # Post-resume: Clear any failed state and restart sensor proxy asynchronously
+        systemctl reset-failed iio-sensor-proxy.service 2>/dev/null || true
+        systemctl restart --no-block iio-sensor-proxy.service 2>/dev/null || systemctl start --no-block iio-sensor-proxy.service 2>/dev/null || true
         ;;
 esac
