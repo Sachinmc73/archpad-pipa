@@ -1,16 +1,13 @@
 post_install() {
-    /usr/lib/archpad/archpad-lockscreen-patch 2>/dev/null || true
+    # Clean up legacy patch/hook files if upgrading from older package
+    rm -f /usr/lib/archpad/archpad-lockscreen-patch
+    rm -f /usr/share/libalpm/hooks/96-archpad-lockscreen-keyboard.hook
 }
 
 post_upgrade() {
-    /usr/lib/archpad/archpad-lockscreen-patch 2>/dev/null || true
+    post_install
 }
 
 post_remove() {
-    LOCK_UI="/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/LockScreenUi.qml"
-    if [ -f "${LOCK_UI}.orig" ]; then
-        mv "${LOCK_UI}.orig" "$LOCK_UI" 2>/dev/null || true
-    elif [ -f "$LOCK_UI" ]; then
-        sed -i 's/ArchpadLockKeyboard/VirtualKeyboardLoader/g' "$LOCK_UI" 2>/dev/null || true
-    fi
+    rm -rf /usr/local/share/plasma/shells/org.kde.plasma.desktop
 }

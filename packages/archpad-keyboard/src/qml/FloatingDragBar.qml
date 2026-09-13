@@ -58,20 +58,23 @@ Rectangle {
             onPositionChanged: (mouse) => {
                 if (pressed) {
                     let p = mapToItem(null, mouse.x, mouse.y)
-                    let currentTouchX = root.windowX + p.x
-                    let targetLeft = currentTouchX - grabOffsetX
-                    let rawWidth = pinnedRight - targetLeft
+                    let errX = p.x - grabOffsetX
+
+                    // Damped proportional tracking (alpha = 0.50):
+                    // Prevents buffer allocation thrashing and limit-cycle oscillation
+                    const alpha = 0.50
+                    let targetW = root.windowWidth - (errX * alpha)
 
                     const minW = 340.0
                     const maxW = Math.min(580.0, Screen.width - 20)
-                    let newW = Math.max(minW, Math.min(maxW, rawWidth))
-                    let newX = pinnedRight - newW
+                    let clampedW = Math.max(minW, Math.min(maxW, targetW))
+                    let clampedX = pinnedRight - clampedW
 
-                    if (newX < 10) {
-                        newX = 10
-                        newW = Math.max(minW, Math.min(maxW, pinnedRight - 10))
+                    if (clampedX < 10) {
+                        clampedX = 10
+                        clampedW = Math.max(minW, Math.min(maxW, pinnedRight - 10))
                     }
-                    root.requestResize(newW, newX)
+                    root.requestResize(clampedW, clampedX)
                 }
             }
         }
@@ -112,11 +115,15 @@ Rectangle {
             onPositionChanged: (mouse) => {
                 if (pressed) {
                     let p = mapToItem(null, mouse.x, mouse.y)
-                    let screenTouchX = root.windowX + p.x
-                    let screenTouchY = (Screen.height - root.windowY - root.windowHeight) + p.y
+                    let errX = p.x - grabOffsetX
+                    let errY = (root.windowHeight - p.y) - grabOffsetY
 
-                    let targetX = screenTouchX - grabOffsetX
-                    let targetBottom = (Screen.height - screenTouchY) - grabOffsetY
+                    // Critically damped proportional tracking (alpha = 0.55):
+                    // Places the discrete closed-loop pole at z = 1 - alpha = +0.45.
+                    // Strictly positive real pole guarantees zero oscillation and smooth glide.
+                    const alpha = 0.55
+                    let targetX = root.windowX + (errX * alpha)
+                    let targetBottom = root.windowY + (errY * alpha)
 
                     let clampedX = Math.max(10, Math.min(Screen.width - root.windowWidth - 10, targetX))
                     let clampedY = Math.max(10, Math.min(Screen.height - root.windowHeight - 10, targetBottom))
