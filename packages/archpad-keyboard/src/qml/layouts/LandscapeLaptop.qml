@@ -261,31 +261,27 @@ ColumnLayout {
             onClicked: km.ctrlActive = !km.ctrlActive
         }
         KeyButton {
-            text: "◄"
+            iconName: "arrow-left"
             weight: 1.0
             customKeyColor: theme.keySpecialColor
-            customFontSize: theme.fontSizeNormal
             onClicked: km.tapNavKey("Left")
         }
         KeyButton {
-            text: "▲"
+            iconName: "arrow-up"
             weight: 1.0
             customKeyColor: theme.keySpecialColor
-            customFontSize: theme.fontSizeNormal
             onClicked: km.tapNavKey("Up")
         }
         KeyButton {
-            text: "▼"
+            iconName: "arrow-down"
             weight: 1.0
             customKeyColor: theme.keySpecialColor
-            customFontSize: theme.fontSizeNormal
             onClicked: km.tapNavKey("Down")
         }
         KeyButton {
-            text: "►"
+            iconName: "arrow-right"
             weight: 1.0
             customKeyColor: theme.keySpecialColor
-            customFontSize: theme.fontSizeNormal
             onClicked: km.tapNavKey("Right")
         }
     }

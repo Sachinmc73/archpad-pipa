@@ -12,6 +12,7 @@ Item {
     property bool isAccent: false
     property bool autoRepeat: false
     property int customFontSize: 0
+    property string iconName: ""
 
     readonly property color finalKeyColor: customKeyColor !== null ? customKeyColor : theme.keyColor
     readonly property color finalTextColor: customTextColor !== null ? customTextColor : (root.isAccent ? "#FFFFFF" : theme.textColor)
@@ -53,6 +54,7 @@ Item {
 
         // Main Key Label
         Text {
+            visible: root.iconName === ""
             text: root.text
             anchors.centerIn: parent
             font.family: theme.fontFamily
@@ -61,6 +63,16 @@ Item {
             color: root.finalTextColor
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
+        }
+
+        // Vector Icon (for pixel-perfect symbol sizing)
+        VectorIcon {
+            visible: root.iconName !== ""
+            name: root.iconName
+            anchors.centerIn: parent
+            width: 18
+            height: 18
+            color: root.finalTextColor
         }
 
         MouseArea {

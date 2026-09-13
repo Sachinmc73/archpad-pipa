@@ -8,6 +8,8 @@ Item {
     property real strokeWidth: 2.0
     property color fillColor: "transparent"
 
+    readonly property bool isArrow: name.startsWith("arrow-")
+
     width: 18
     height: 18
 
@@ -19,14 +21,22 @@ Item {
 
         ShapePath {
             strokeColor: root.color
-            strokeWidth: root.strokeWidth
-            fillColor: root.fillColor
+            strokeWidth: root.isArrow ? 1.2 : root.strokeWidth
+            fillColor: root.isArrow ? root.color : root.fillColor
             capStyle: ShapePath.RoundCap
             joinStyle: ShapePath.RoundJoin
 
             PathSvg {
                 path: {
                     switch (root.name) {
+                    case "arrow-left":
+                        return "M17 5 L5 12 L17 19 Z"
+                    case "arrow-right":
+                        return "M7 5 L19 12 L7 19 Z"
+                    case "arrow-up":
+                        return "M5 17 L12 5 L19 17 Z"
+                    case "arrow-down":
+                        return "M5 7 L12 19 L19 7 Z"
                     case "push-up":
                         // Ceiling bar + upward arrow
                         return "M4 4 h16 M12 20 V8 M7 13 l5-5 5 5"

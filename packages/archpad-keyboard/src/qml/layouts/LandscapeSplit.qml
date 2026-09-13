@@ -56,8 +56,8 @@ ColumnLayout {
             KeyButton { text: "/"; weight: 1.0; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("/") }
             KeyButton { text: "-"; weight: 1.0; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("-") }
             KeyButton { text: "_"; weight: 1.0; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("_") }
-            KeyButton { text: "◄"; weight: 1.0; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeNormal; onClicked: km.tapNavKey("Left") }
-            KeyButton { text: "►"; weight: 1.0; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeNormal; onClicked: km.tapNavKey("Right") }
+            KeyButton { iconName: "arrow-left"; weight: 1.0; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Left") }
+            KeyButton { iconName: "arrow-right"; weight: 1.0; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Right") }
         }
     }
 
