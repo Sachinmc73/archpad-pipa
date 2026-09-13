@@ -88,3 +88,12 @@ This file is the authoritative guide and persistent memory for all AI agents wor
 - **Capacitive Touch Deadband**:
   - Always filter out microscopic ADC sensor noise ($\pm 0.2\text{px}$ to $0.5\text{px}$) when stationary via a small deadband (`Math.abs(err) < 0.5 -> 0`) to prevent unnecessary GPU repaints and micro-jitter while resting.
 
+### E. Display Timing Parity & Gate Driver Phase (Novatek NT36532 / Dual-DSI)
+- **Even Line Parity Requirement ($V_{\text{total}} \pmod 2 == 0$)**:
+  - The Novatek NT36532 panel DDIC uses dual-line (2H) gate driver multiplexing.
+  - Total vertical lines ($V_{\text{total}} = V_{\text{active}} + V_{\text{fp}} + V_{\text{pw}} + V_{\text{bp}}$) **MUST be strictly even**.
+  - If $V_{\text{total}}$ or $V_{\text{fp}}$ is odd, the gate driver clock inverts phase between frames, triggering an internal timing fault in the DDIC and shutting down output (black screen).
+  - On the SoC side, this stalls the DSI link, logging `dsi_err_worker: status=5` ($0\text{x}1 \; \text{DSI\_ERR\_STATE\_TIMEOUT} \;|\; 0\text{x}4 \; \text{DSI\_ERR\_STATE\_FIFO}$).
+  - All custom refresh rate modes MUST round $V_{\text{total}}$ to the nearest **even integer** (e.g., $V_{\text{total}} = 4164$ for 90Hz, $V_{\text{total}} = 7806$ for 48Hz).
+
+
