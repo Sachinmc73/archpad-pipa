@@ -515,11 +515,40 @@ void KeyboardManager::tapSymbol(const QString &symbol)
     bool shift = false;
     int keycode = 0;
 
+    static const int s_alphaKeycodes[26] = {
+        KEY_A, // a / A
+        KEY_B, // b / B
+        KEY_C, // c / C
+        KEY_D, // d / D
+        KEY_E, // e / E
+        KEY_F, // f / F
+        KEY_G, // g / G
+        KEY_H, // h / H
+        KEY_I, // i / I
+        KEY_J, // j / J
+        KEY_K, // k / K
+        KEY_L, // l / L
+        KEY_M, // m / M
+        KEY_N, // n / N
+        KEY_O, // o / O
+        KEY_P, // p / P
+        KEY_Q, // q / Q
+        KEY_R, // r / R
+        KEY_S, // s / S
+        KEY_T, // t / T
+        KEY_U, // u / U
+        KEY_V, // v / V
+        KEY_W, // w / W
+        KEY_X, // x / X
+        KEY_Y, // y / Y
+        KEY_Z  // z / Z
+    };
+
     if (c >= QLatin1Char('a') && c <= QLatin1Char('z')) {
-        keycode = KEY_A + (c.unicode() - 'a');
+        keycode = s_alphaKeycodes[c.unicode() - 'a'];
         shift = false;
     } else if (c >= QLatin1Char('A') && c <= QLatin1Char('Z')) {
-        keycode = KEY_A + (c.unicode() - 'A');
+        keycode = s_alphaKeycodes[c.unicode() - 'A'];
         shift = true;
     } else if (c >= QLatin1Char('1') && c <= QLatin1Char('9')) {
         keycode = KEY_1 + (c.unicode() - '1');
