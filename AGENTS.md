@@ -73,3 +73,18 @@ This file is the authoritative guide and persistent memory for all AI agents wor
 - **SDDM & Orientation Sensor**:
   - Never add hard systemd dependencies like `After=iio-sensor-proxy.service` to `sddm.service` (stalled cold boots by 50 seconds).
   - KWin connects dynamically to `net.hadess.SensorProxy` over D-Bus via `QDBusServiceWatcher` when the service becomes available.
+
+### D. Touch Screen Dragging & Frame-Rate Invariant Exponential Damping
+- **The Runaway Accumulator Bug**:
+  - Sampling touch offset once on touch-down (`grabOffsetX = p.x`) and computing `targetX = root.windowX + (p.x - grabOffsetX)` on every touch event causes runaway oscillation because KWin updates window margins asynchronously on vsync. Touch events arriving before the next frame evaluate against an already-incremented requested position.
+- **Fixed Discrete Gain ($\alpha$) vs Display Refresh Rate**:
+  - Applying a fixed discrete gain (e.g. $\alpha = 0.55$) works well at 120Hz ($8.3\text{ ms}$ frame time).
+  - However, at 60Hz ($16.7\text{ ms}$ frame time), the hardware touch digitizer emits 2 to 4 touch events per display frame. Compounding over multiple events raises effective gain to $(1 - (1 - \alpha)^N) \approx 0.91 - 0.96$, reintroducing jitter and instability.
+- **The Continuous Time-Delta Solution ($\Delta t$)**:
+  - Always use continuous time-delta exponential damping:
+    $$\alpha(\Delta t) = 1.0 - \exp(-\lambda \cdot \Delta t)$$
+    where $\Delta t = (t - t_{\text{last}})/1000.0$ and $\lambda \approx 96.0\text{ s}^{-1}$.
+  - Because $(1 - \alpha(\Delta t_1)) \cdot (1 - \alpha(\Delta t_2)) = e^{-\lambda (\Delta t_1 + \Delta t_2)}$, physical convergence is **strictly invariant across 60Hz, 90Hz, 120Hz, and 144Hz**.
+- **Capacitive Touch Deadband**:
+  - Always filter out microscopic ADC sensor noise ($\pm 0.2\text{px}$ to $0.5\text{px}$) when stationary via a small deadband (`Math.abs(err) < 0.5 -> 0`) to prevent unnecessary GPU repaints and micro-jitter while resting.
+
