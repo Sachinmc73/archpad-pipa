@@ -10,58 +10,105 @@ Rectangle {
     border.width: 1
     radius: theme.keyRadius
 
-    signal toggleOptions()
     signal dockBack()
     signal dragMoved(real deltaX, real deltaY)
+    signal resizeMoved(real deltaX, real startWidth)
 
-    RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        spacing: 6
+    // 1. Top-Left: Resize Handle
+    Rectangle {
+        id: resizeBtn
+        anchors.left: parent.left
+        anchors.leftMargin: 6
+        anchors.verticalCenter: parent.verticalCenter
+        width: 32
+        height: 26
+        radius: theme.keyRadius
+        color: resizeArea.pressed ? theme.keyPressedColor : "transparent"
+        border.color: theme.borderColor
+        border.width: 1
 
-        // Centered Drag Handle Grip (Zero text, perfectly centered)
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+        VectorIcon {
+            name: "resize-corner"
+            anchors.centerIn: parent
+            width: 14
+            height: 14
+            color: resizeArea.pressed ? theme.keyActiveColor : theme.textSecondaryColor
+            strokeWidth: 1.8
+        }
 
-            Rectangle {
-                anchors.centerIn: parent
-                width: 48
-                height: 4
-                radius: 2
-                color: theme.textSecondaryColor
-                opacity: dragArea.pressed ? 0.9 : 0.45
-                Behavior on opacity {
-                    NumberAnimation { duration: 80 }
-                }
+        MouseArea {
+            id: resizeArea
+            anchors.fill: parent
+            preventStealing: true
+
+            property real startX: 0
+            property real startWidth: 400
+
+            onPressed: (mouse) => {
+                startX = mouse.x
+                startWidth = km.floatingWidth
             }
 
-            MouseArea {
-                id: dragArea
-                anchors.fill: parent
-                preventStealing: true
-
-                property real lastX: 0
-                property real lastY: 0
-
-                onPressed: (mouse) => {
-                    lastX = mouse.x
-                    lastY = mouse.y
-                }
-
-                onPositionChanged: (mouse) => {
-                    if (pressed) {
-                        let dx = mouse.x - lastX
-                        let dy = mouse.y - lastY
-                        root.dragMoved(dx, dy)
-                    }
+            onPositionChanged: (mouse) => {
+                if (pressed) {
+                    let dx = mouse.x - startX
+                    root.resizeMoved(dx, startWidth)
                 }
             }
         }
+    }
 
-        // Dock Back to Bottom Button (Native Dock-Bottom Vector Icon)
+    // 2. Exactly in the middle: Centered Drag Handle Grip
+    Item {
+        anchors.centerIn: parent
+        width: 120
+        height: parent.height
+
         Rectangle {
+            anchors.centerIn: parent
+            width: 48
+            height: 4
+            radius: 2
+            color: theme.textSecondaryColor
+            opacity: dragArea.pressed ? 0.9 : 0.45
+            Behavior on opacity {
+                NumberAnimation { duration: 80 }
+            }
+        }
+
+        MouseArea {
+            id: dragArea
+            anchors.fill: parent
+            preventStealing: true
+
+            property real lastX: 0
+            property real lastY: 0
+
+            onPressed: (mouse) => {
+                lastX = mouse.x
+                lastY = mouse.y
+            }
+
+            onPositionChanged: (mouse) => {
+                if (pressed) {
+                    let dx = mouse.x - lastX
+                    let dy = mouse.y - lastY
+                    root.dragMoved(dx, dy)
+                }
+            }
+        }
+    }
+
+    // 3. Right: Pop Back Icon (180° rotated popup trigger icon) + Minimise Icon
+    RowLayout {
+        anchors.right: parent.right
+        anchors.rightMargin: 6
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 6
+
+        // Pop Back Button (180 degree rotated floating icon)
+        Rectangle {
+            id: dockBtn
             width: 32
             height: 26
             radius: theme.keyRadius
@@ -70,12 +117,13 @@ Rectangle {
             border.width: 1
 
             VectorIcon {
-                name: "dock-bottom"
+                name: "floating"
+                rotation: 180
                 anchors.centerIn: parent
                 width: 15
                 height: 15
                 color: theme.keyActiveColor
-                strokeWidth: 2.0
+                strokeWidth: 1.8
             }
 
             MouseArea {
@@ -85,33 +133,9 @@ Rectangle {
             }
         }
 
-        // Audio Click Toggle (Native Volume Vector Icon)
+        // Minimise Icon (Rightmost)
         Rectangle {
-            width: 32
-            height: 26
-            radius: theme.keyRadius
-            color: soundArea.pressed ? theme.keyPressedColor : "transparent"
-            border.color: theme.borderColor
-            border.width: 1
-
-            VectorIcon {
-                name: km.soundEnabled ? "volume-on" : "volume-off"
-                anchors.centerIn: parent
-                width: 15
-                height: 15
-                color: km.soundEnabled ? theme.textColor : theme.textSecondaryColor
-                strokeWidth: 1.8
-            }
-
-            MouseArea {
-                id: soundArea
-                anchors.fill: parent
-                onClicked: km.soundEnabled = !km.soundEnabled
-            }
-        }
-
-        // Hide Keyboard Button (Native Chevron-Down Vector Icon)
-        Rectangle {
+            id: hideBtn
             width: 32
             height: 26
             radius: theme.keyRadius

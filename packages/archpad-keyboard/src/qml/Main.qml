@@ -34,7 +34,7 @@ QtWindow.Window {
 
     // Width and height: Docked modes scale with km.heightScale; Popup mode uses locked 10:7 aspect ratio
     width: km.isFloating ? km.floatingWidth : Screen.width
-    height: km.isFloating ? Math.round(km.floatingWidth / 1.42857) :
+    height: km.isFloating ? Math.round(km.floatingWidth * 0.76) :
             Math.round((isLandscape ? (km.splitMode ? 360 : 310) : 420) * km.heightScale)
 
     // Keyboard Main Surface Container
@@ -73,11 +73,18 @@ QtWindow.Window {
             Component {
                 id: floatingBarComp
                 FloatingDragBar {
-                    onToggleOptions: km.optionsVisible = !km.optionsVisible
                     onDockBack: km.isFloating = false
                     onDragMoved: (dx, dy) => {
                         root.floatingX += dx
                         root.floatingY -= dy
+                    }
+                    onResizeMoved: (dx, startWidth) => {
+                        let newW = Math.max(280, Math.min(560, startWidth - dx))
+                        let deltaW = newW - km.floatingWidth
+                        if (Math.abs(deltaW) >= 1) {
+                            km.floatingWidth = newW
+                            root.floatingX -= deltaW
+                        }
                     }
                 }
             }
@@ -107,55 +114,6 @@ QtWindow.Window {
                 Component { id: portraitLayoutComp; PortraitDualBar {} }
                 Component { id: splitLayoutComp; LandscapeSplit {} }
                 Component { id: floatingLayoutComp; FloatingMobile {} }
-            }
-        }
-
-        // Interactive Top-Left Corner Resize Handle in Pop-up Mode (Locked Aspect Ratio)
-        Rectangle {
-            id: resizeHandle
-            visible: km.isFloating
-            width: 24
-            height: 24
-            anchors.top: parent.top
-            anchors.left: parent.left
-            color: "transparent"
-            z: 100
-
-            VectorIcon {
-                name: "resize-corner"
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.margins: 4
-                width: 14
-                height: 14
-                color: resizeArea.pressed ? theme.keyActiveColor : theme.textDimColor
-                strokeWidth: 2.0
-            }
-
-            MouseArea {
-                id: resizeArea
-                anchors.fill: parent
-                preventStealing: true
-
-                property real startX: 0
-                property real startWidth: 400
-
-                onPressed: (mouse) => {
-                    startX = mouse.x
-                    startWidth = km.floatingWidth
-                }
-
-                onPositionChanged: (mouse) => {
-                    if (pressed) {
-                        let dx = mouse.x - startX
-                        let newW = Math.max(280, Math.min(560, startWidth - dx))
-                        let deltaW = newW - km.floatingWidth
-                        if (Math.abs(deltaW) >= 1) {
-                            km.floatingWidth = newW
-                            root.floatingX -= deltaW
-                        }
-                    }
-                }
             }
         }
 
