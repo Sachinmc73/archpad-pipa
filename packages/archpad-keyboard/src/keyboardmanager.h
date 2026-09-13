@@ -161,7 +161,8 @@ private:
     void emitRawEvent(int type, int code, int value);
     void emitKey(int code, int value);
     void emitKeyPressAndRelease(int code);
-    void emitKeyWithActiveModifiers(int keycode, bool forceShift = false);
+    void emitKeyWithActiveModifiers(int keycode, bool forceShift = false, bool forceAltGr = false);
+    void ensureXkbOptions();
 
     bool detectSystemDark();
     void updateResolvedDark();

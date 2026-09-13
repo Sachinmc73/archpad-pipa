@@ -136,7 +136,38 @@ bool KeyboardManager::initUInput()
     }
 
     qInfo() << "Successfully initialized ArchPad Virtual Keyboard on /dev/uinput";
+    ensureXkbOptions();
     return true;
+}
+
+void KeyboardManager::ensureXkbOptions()
+{
+    QString kxkbPath = QDir::homePath() + QStringLiteral("/.config/kxkbrc");
+    QSettings kxkb(kxkbPath, QSettings::IniFormat);
+    QString currentOptions = kxkb.value(QStringLiteral("Layout/Options")).toString();
+    if (!currentOptions.contains(QStringLiteral("rupeesign:4")) ||
+        !currentOptions.contains(QStringLiteral("lv3:ralt_switch"))) {
+        kxkb.setValue(QStringLiteral("Layout/LayoutList"), QStringLiteral("us"));
+        QStringList opts;
+        if (!currentOptions.isEmpty()) {
+            opts = currentOptions.split(QLatin1Char(','), Qt::SkipEmptyParts);
+        }
+        if (!opts.contains(QStringLiteral("rupeesign:4"))) opts.append(QStringLiteral("rupeesign:4"));
+        if (!opts.contains(QStringLiteral("eurosign:e"))) opts.append(QStringLiteral("eurosign:e"));
+        if (!opts.contains(QStringLiteral("lv3:ralt_switch"))) opts.append(QStringLiteral("lv3:ralt_switch"));
+        kxkb.setValue(QStringLiteral("Layout/Options"), opts.join(QLatin1Char(',')));
+        kxkb.setValue(QStringLiteral("Layout/ResetOldOptions"), true);
+        kxkb.setValue(QStringLiteral("Layout/Use"), true);
+        kxkb.sync();
+
+        QDBusInterface kwinLayouts(QStringLiteral("org.kde.KWin"),
+                                  QStringLiteral("/Layouts"),
+                                  QStringLiteral("org.kde.KeyboardLayouts"),
+                                  QDBusConnection::sessionBus());
+        if (kwinLayouts.isValid()) {
+            kwinLayouts.call(QStringLiteral("setLayout"), 0u);
+        }
+    }
 }
 
 void KeyboardManager::closeUInput()
@@ -416,7 +447,7 @@ void KeyboardManager::setSplitPinned(bool pinned)
     }
 }
 
-void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift)
+void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift, bool forceAltGr)
 {
     playClick();
 
@@ -425,6 +456,7 @@ void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift)
     if (m_ctrlActive) emitKey(KEY_LEFTCTRL, 1);
     if (m_altActive) emitKey(KEY_LEFTALT, 1);
     if (m_metaActive) emitKey(KEY_LEFTMETA, 1);
+    if (forceAltGr) emitKey(KEY_RIGHTALT, 1);
     if (needsShift) emitKey(KEY_LEFTSHIFT, 1);
 
     emitKeyPressAndRelease(keycode);
@@ -434,6 +466,9 @@ void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift)
         if (m_shiftActive && !m_capsLockActive) {
             setShiftActive(false);
         }
+    }
+    if (forceAltGr) {
+        emitKey(KEY_RIGHTALT, 0);
     }
     if (m_metaActive) {
         emitKey(KEY_LEFTMETA, 0);
@@ -510,9 +545,17 @@ void KeyboardManager::tapNavKey(const QString &navKey)
 void KeyboardManager::tapSymbol(const QString &symbol)
 {
     if (symbol.isEmpty()) return;
+    if (symbol == QLatin1String("...")) {
+        tapSymbol(QStringLiteral("."));
+        tapSymbol(QStringLiteral("."));
+        tapSymbol(QStringLiteral("."));
+        return;
+    }
+
     QChar c = symbol.at(0);
 
     bool shift = false;
+    bool altGr = false;
     int keycode = 0;
 
     static const int s_alphaKeycodes[26] = {
@@ -591,12 +634,50 @@ void KeyboardManager::tapSymbol(const QString &symbol)
         case '/': keycode = KEY_SLASH; shift = false; break;
         case '?': keycode = KEY_SLASH; shift = true; break;
         case ' ': keycode = KEY_SPACE; shift = false; break;
+
+        // Indian Rupee & Currency
+        case 0x20B9: // '₹' Indian Rupee
+            keycode = KEY_4; altGr = true; shift = false; break;
+        case 0x20AC: // '€' Euro
+            keycode = KEY_E; altGr = true; shift = false; break;
+        case 0x00A3: // '£' Pound Sterling
+            keycode = KEY_4; altGr = true; shift = true; break;
+        case 0x00A5: // '¥' Yen
+            keycode = KEY_MINUS; altGr = true; shift = false; break;
+        case 0x00A2: // '¢' Cent
+            keycode = KEY_C; altGr = true; shift = true; break;
+
+        // Math & Specials
+        case 0x00D7: // '×' Multiplication
+            keycode = KEY_8; shift = true; break;
+        case 0x00F7: // '÷' Division
+            keycode = KEY_SLASH; shift = false; break;
+        case 0x00B0: // '°' Degree
+            keycode = KEY_SEMICOLON; altGr = true; shift = true; break;
+        case 0x00B1: // '±' Plus-minus
+            keycode = KEY_M; altGr = true; shift = true; break;
+        case 0x2022: // '•' Bullet
+        case 0x00B7: // '·' Middle dot
+            keycode = KEY_B; altGr = true; shift = false; break;
+        case 0x00A9: // '©' Copyright
+            keycode = KEY_C; altGr = true; shift = false; break;
+        case 0x00AE: // '®' Registered
+            keycode = KEY_V; altGr = true; shift = false; break;
+        case 0x2122: // '™' Trademark
+            keycode = KEY_V; altGr = true; shift = true; break;
+        case 0x00A7: // '§' Section
+            keycode = KEY_S; altGr = true; shift = true; break;
+        case 0x00B6: // '¶' Pilcrow
+            keycode = KEY_SEMICOLON; altGr = true; shift = false; break;
+        case 0x2713: // '✓' Checkmark
+            keycode = KEY_V; shift = false; break;
+
         default:
             return;
         }
     }
 
-    emitKeyWithActiveModifiers(keycode, shift);
+    emitKeyWithActiveModifiers(keycode, shift, altGr);
 }
 
 void KeyboardManager::tapText(const QString &text)
