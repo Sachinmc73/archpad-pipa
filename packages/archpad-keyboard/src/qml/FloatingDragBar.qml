@@ -10,9 +10,14 @@ Rectangle {
     border.width: 1
     radius: theme.keyRadius
 
+    property real windowX: 0
+    property real windowY: 0
+    property real windowWidth: 0
+    property real windowHeight: 0
+
     signal dockBack()
-    signal dragMoved(real deltaX, real deltaY)
-    signal resizeMoved(real deltaX, real startWidth)
+    signal requestMove(real newX, real newY)
+    signal requestResize(real newWidth, real newX)
 
     // 1. Top-Left: Resize Handle
     Rectangle {
@@ -41,18 +46,32 @@ Rectangle {
             anchors.fill: parent
             preventStealing: true
 
-            property real startX: 0
-            property real startWidth: 400
+            property real pinnedRight: 0
+            property real grabOffsetX: 0
 
             onPressed: (mouse) => {
-                startX = mouse.x
-                startWidth = km.floatingWidth
+                let p = mapToItem(null, mouse.x, mouse.y)
+                pinnedRight = root.windowX + root.windowWidth
+                grabOffsetX = p.x
             }
 
             onPositionChanged: (mouse) => {
                 if (pressed) {
-                    let dx = mouse.x - startX
-                    root.resizeMoved(dx, startWidth)
+                    let p = mapToItem(null, mouse.x, mouse.y)
+                    let currentTouchX = root.windowX + p.x
+                    let targetLeft = currentTouchX - grabOffsetX
+                    let rawWidth = pinnedRight - targetLeft
+
+                    const minW = 340.0
+                    const maxW = Math.min(580.0, Screen.width - 20)
+                    let newW = Math.max(minW, Math.min(maxW, rawWidth))
+                    let newX = pinnedRight - newW
+
+                    if (newX < 10) {
+                        newX = 10
+                        newW = Math.max(minW, Math.min(maxW, pinnedRight - 10))
+                    }
+                    root.requestResize(newW, newX)
                 }
             }
         }
@@ -81,19 +100,28 @@ Rectangle {
             anchors.fill: parent
             preventStealing: true
 
-            property real lastX: 0
-            property real lastY: 0
+            property real grabOffsetX: 0
+            property real grabOffsetY: 0
 
             onPressed: (mouse) => {
-                lastX = mouse.x
-                lastY = mouse.y
+                let p = mapToItem(null, mouse.x, mouse.y)
+                grabOffsetX = p.x
+                grabOffsetY = root.windowHeight - p.y
             }
 
             onPositionChanged: (mouse) => {
                 if (pressed) {
-                    let dx = mouse.x - lastX
-                    let dy = mouse.y - lastY
-                    root.dragMoved(dx, dy)
+                    let p = mapToItem(null, mouse.x, mouse.y)
+                    let screenTouchX = root.windowX + p.x
+                    let screenTouchY = (Screen.height - root.windowY - root.windowHeight) + p.y
+
+                    let targetX = screenTouchX - grabOffsetX
+                    let targetBottom = (Screen.height - screenTouchY) - grabOffsetY
+
+                    let clampedX = Math.max(10, Math.min(Screen.width - root.windowWidth - 10, targetX))
+                    let clampedY = Math.max(10, Math.min(Screen.height - root.windowHeight - 10, targetBottom))
+
+                    root.requestMove(clampedX, clampedY)
                 }
             }
         }

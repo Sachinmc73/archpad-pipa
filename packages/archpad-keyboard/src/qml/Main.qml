@@ -73,18 +73,18 @@ QtWindow.Window {
             Component {
                 id: floatingBarComp
                 FloatingDragBar {
+                    windowX: root.floatingX
+                    windowY: root.floatingY
+                    windowWidth: root.width
+                    windowHeight: root.height
                     onDockBack: km.isFloating = false
-                    onDragMoved: (dx, dy) => {
-                        root.floatingX += dx
-                        root.floatingY -= dy
+                    onRequestMove: (newX, newY) => {
+                        root.floatingX = newX
+                        root.floatingY = newY
                     }
-                    onResizeMoved: (dx, startWidth) => {
-                        let newW = Math.max(280, Math.min(560, startWidth - dx))
-                        let deltaW = newW - km.floatingWidth
-                        if (Math.abs(deltaW) >= 1) {
-                            km.floatingWidth = newW
-                            root.floatingX -= deltaW
-                        }
+                    onRequestResize: (newWidth, newX) => {
+                        km.floatingWidth = newWidth
+                        root.floatingX = newX
                     }
                 }
             }

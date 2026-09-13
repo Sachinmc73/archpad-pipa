@@ -10,7 +10,8 @@ Item {
     property real weight: 1.0
     property int customFontSize: 0
 
-    readonly property int finalFontSize: customFontSize > 0 ? customFontSize : theme.fontSizeNormal
+    readonly property int autoFontSize: Math.max(11, Math.min(theme.fontSizeNormal, Math.round(parent.height * 0.36)))
+    readonly property int finalFontSize: customFontSize > 0 ? customFontSize : autoFontSize
 
     signal clicked()
 

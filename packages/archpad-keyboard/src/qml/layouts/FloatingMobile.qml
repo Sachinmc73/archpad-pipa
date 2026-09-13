@@ -53,16 +53,16 @@ ColumnLayout {
         Layout.fillHeight: true
         spacing: 1
 
-        KeyButton { text: "1"; secondaryText: "!"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("1"); onHeld: km.tapSymbol("!") }
-        KeyButton { text: "2"; secondaryText: "@"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("2"); onHeld: km.tapSymbol("@") }
-        KeyButton { text: "3"; secondaryText: "#"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("3"); onHeld: km.tapSymbol("#") }
-        KeyButton { text: "4"; secondaryText: "₹"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("4"); onHeld: km.tapSymbol("₹") }
-        KeyButton { text: "5"; secondaryText: "%"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("5"); onHeld: km.tapSymbol("%") }
-        KeyButton { text: "6"; secondaryText: "^"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("6"); onHeld: km.tapSymbol("^") }
-        KeyButton { text: "7"; secondaryText: "&"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("7"); onHeld: km.tapSymbol("&") }
-        KeyButton { text: "8"; secondaryText: "*"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("8"); onHeld: km.tapSymbol("*") }
-        KeyButton { text: "9"; secondaryText: "("; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("9"); onHeld: km.tapSymbol("(") }
-        KeyButton { text: "0"; secondaryText: ")"; weight: 1.0; customFontSize: theme.fontSizeSmall; onClicked: km.tapSymbol("0"); onHeld: km.tapSymbol(")") }
+        KeyButton { text: "1"; secondaryText: "!"; weight: 1.0; onClicked: km.tapSymbol("1"); onHeld: km.tapSymbol("!") }
+        KeyButton { text: "2"; secondaryText: "@"; weight: 1.0; onClicked: km.tapSymbol("2"); onHeld: km.tapSymbol("@") }
+        KeyButton { text: "3"; secondaryText: "#"; weight: 1.0; onClicked: km.tapSymbol("3"); onHeld: km.tapSymbol("#") }
+        KeyButton { text: "4"; secondaryText: "₹"; weight: 1.0; onClicked: km.tapSymbol("4"); onHeld: km.tapSymbol("₹") }
+        KeyButton { text: "5"; secondaryText: "%"; weight: 1.0; onClicked: km.tapSymbol("5"); onHeld: km.tapSymbol("%") }
+        KeyButton { text: "6"; secondaryText: "^"; weight: 1.0; onClicked: km.tapSymbol("6"); onHeld: km.tapSymbol("^") }
+        KeyButton { text: "7"; secondaryText: "&"; weight: 1.0; onClicked: km.tapSymbol("7"); onHeld: km.tapSymbol("&") }
+        KeyButton { text: "8"; secondaryText: "*"; weight: 1.0; onClicked: km.tapSymbol("8"); onHeld: km.tapSymbol("*") }
+        KeyButton { text: "9"; secondaryText: "("; weight: 1.0; onClicked: km.tapSymbol("9"); onHeld: km.tapSymbol("(") }
+        KeyButton { text: "0"; secondaryText: ")"; weight: 1.0; onClicked: km.tapSymbol("0"); onHeld: km.tapSymbol(")") }
     }
 
     // 3. Row 2: Q W E R T Y U I O P (or Symbols)
@@ -75,7 +75,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("q") : "@"
             secondaryText: !root.symbolMode ? "~" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("q") : "@")
             onHeld: km.tapSymbol(!root.symbolMode ? "~" : "")
         }
@@ -83,7 +82,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("w") : "#"
             secondaryText: !root.symbolMode ? "|" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("w") : "#")
             onHeld: km.tapSymbol(!root.symbolMode ? "|" : "")
         }
@@ -91,7 +89,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("e") : "₹"
             secondaryText: !root.symbolMode ? "\\" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("e") : "₹")
             onHeld: km.tapSymbol(!root.symbolMode ? "\\" : "")
         }
@@ -99,7 +96,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("r") : "$"
             secondaryText: !root.symbolMode ? "/" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("r") : "$")
             onHeld: km.tapSymbol(!root.symbolMode ? "/" : "")
         }
@@ -107,7 +103,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("t") : "%"
             secondaryText: !root.symbolMode ? "_" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("t") : "%")
             onHeld: km.tapSymbol(!root.symbolMode ? "_" : "")
         }
@@ -115,7 +110,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("y") : "&"
             secondaryText: !root.symbolMode ? "<" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("y") : "&")
             onHeld: km.tapSymbol(!root.symbolMode ? "<" : "")
         }
@@ -123,7 +117,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("u") : "-"
             secondaryText: !root.symbolMode ? ">" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("u") : "-")
             onHeld: km.tapSymbol(!root.symbolMode ? ">" : "")
         }
@@ -131,7 +124,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("i") : "+"
             secondaryText: !root.symbolMode ? "[" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("i") : "+")
             onHeld: km.tapSymbol(!root.symbolMode ? "[" : "")
         }
@@ -139,7 +131,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("o") : "("
             secondaryText: !root.symbolMode ? "]" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("o") : "(")
             onHeld: km.tapSymbol(!root.symbolMode ? "]" : "")
         }
@@ -147,7 +138,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("p") : ")"
             secondaryText: !root.symbolMode ? "=" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("p") : ")")
             onHeld: km.tapSymbol(!root.symbolMode ? "=" : "")
         }
@@ -165,7 +155,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("a") : "*"
             secondaryText: !root.symbolMode ? "!" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("a") : "*")
             onHeld: km.tapSymbol(!root.symbolMode ? "!" : "")
         }
@@ -173,7 +162,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("s") : "\""
             secondaryText: !root.symbolMode ? "@" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("s") : "\"")
             onHeld: km.tapSymbol(!root.symbolMode ? "@" : "")
         }
@@ -181,7 +169,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("d") : "'"
             secondaryText: !root.symbolMode ? "#" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("d") : "'")
             onHeld: km.tapSymbol(!root.symbolMode ? "#" : "")
         }
@@ -189,7 +176,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("f") : ":"
             secondaryText: !root.symbolMode ? "$" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("f") : ":")
             onHeld: km.tapSymbol(!root.symbolMode ? "$" : "")
         }
@@ -197,7 +183,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("g") : ";"
             secondaryText: !root.symbolMode ? "%" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("g") : ";")
             onHeld: km.tapSymbol(!root.symbolMode ? "%" : "")
         }
@@ -205,7 +190,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("h") : "!"
             secondaryText: !root.symbolMode ? "^" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("h") : "!")
             onHeld: km.tapSymbol(!root.symbolMode ? "^" : "")
         }
@@ -213,7 +197,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("j") : "?"
             secondaryText: !root.symbolMode ? "&" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("j") : "?")
             onHeld: km.tapSymbol(!root.symbolMode ? "&" : "")
         }
@@ -221,7 +204,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("k") : "/"
             secondaryText: !root.symbolMode ? "*" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("k") : "/")
             onHeld: km.tapSymbol(!root.symbolMode ? "*" : "")
         }
@@ -229,7 +211,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("l") : "\\"
             secondaryText: !root.symbolMode ? "?" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("l") : "\\")
             onHeld: km.tapSymbol(!root.symbolMode ? "?" : "")
         }
@@ -279,7 +260,6 @@ ColumnLayout {
                 secondaryText: "~"
                 weight: 1.4
                 customKeyColor: theme.keySpecialColor
-                customFontSize: theme.fontSizeSmall
                 onClicked: km.tapSymbol("_")
                 onHeld: km.tapSymbol("~")
             }
@@ -289,7 +269,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("z") : "<"
             secondaryText: !root.symbolMode ? "`" : "`"
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("z") : "<")
             onHeld: km.tapSymbol("`")
         }
@@ -297,7 +276,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("x") : ">"
             secondaryText: !root.symbolMode ? "+" : "|"
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("x") : ">")
             onHeld: km.tapSymbol(!root.symbolMode ? "+" : "|")
         }
@@ -305,7 +283,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("c") : "["
             secondaryText: !root.symbolMode ? "-" : "{"
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("c") : "[")
             onHeld: km.tapSymbol(!root.symbolMode ? "-" : "{")
         }
@@ -313,7 +290,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("v") : "]"
             secondaryText: !root.symbolMode ? "{" : "}"
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("v") : "]")
             onHeld: km.tapSymbol(!root.symbolMode ? "{" : "}")
         }
@@ -321,7 +297,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("b") : "{"
             secondaryText: !root.symbolMode ? "}" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("b") : "{")
             onHeld: km.tapSymbol(!root.symbolMode ? "}" : "")
         }
@@ -329,7 +304,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("n") : "}"
             secondaryText: !root.symbolMode ? ":" : ""
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("n") : "}")
             onHeld: km.tapSymbol(!root.symbolMode ? ":" : "")
         }
@@ -337,7 +311,6 @@ ColumnLayout {
             text: !root.symbolMode ? l("m") : "="
             secondaryText: !root.symbolMode ? ";" : "+"
             weight: 1.0
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(!root.symbolMode ? l("m") : "=")
             onHeld: km.tapSymbol(!root.symbolMode ? ";" : "+")
         }
@@ -347,7 +320,6 @@ ColumnLayout {
             weight: 1.4
             autoRepeat: true
             customKeyColor: theme.keyDeleteColor
-            customFontSize: theme.fontSizeNormal
             onClicked: km.tapNavKey("Backspace")
         }
     }
@@ -369,7 +341,6 @@ ColumnLayout {
             text: ","
             secondaryText: "'"
             weight: 0.9
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(",")
             onHeld: km.tapSymbol("'")
         }
@@ -386,7 +357,6 @@ ColumnLayout {
             text: "."
             secondaryText: "\""
             weight: 0.9
-            customFontSize: theme.fontSizeSmall
             onClicked: km.tapSymbol(".")
             onHeld: km.tapSymbol("\"")
         }
@@ -394,7 +364,6 @@ ColumnLayout {
             text: "↵"
             weight: 1.5
             isAccent: true
-            customFontSize: theme.fontSizeNormal
             onClicked: km.tapNavKey("Enter")
         }
     }

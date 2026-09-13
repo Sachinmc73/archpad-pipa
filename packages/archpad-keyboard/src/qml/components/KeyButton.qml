@@ -16,7 +16,8 @@ Item {
 
     readonly property color finalKeyColor: customKeyColor !== null ? customKeyColor : theme.keyColor
     readonly property color finalTextColor: customTextColor !== null ? customTextColor : (root.isAccent ? "#FFFFFF" : theme.textColor)
-    readonly property int finalFontSize: customFontSize > 0 ? customFontSize : theme.fontSizeNormal
+    readonly property int autoFontSize: Math.max(11, Math.min(theme.fontSizeNormal, Math.round(parent.height * 0.38)))
+    readonly property int finalFontSize: customFontSize > 0 ? customFontSize : autoFontSize
 
     signal clicked()
     signal held()
@@ -45,9 +46,10 @@ Item {
             text: root.secondaryText
             anchors.top: parent.top
             anchors.right: parent.right
-            anchors.margins: 4
+            anchors.topMargin: Math.max(2, Math.round(parent.height * 0.05))
+            anchors.rightMargin: Math.max(3, Math.round(parent.width * 0.08))
             font.family: theme.fontFamily
-            font.pixelSize: theme.fontSizeSmall
+            font.pixelSize: Math.max(8, Math.min(11, Math.round(parent.height * 0.22)))
             font.weight: Font.DemiBold
             color: theme.textSecondaryColor
         }
@@ -57,6 +59,8 @@ Item {
             visible: root.iconName === ""
             text: root.text
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: root.secondaryText !== "" ? Math.max(2, Math.round(parent.height * 0.08)) : 0
+            anchors.horizontalCenterOffset: root.secondaryText !== "" ? -Math.max(1, Math.round(parent.width * 0.04)) : 0
             font.family: theme.fontFamily
             font.pixelSize: root.finalFontSize
             font.weight: Font.Normal
@@ -70,8 +74,8 @@ Item {
             visible: root.iconName !== ""
             name: root.iconName
             anchors.centerIn: parent
-            width: 18
-            height: 18
+            width: Math.max(14, Math.min(18, Math.round(parent.height * 0.38)))
+            height: width
             color: root.finalTextColor
         }
 

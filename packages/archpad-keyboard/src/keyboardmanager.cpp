@@ -92,6 +92,10 @@ KeyboardManager::KeyboardManager(QObject *parent)
 
 KeyboardManager::~KeyboardManager()
 {
+    if (m_saveSettingsTimer && m_saveSettingsTimer->isActive()) {
+        m_saveSettingsTimer->stop();
+        saveSettings();
+    }
     closeUInput();
     if (m_caContext) {
         ca_context_destroy(m_caContext);
@@ -273,10 +277,10 @@ void KeyboardManager::loadSettings()
     m_themePinned = s.value(QStringLiteral("themePinned"), false).toBool();
     m_soundPinned = s.value(QStringLiteral("soundPinned"), false).toBool();
     m_splitPinned = s.value(QStringLiteral("splitPinned"), false).toBool();
-    m_floatingWidth = s.value(QStringLiteral("floatingWidth"), 400.0).toReal();
+    m_floatingWidth = s.value(QStringLiteral("floatingWidth"), 420.0).toReal();
     s.endGroup();
-    if (m_floatingWidth < 280.0) m_floatingWidth = 280.0;
-    if (m_floatingWidth > 560.0) m_floatingWidth = 560.0;
+    if (m_floatingWidth < 340.0) m_floatingWidth = 340.0;
+    if (m_floatingWidth > 580.0) m_floatingWidth = 580.0;
 }
 
 void KeyboardManager::saveSettings()
@@ -296,6 +300,17 @@ void KeyboardManager::saveSettings()
     s.setValue(QStringLiteral("floatingWidth"), m_floatingWidth);
     s.endGroup();
     s.sync();
+}
+
+void KeyboardManager::scheduleSaveSettings()
+{
+    if (!m_saveSettingsTimer) {
+        m_saveSettingsTimer = new QTimer(this);
+        m_saveSettingsTimer->setSingleShot(true);
+        m_saveSettingsTimer->setInterval(300); // 300ms debounce
+        connect(m_saveSettingsTimer, &QTimer::timeout, this, &KeyboardManager::saveSettings);
+    }
+    m_saveSettingsTimer->start();
 }
 
 void KeyboardManager::setShiftActive(bool active)
@@ -411,11 +426,11 @@ void KeyboardManager::setSplitMode(bool split)
 
 void KeyboardManager::setFloatingWidth(qreal width)
 {
-    if (width < 280.0) width = 280.0;
-    if (width > 560.0) width = 560.0;
+    if (width < 340.0) width = 340.0;
+    if (width > 580.0) width = 580.0;
     if (!qFuzzyCompare(m_floatingWidth, width)) {
         m_floatingWidth = width;
-        saveSettings();
+        scheduleSaveSettings();
         Q_EMIT floatingWidthChanged(m_floatingWidth);
     }
 }

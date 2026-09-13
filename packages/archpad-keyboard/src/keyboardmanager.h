@@ -4,6 +4,7 @@
 #include <QString>
 #include <QSet>
 #include <QFileSystemWatcher>
+#include <QTimer>
 
 struct ca_context;
 
@@ -168,6 +169,7 @@ private:
     void updateResolvedDark();
     void loadSettings();
     void saveSettings();
+    void scheduleSaveSettings();
 
     int m_uinputFd = -1;
     bool m_shiftActive = false;
@@ -187,7 +189,7 @@ private:
 
     qreal m_heightScale = 1.0; // 0.85 (Compact) to 1.25 (Expanded)
     bool m_splitMode = false;
-    qreal m_floatingWidth = 400.0;
+    qreal m_floatingWidth = 420.0;
 
     // Pinning: by default only essentials are outside; theme/sound/split are unpinned
     bool m_themePinned = false;
@@ -195,4 +197,5 @@ private:
     bool m_splitPinned = false;
     ca_context *m_caContext = nullptr;
     QFileSystemWatcher *m_themeWatcher = nullptr;
+    QTimer *m_saveSettingsTimer = nullptr;
 };
