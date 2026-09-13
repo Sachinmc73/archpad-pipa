@@ -1,7 +1,7 @@
 # Maintainer: ArchPad Project <https://github.com/pipa-mainline>
 pkgname=archpad-pipa-device
 pkgver=1.0.0
-pkgrel=32
+pkgrel=33
 pkgdesc="Device integration, power management daemon, udev rules, and quirks for Xiaomi Pad 6 (pipa)"
 arch=('aarch64')
 url="https://github.com/pipa-mainline"
@@ -48,8 +48,7 @@ source=("81-libssc-xiaomi-pipa.rules"
         "net.hadess.PowerProfiles.conf"
         "ArchpadLockKeyboard.qml"
         "archpad-lockscreen-patch"
-        "96-archpad-lockscreen-keyboard.hook"
-        "kwinrulesrc")
+        "96-archpad-lockscreen-keyboard.hook")
 sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5119335d4bb4e73b3cfe7b87fe7e9d8799b69f34fe180c425d0febba87d95c'
             'cdd3151aa5a96927ec01d9026b1150544fad78ba0d8c7c5f0eeb6559e1838bf61fa1caa36faec529ba6f0c1bdaea69e9a38b7eed61de7c4087e8294aed835ca2'
             'd73e0a550de972a572dd9bde80f405dbf546f294fd7ca771a504a91c44cd546185bfea363f980f0985a4af5cf45c88024757f0b0b1516f7ed03b1e4d96f311e3'
@@ -83,8 +82,7 @@ sha512sums=('80ba46fe8adeae1f604f023a94f7b55c559306a383df29a350603b11ca1c47340e5
             'd7020b46169f88f57871a8d804b627a29121fc6454e986cd157dae30047fe302381f954fbef594c478e0d0163affe400ca2ef8a2343509c9e6b969c7d0c0589e'
             '22e5c8a2d8042a3905ab049697106d95e4247bb83117bf2fa579f237648539cea26d1b92e62274012b76aefe23525cd91eb4b8dd184da4397ae9e4e3bf0f583b'
             '95e4e9b92fd7c331d214debdc245dabfa91e27736a4ea6ba3cc774ef3572a53528623c97c02d2992d781eeec0a76e34a5b72bf11e2f4990f3fdf680436f26ef4'
-            'adc97fa38afeeda9aeeb34a7efc57244c87c6d3110a432a0d01990b94110615422bdb107f5ca805de665374c449a1c78369602507f29a07cb54ec26ffc904cca'
-            'a0363989c83cc813e97dd9bf8985ce9ab50229248c03dd82f948c563f523130d11b8c9cfa6815df5a361acb0acb8651f63f1946c1dc1cc0ae036491c3b8b2e89')
+            'adc97fa38afeeda9aeeb34a7efc57244c87c6d3110a432a0d01990b94110615422bdb107f5ca805de665374c449a1c78369602507f29a07cb54ec26ffc904cca')
 
 build() {
   cd "${srcdir}"
@@ -124,8 +122,6 @@ package() {
     "${pkgdir}/usr/lib/systemd/system-sleep/10-archpad-sensors-sleep.sh"
   install -Dm644 "${srcdir}/60-archpad-powerdevil.conf" \
     "${pkgdir}/etc/xdg/powerdevilrc"
-  install -Dm644 "${srcdir}/kwinrulesrc" \
-    "${pkgdir}/etc/xdg/kwinrulesrc"
   install -Dm644 "${srcdir}/10-archpad-power.rules" \
     "${pkgdir}/usr/share/polkit-1/rules.d/10-archpad-power.rules"
 

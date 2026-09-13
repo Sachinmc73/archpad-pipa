@@ -86,73 +86,7 @@ Rectangle {
             rowSpacing: 8
             columnSpacing: 8
 
-            // 1. Move Up / Push UI Up (Always Pinned)
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: theme.keyRadius
-                color: km.pushWindows ? Qt.darker(theme.keyActiveColor, 2.0) : (card1Area.pressed ? theme.keyPressedColor : theme.keyColor)
-                border.color: km.pushWindows ? theme.keyActiveColor : theme.borderColor
-                border.width: 1
-
-                MouseArea {
-                    id: card1Area
-                    anchors.fill: parent
-                    onClicked: km.pushWindows = !km.pushWindows
-                }
-
-                // Permanent Pin Badge
-                RowLayout {
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    anchors.margins: 7
-                    spacing: 3
-                    VectorIcon {
-                        name: "pin"
-                        width: 10
-                        height: 10
-                        color: theme.textDimColor
-                        strokeWidth: 1.5
-                    }
-                    Text {
-                        text: "Always Pinned"
-                        font.family: theme.fontFamily
-                        font.pixelSize: 9
-                        color: theme.textDimColor
-                    }
-                }
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 4
-
-                    VectorIcon {
-                        name: "push-up"
-                        Layout.alignment: Qt.AlignHCenter
-                        width: 22
-                        height: 22
-                        color: km.pushWindows ? theme.keyActiveColor : theme.textColor
-                        strokeWidth: 2.0
-                    }
-                    Text {
-                        text: "Push Windows Up"
-                        font.family: theme.fontFamily
-                        font.pixelSize: theme.fontSizeSmall
-                        font.weight: Font.DemiBold
-                        color: theme.textColor
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-                    Text {
-                        text: km.pushWindows ? "Active (Displacing Apps)" : "Overlay (Apps Unmoved)"
-                        font.family: theme.fontFamily
-                        font.pixelSize: 10
-                        color: km.pushWindows ? theme.keyActiveColor : theme.textSecondaryColor
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-                }
-            }
-
-            // 2. Pop-up / Floating Mode (Always Pinned)
+            // 1. Pop-up / Floating Mode (Always Pinned)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true

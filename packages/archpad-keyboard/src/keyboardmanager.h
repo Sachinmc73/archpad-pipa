@@ -21,7 +21,6 @@ class KeyboardManager : public QObject
     Q_PROPERTY(bool isVisible READ isVisible WRITE setIsVisible NOTIFY isVisibleChanged)
     Q_PROPERTY(bool soundEnabled READ soundEnabled WRITE setSoundEnabled NOTIFY soundEnabledChanged)
     Q_PROPERTY(bool optionsVisible READ optionsVisible WRITE setOptionsVisible NOTIFY optionsVisibleChanged)
-    Q_PROPERTY(bool pushWindows READ pushWindows WRITE setPushWindows NOTIFY pushWindowsChanged)
     
     // 3-Way Theme: 0 = Follow System, 1 = Light, 2 = Dark
     Q_PROPERTY(int themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged)
@@ -72,9 +71,6 @@ public:
     bool optionsVisible() const { return m_optionsVisible; }
     void setOptionsVisible(bool visible);
 
-    bool pushWindows() const { return m_pushWindows; }
-    void setPushWindows(bool push);
-
     int themeMode() const { return m_themeMode; }
     void setThemeMode(int mode);
 
@@ -120,8 +116,6 @@ public Q_SLOTS:
     void SetFloating(bool floating);
     void ToggleOptions();
     void SetOptionsVisible(bool visible);
-    void TogglePushWindows();
-    void SetPushWindows(bool push);
     void CycleThemeMode();
     void SetThemeMode(int mode);
     void SetHeightScale(double scale);
@@ -151,7 +145,6 @@ Q_SIGNALS:
     void isVisibleChanged(bool visible);
     void soundEnabledChanged(bool enabled);
     void optionsVisibleChanged(bool visible);
-    void pushWindowsChanged(bool push);
     void themeModeChanged(int mode);
     void resolvedDarkChanged(bool isDark);
     void heightScaleChanged(qreal scale);
@@ -180,10 +173,9 @@ private:
     bool m_altActive = false;
     bool m_metaActive = false;
     bool m_isFloating = false;
-    bool m_isVisible = true;
+    bool m_isVisible = false;
     bool m_soundEnabled = true;
     bool m_optionsVisible = false;
-    bool m_pushWindows = true; // Default: Push Windows (Displace Apps)
     
     int m_themeMode = 0; // 0 = Follow System, 1 = Light, 2 = Dark
     bool m_cachedSystemDark = true;

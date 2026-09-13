@@ -44,33 +44,7 @@ Rectangle {
 
         // Action Toolbar: Fixed 34x26 native icon buttons
 
-        // 1. Move Up / Push UI Up (Always Pinned)
-        Rectangle {
-            id: pushBtn
-            width: 34
-            height: 26
-            radius: theme.keyRadius
-            color: km.pushWindows ? theme.keyActiveColor : (pushArea.pressed ? theme.keyPressedColor : "transparent")
-            border.color: km.pushWindows ? theme.keyActiveColor : theme.borderColor
-            border.width: 1
-
-            VectorIcon {
-                name: "push-up"
-                anchors.centerIn: parent
-                width: 16
-                height: 16
-                color: km.pushWindows ? "#FFFFFF" : theme.textSecondaryColor
-                strokeWidth: 2.0
-            }
-
-            MouseArea {
-                id: pushArea
-                anchors.fill: parent
-                onClicked: km.pushWindows = !km.pushWindows
-            }
-        }
-
-        // 2. Pop-up / Floating Mode (Always Pinned)
+        // 1. Pop-up / Floating Mode (Always Pinned)
         Rectangle {
             id: floatBtn
             width: 34

@@ -54,8 +54,8 @@ int main(int argc, char **argv)
     }
 
     auto *keyboardMgr = new KeyboardManager(&app);
-    if (parser.isSet(daemonOpt)) {
-        keyboardMgr->setIsVisible(false);
+    if (!parser.isSet(daemonOpt)) {
+        keyboardMgr->setIsVisible(true);
     }
 
     QQmlApplicationEngine engine;

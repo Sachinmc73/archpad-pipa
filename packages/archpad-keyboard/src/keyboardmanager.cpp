@@ -239,7 +239,6 @@ void KeyboardManager::loadSettings()
     m_themePinned = s.value(QStringLiteral("themePinned"), false).toBool();
     m_soundPinned = s.value(QStringLiteral("soundPinned"), false).toBool();
     m_splitPinned = s.value(QStringLiteral("splitPinned"), false).toBool();
-    m_pushWindows = s.value(QStringLiteral("pushWindows"), true).toBool();
     m_floatingWidth = s.value(QStringLiteral("floatingWidth"), 400.0).toReal();
     if (m_floatingWidth < 280.0) m_floatingWidth = 280.0;
     if (m_floatingWidth > 560.0) m_floatingWidth = 560.0;
@@ -257,7 +256,6 @@ void KeyboardManager::saveSettings()
     s.setValue(QStringLiteral("themePinned"), m_themePinned);
     s.setValue(QStringLiteral("soundPinned"), m_soundPinned);
     s.setValue(QStringLiteral("splitPinned"), m_splitPinned);
-    s.setValue(QStringLiteral("pushWindows"), m_pushWindows);
     s.setValue(QStringLiteral("floatingWidth"), m_floatingWidth);
 }
 
@@ -334,15 +332,6 @@ void KeyboardManager::setOptionsVisible(bool visible)
     if (m_optionsVisible != visible) {
         m_optionsVisible = visible;
         Q_EMIT optionsVisibleChanged(m_optionsVisible);
-    }
-}
-
-void KeyboardManager::setPushWindows(bool push)
-{
-    if (m_pushWindows != push) {
-        m_pushWindows = push;
-        saveSettings();
-        Q_EMIT pushWindowsChanged(m_pushWindows);
     }
 }
 
@@ -635,16 +624,6 @@ void KeyboardManager::ToggleOptions()
 void KeyboardManager::SetOptionsVisible(bool visible)
 {
     setOptionsVisible(visible);
-}
-
-void KeyboardManager::TogglePushWindows()
-{
-    setPushWindows(!m_pushWindows);
-}
-
-void KeyboardManager::SetPushWindows(bool push)
-{
-    setPushWindows(push);
 }
 
 void KeyboardManager::CycleThemeMode()
