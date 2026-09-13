@@ -11,7 +11,6 @@ post_install() {
   systemctl mask systemd-rfkill.service systemd-rfkill.socket 2>/dev/null || true
   udevadm control --reload 2>/dev/null || true
   udevadm trigger -s misc 2>/dev/null || true
-  /usr/lib/archpad/archpad-lockscreen-patch 2>/dev/null || true
 }
 
 post_upgrade() {
@@ -27,5 +26,4 @@ post_upgrade() {
   systemctl mask systemd-rfkill.service systemd-rfkill.socket 2>/dev/null || true
   udevadm control --reload 2>/dev/null || true
   udevadm trigger -s misc 2>/dev/null || true
-  /usr/lib/archpad/archpad-lockscreen-patch 2>/dev/null || true
 }

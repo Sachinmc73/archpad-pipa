@@ -74,6 +74,7 @@ KeyboardManager::KeyboardManager(QObject *parent)
     // Initialize Theme System & Watcher
     m_cachedSystemDark = detectSystemDark();
     updateResolvedDark();
+    saveSettings();
 
     m_themeWatcher = new QFileSystemWatcher(this);
     QString kdeGlobals = QDir::homePath() + QStringLiteral("/.config/kdeglobals");
@@ -220,6 +221,7 @@ void KeyboardManager::updateResolvedDark()
 
     if (m_resolvedDark != isDark) {
         m_resolvedDark = isDark;
+        saveSettings();
         Q_EMIT resolvedDarkChanged(m_resolvedDark);
     }
 }
@@ -233,6 +235,7 @@ void KeyboardManager::loadSettings()
 {
     QString confPath = QDir::homePath() + QStringLiteral("/.config/archpad/keyboard.conf");
     QSettings s(confPath, QSettings::IniFormat);
+    s.beginGroup(QStringLiteral("General"));
     m_themeMode = s.value(QStringLiteral("themeMode"), 0).toInt();
     m_heightScale = s.value(QStringLiteral("heightScale"), 1.0).toReal();
     m_soundEnabled = s.value(QStringLiteral("soundEnabled"), true).toBool();
@@ -240,6 +243,7 @@ void KeyboardManager::loadSettings()
     m_soundPinned = s.value(QStringLiteral("soundPinned"), false).toBool();
     m_splitPinned = s.value(QStringLiteral("splitPinned"), false).toBool();
     m_floatingWidth = s.value(QStringLiteral("floatingWidth"), 400.0).toReal();
+    s.endGroup();
     if (m_floatingWidth < 280.0) m_floatingWidth = 280.0;
     if (m_floatingWidth > 560.0) m_floatingWidth = 560.0;
 }
@@ -250,13 +254,17 @@ void KeyboardManager::saveSettings()
     QDir().mkpath(confDir);
     QString confPath = confDir + QStringLiteral("/keyboard.conf");
     QSettings s(confPath, QSettings::IniFormat);
+    s.beginGroup(QStringLiteral("General"));
     s.setValue(QStringLiteral("themeMode"), m_themeMode);
+    s.setValue(QStringLiteral("resolvedDark"), m_resolvedDark);
     s.setValue(QStringLiteral("heightScale"), m_heightScale);
     s.setValue(QStringLiteral("soundEnabled"), m_soundEnabled);
     s.setValue(QStringLiteral("themePinned"), m_themePinned);
     s.setValue(QStringLiteral("soundPinned"), m_soundPinned);
     s.setValue(QStringLiteral("splitPinned"), m_splitPinned);
     s.setValue(QStringLiteral("floatingWidth"), m_floatingWidth);
+    s.endGroup();
+    s.sync();
 }
 
 void KeyboardManager::setShiftActive(bool active)
@@ -340,9 +348,9 @@ void KeyboardManager::setThemeMode(int mode)
     if (mode < 0 || mode > 2) mode = 0;
     if (m_themeMode != mode) {
         m_themeMode = mode;
+        updateResolvedDark();
         saveSettings();
         Q_EMIT themeModeChanged(m_themeMode);
-        updateResolvedDark();
     }
 }
 

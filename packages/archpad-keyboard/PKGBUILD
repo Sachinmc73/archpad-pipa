@@ -1,11 +1,12 @@
 # Maintainer: ArchPad project
 pkgname=archpad-keyboard
 pkgver=1.0.0
-pkgrel=5
+pkgrel=8
 pkgdesc="Ultra-lightweight on-screen keyboard for ArchPad (Xiaomi Pad 6)"
 arch=('aarch64')
 url="https://github.com/Sachinmc73/archpad-pipa"
 license=('GPL-3.0-or-later')
+install=archpad-keyboard.install
 depends=(
     'glibc'
     'libstdc++'
@@ -33,4 +34,12 @@ package() {
     install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
     ln -s /usr/lib/systemd/user/archpad-keyboard.service \
         "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-keyboard.service"
+
+    # Lockscreen Virtual Keyboard integration
+    install -Dm644 "$startdir/ArchpadLockKeyboard.qml" \
+        "$pkgdir/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/ArchpadLockKeyboard.qml"
+    install -Dm755 "$startdir/archpad-lockscreen-patch" \
+        "$pkgdir/usr/lib/archpad/archpad-lockscreen-patch"
+    install -Dm644 "$startdir/96-archpad-lockscreen-keyboard.hook" \
+        "$pkgdir/usr/share/libalpm/hooks/96-archpad-lockscreen-keyboard.hook"
 }
