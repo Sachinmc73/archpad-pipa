@@ -1,7 +1,7 @@
 # Maintainer: ArchPad project
 pkgname=archpad-keyboard
 pkgver=1.0.0
-pkgrel=28
+pkgrel=29
 pkgdesc="Ultra-lightweight on-screen keyboard for ArchPad (Xiaomi Pad 6)"
 arch=('aarch64')
 url="https://github.com/Sachinmc73/archpad-pipa"
@@ -41,4 +41,8 @@ package() {
         "$pkgdir/usr/local/share/plasma/shells/org.kde.plasma.desktop/metadata.json"
     cp -r "$startdir/lockscreen/contents/lockscreen/"* \
         "$pkgdir/usr/local/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/"
+
+    # SDDM Greeter Theme integration
+    install -d "$pkgdir/usr/share/sddm/themes/archpad"
+    cp -r "$startdir/sddm/"* "$pkgdir/usr/share/sddm/themes/archpad/"
 }

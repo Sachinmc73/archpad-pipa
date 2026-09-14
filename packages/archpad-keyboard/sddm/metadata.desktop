@@ -1,0 +1,13 @@
+[SddmGreeterTheme]
+Name=ArchPad
+Description=ArchPad Tablet Theme with Integrated On-Screen Keyboard
+Author=ArchPad Project
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=1.0.0
+Screenshot=preview.png
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=archpad
+Theme-API=2.0
+QtVersion=6
