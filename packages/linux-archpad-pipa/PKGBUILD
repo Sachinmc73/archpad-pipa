@@ -3,7 +3,7 @@
 pkgbase=linux-archpad-pipa
 pkgname=('linux-archpad-pipa' 'linux-archpad-pipa-headers')
 pkgver=7.1.4
-pkgrel=15
+pkgrel=16
 pkgdesc='Linux kernel and modules for the Xiaomi Pad 6 (pipa)'
 arch=('aarch64')
 url='https://github.com/pipa-mainline'
