@@ -121,8 +121,40 @@ This file is the authoritative guide and persistent memory for all AI agents wor
       </policy>
     </busconfig>
     ```
-  - This denies access to the ghost interface. When PowerDevil starts, `rep.isValid()` returns `false`, `KeyboardBrightnessControl` is marked unsupported, and the ghost slider is suppressed completely.
   - Screen brightness, battery status, and sleep controls remain 100% operational, and `pacman -Qkk` integrity remains pristine (0 modified files).
+
+### G. SDDM Display Orientation, Sensor DSP Boot Timing & Polkit Sensor Claim
+- **The Polkit Sensor Claim Trap for Display Managers**:
+  - `iio-sensor-proxy` defines `net.hadess.SensorProxy.claim-sensor` with `allow_active: yes`, `allow_any: no`, `allow_inactive: no`.
+  - In `systemd-logind` / `polkit`, SDDM's greeter session (running as user `sddm`) is classified as `greeter`, NOT an `active` user session.
+  - When KWin under SDDM attempts to call `net.hadess.SensorProxy.ClaimAccelerometer`, D-Bus returns `Error org.freedesktop.DBus.Error.AccessDenied: Not Authorized: Sensor claim not allowed`.
+  - **Resolution**: Install a polkit rule in `/usr/share/polkit-1/rules.d/10-archpad-power.rules` (packaged cleanly in `archpad-pipa-device`):
+    ```javascript
+    polkit.addRule(function(action, subject) {
+        if (action.id == "net.hadess.SensorProxy.claim-sensor" && subject.user == "sddm") {
+            return polkit.Result.YES;
+        }
+    });
+    ```
+- **Cold-Boot Sensor Delay & Fallback Orientation**:
+  - On cold boot, Qualcomm Snapdragon Sensor DSP (`hexagonrpcd` / `archpad-wait-ssc`) takes ~45 seconds to initialize firmware sensors.
+  - SDDM starts in ~2 seconds. During the initial ~45 seconds, KWin has no sensor data and falls back to `/var/lib/sddm/.config/kwinoutputconfig.json`.
+  - The physical Novatek NT36532 panel is natively portrait (1800x2880), so `"transform": "Normal"` forces portrait.
+  - Setting `"transform": "Rotated270"` with `"scale": 2.25` and `"autoRotation": "Always"` ensures SDDM boots directly in landscape, and once sensors are online, seamlessly auto-rotates when tilted.
+
+### H. SDDM Dynamic Lock Screen Wallpaper Synchronization
+- **Zero-Hardcoding Wallpaper Parity**:
+  - User home directories are `0700` (`drwx------`), preventing user `sddm` from reading `~/.config/kscreenlockerrc` or custom wallpapers in `~/Pictures/`.
+  - Never hardcode specific wallpaper filenames into SDDM themes.
+  - Instead, use standard `systemd-tmpfiles` (`/usr/lib/tmpfiles.d/archpad-sddm.conf`):
+    ```
+    d /var/lib/sddm/theme 0775 sddm users -
+    ```
+  - Package a systemd user path watcher (`archpad-sync-sddm-wallpaper.path`) in `archpad-keyboard`:
+    - Monitors `~/.config/kscreenlockerrc` for changes.
+    - Whenever the user updates the lock screen wallpaper in KDE System Settings, it automatically copies the image to `/var/lib/sddm/theme/lockscreen-wallpaper.png` (`chmod 644`).
+  - SDDM `theme.conf` points to `/var/lib/sddm/theme/lockscreen-wallpaper.png` with a QML fallback to the default ArchPad artwork if the custom wallpaper is absent.
+
 
 
 
