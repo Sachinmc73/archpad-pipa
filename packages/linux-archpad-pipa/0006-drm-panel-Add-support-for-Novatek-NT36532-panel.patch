@@ -10,8 +10,8 @@ Signed-off-by: Ryo Kenrie Wongso <developer@damillora.com>
 ---
  drivers/gpu/drm/panel/Kconfig                 |  10 +
  drivers/gpu/drm/panel/Makefile                |   1 +
- drivers/gpu/drm/panel/panel-novatek-nt36532.c | 689 ++++++++++++++++++
- 3 files changed, 700 insertions(+)
+ drivers/gpu/drm/panel/panel-novatek-nt36532.c | 644 ++++++++++++++++++
+ 3 files changed, 655 insertions(+)
  create mode 100644 drivers/gpu/drm/panel/panel-novatek-nt36532.c
 
 diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
@@ -52,7 +52,7 @@ new file mode 100644
 index 000000000000..cf0c92766f89
 --- /dev/null
 +++ b/drivers/gpu/drm/panel/panel-novatek-nt36532.c
-@@ -0,0 +1,689 @@
+@@ -0,0 +1,644 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// Copyright (c) 2024 Luka Panio <lukapanio@gmail.com>
 +
@@ -361,21 +361,6 @@ index 000000000000..cf0c92766f89
 +		.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
 +	},
 +	{
-+		/* 90 Hz - VFP Porch Stretching Mode */
-+		.clock = 785244,
-+		.hdisplay = 1800,
-+		.hsync_start = 1800 + 200,
-+		.hsync_end = 1800 + 200 + 4,
-+		.htotal = 1800 + 200 + 4 + 92,
-+		.vdisplay = 2880,
-+		.vsync_start = 2880 + 1067,
-+		.vsync_end = 2880 + 1067 + 2,
-+		.vtotal = 2880 + 1067 + 2 + 214,
-+		.width_mm = 148,
-+		.height_mm = 237,
-+		.type = DRM_MODE_TYPE_DRIVER,
-+	},
-+	{
 +		/* 60 Hz - VFP Porch Stretching Mode */
 +		.clock = 785244,
 +		.hdisplay = 1800,
@@ -386,36 +371,6 @@ index 000000000000..cf0c92766f89
 +		.vsync_start = 2880 + 3148,
 +		.vsync_end = 2880 + 3148 + 2,
 +		.vtotal = 2880 + 3148 + 2 + 214,
-+		.width_mm = 148,
-+		.height_mm = 237,
-+		.type = DRM_MODE_TYPE_DRIVER,
-+	},
-+	{
-+		/* 48 Hz - VFP Porch Stretching Mode */
-+		.clock = 785244,
-+		.hdisplay = 1800,
-+		.hsync_start = 1800 + 200,
-+		.hsync_end = 1800 + 200 + 4,
-+		.htotal = 1800 + 200 + 4 + 92,
-+		.vdisplay = 2880,
-+		.vsync_start = 2880 + 4709,
-+		.vsync_end = 2880 + 4709 + 2,
-+		.vtotal = 2880 + 4709 + 2 + 214,
-+		.width_mm = 148,
-+		.height_mm = 237,
-+		.type = DRM_MODE_TYPE_DRIVER,
-+	},
-+	{
-+		/* 30 Hz - VFP Porch Stretching Mode */
-+		.clock = 785244,
-+		.hdisplay = 1800,
-+		.hsync_start = 1800 + 200,
-+		.hsync_end = 1800 + 200 + 4,
-+		.htotal = 1800 + 200 + 4 + 92,
-+		.vdisplay = 2880,
-+		.vsync_start = 2880 + 9392,
-+		.vsync_end = 2880 + 9392 + 2,
-+		.vtotal = 2880 + 9392 + 2 + 214,
 +		.width_mm = 148,
 +		.height_mm = 237,
 +		.type = DRM_MODE_TYPE_DRIVER,
