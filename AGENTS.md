@@ -96,4 +96,33 @@ This file is the authoritative guide and persistent memory for all AI agents wor
   - On the SoC side, this stalls the DSI link, logging `dsi_err_worker: status=5` ($0\text{x}1 \; \text{DSI\_ERR\_STATE\_TIMEOUT} \;|\; 0\text{x}4 \; \text{DSI\_ERR\_STATE\_FIFO}$).
   - All custom refresh rate modes MUST round $V_{\text{total}}$ to the nearest **even integer** (e.g., $V_{\text{total}} = 4164$ for 90Hz, $V_{\text{total}} = 7806$ for 48Hz).
 
+### F. Keyboard Backlight D-Bus Ghost Interface & PowerDevil Architecture
+- **The Upstream UPower & PowerDevil Logic Mismatch**:
+  - Freedesktop's `upowerd` unconditionally exports a static singleton D-Bus path at `/org/freedesktop/UPower/KbdBacklight` on every machine, even when 0 physical keyboard LEDs exist in `/sys/class/leds`. When no hardware is present, it returns `GetMaxBrightness() = 0` and `NativePath = ""`.
+  - In KDE Plasma 6's PowerDevil (`daemon/controllers/keyboardbrightnesscontroller.cpp`), it queries `GetMaxBrightness()` and checks:
+    ```cpp
+    QDBusPendingReply<int> rep = m_kbdBacklight->GetMaxBrightness();
+    if (rep.isValid()) {
+        m_maxBrightness = rep.value(); // = 0
+        m_isSupported = true; // Flaw: checks D-Bus reply validity, NOT if maxBrightness > 0!
+    }
+    ```
+  - Because `upowerd` replies successfully with integer `0`, `rep.isValid()` evaluates to `true`. PowerDevil registers `/org/kde/Solid/PowerManagement/Actions/KeyboardBrightnessControl` and Plasma's Brightness applet renders a dummy 0/0 slider in the system tray.
+- **Clean Zero-Patchwork Resolution via D-Bus Policy**:
+  - We do not patch upstream C++ or QML binaries.
+  - Instead, we install `/etc/dbus-1/system.d/10-archpad-no-kbd-backlight.conf`, cleanly tracked and packaged in `archpad-pipa-device`:
+    ```xml
+    <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+     "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+    <busconfig>
+      <policy context="default">
+        <deny send_destination="org.freedesktop.UPower"
+              send_interface="org.freedesktop.UPower.KbdBacklight"/>
+      </policy>
+    </busconfig>
+    ```
+  - This denies access to the ghost interface. When PowerDevil starts, `rep.isValid()` returns `false`, `KeyboardBrightnessControl` is marked unsupported, and the ghost slider is suppressed completely.
+  - Screen brightness, battery status, and sleep controls remain 100% operational, and `pacman -Qkk` integrity remains pristine (0 modified files).
+
+
 
