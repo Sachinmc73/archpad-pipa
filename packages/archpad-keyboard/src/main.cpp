@@ -31,6 +31,12 @@ int main(int argc, char **argv)
     QCommandLineOption toggleOpt(QStringList() << "t" << "toggle", QStringLiteral("Toggle keyboard visibility"));
     parser.addOption(toggleOpt);
 
+    QCommandLineOption showOpt(QStringList() << "s" << "show", QStringLiteral("Show the keyboard"));
+    parser.addOption(showOpt);
+
+    QCommandLineOption hideOpt(QStringList() << "hide", QStringLiteral("Hide the keyboard"));
+    parser.addOption(hideOpt);
+
     QCommandLineOption daemonOpt(QStringList() << "d" << "daemon", QStringLiteral("Start hidden in background daemon mode"));
     parser.addOption(daemonOpt);
     parser.process(app);
@@ -45,17 +51,24 @@ int main(int argc, char **argv)
         if (iface.isValid()) {
             if (parser.isSet(toggleOpt)) {
                 iface.call(QStringLiteral("Toggle"));
-            } else if (!parser.isSet(daemonOpt)) {
+            } else if (parser.isSet(showOpt)) {
                 iface.call(QStringLiteral("Show"));
+            } else if (parser.isSet(hideOpt)) {
+                iface.call(QStringLiteral("Hide"));
+            } else if (!parser.isSet(daemonOpt)) {
+                iface.call(QStringLiteral("Toggle"));
             }
         }
         return 0;
     }
 
     auto *keyboardMgr = new KeyboardManager(&app);
-    if (!parser.isSet(daemonOpt)) {
-        keyboardMgr->setIsVisible(true);
+    if (parser.isSet(showOpt)) {
+        keyboardMgr->Show();
+    } else if (parser.isSet(toggleOpt)) {
+        keyboardMgr->Toggle();
     }
+    // By default (and with --daemon), keyboard starts cleanly hidden in background
 
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::warnings, [](const QList<QQmlError> &warnings) {

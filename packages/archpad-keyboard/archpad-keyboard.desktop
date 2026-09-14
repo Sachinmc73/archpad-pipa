@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=ArchPad Keyboard
 Comment=Ultra-lightweight On-Screen Keyboard for ArchPad
-Exec=archpad-keyboard
+Exec=archpad-keyboard --daemon
 Type=Application
 Icon=input-keyboard-virtual
 X-KDE-Wayland-VirtualKeyboard=true
