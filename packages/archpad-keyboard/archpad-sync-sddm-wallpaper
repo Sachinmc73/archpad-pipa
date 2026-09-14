@@ -1,0 +1,40 @@
+#!/usr/bin/bash
+# archpad-sync-sddm-wallpaper: Automatically syncs active KDE lock screen wallpaper to SDDM
+set -euo pipefail
+
+LOCKRC="${HOME}/.config/kscreenlockerrc"
+TARGET_DIR="/var/lib/sddm/theme"
+TARGET_WALLPAPER="${TARGET_DIR}/lockscreen-wallpaper.png"
+DEFAULT_WALLPAPER="/usr/share/wallpapers/ArchPad/contents/images/2880x1800.png"
+
+# Verify target directory exists
+if [[ ! -d "$TARGET_DIR" ]]; then
+    exit 0
+fi
+
+IMAGE=""
+if [[ -f "$LOCKRC" ]]; then
+    # Look for Image= under wallpaper section
+    RAW_IMAGE=$(grep -E '^\s*Image=' "$LOCKRC" | head -n 1 | cut -d'=' -f2-)
+    # Strip file:// prefix and trim whitespace
+    IMAGE=$(echo "$RAW_IMAGE" | sed 's|^file://||' | sed 's|^[[:space:]]*||;s|[[:space:]]*$||')
+fi
+
+# If image path is empty or does not exist, use default wallpaper
+if [[ -z "$IMAGE" || ! -f "$IMAGE" ]]; then
+    if [[ -f "$DEFAULT_WALLPAPER" ]]; then
+        IMAGE="$DEFAULT_WALLPAPER"
+    fi
+fi
+
+# If we have a valid image, copy it atomically to the shared SDDM location
+if [[ -n "$IMAGE" && -f "$IMAGE" ]]; then
+    if cmp -s "$IMAGE" "$TARGET_WALLPAPER" 2>/dev/null; then
+        exit 0
+    fi
+    TMP_FILE="${TARGET_DIR}/.wallpaper.tmp.$$"
+    if cp -f "$IMAGE" "$TMP_FILE" 2>/dev/null; then
+        chmod 644 "$TMP_FILE"
+        mv -f "$TMP_FILE" "$TARGET_WALLPAPER"
+    fi
+fi

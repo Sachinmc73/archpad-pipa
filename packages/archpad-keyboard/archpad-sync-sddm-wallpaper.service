@@ -1,0 +1,10 @@
+[Unit]
+Description=Synchronize KDE Lock Screen Wallpaper to SDDM
+After=plasma-workspace.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/archpad-sync-sddm-wallpaper
+
+[Install]
+WantedBy=graphical-session.target

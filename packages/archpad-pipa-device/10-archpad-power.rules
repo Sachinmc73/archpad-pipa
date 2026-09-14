@@ -10,3 +10,10 @@ polkit.addRule(function(action, subject) {
         return polkit.Result.YES;
     }
 });
+
+/* ArchPad pipa: Allow SDDM greeter to claim accelerometer sensor for auto-rotation */
+polkit.addRule(function(action, subject) {
+    if (action.id == "net.hadess.SensorProxy.claim-sensor" && subject.user == "sddm") {
+        return polkit.Result.YES;
+    }
+});

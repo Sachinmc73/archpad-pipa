@@ -1,7 +1,7 @@
 # Maintainer: ArchPad project
 pkgname=archpad-keyboard
 pkgver=1.0.0
-pkgrel=29
+pkgrel=30
 pkgdesc="Ultra-lightweight on-screen keyboard for ArchPad (Xiaomi Pad 6)"
 arch=('aarch64')
 url="https://github.com/Sachinmc73/archpad-pipa"
@@ -34,6 +34,18 @@ package() {
     install -d "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
     ln -s /usr/lib/systemd/user/archpad-keyboard.service \
         "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-keyboard.service"
+
+    # SDDM wallpaper sync tool & systemd user units
+    install -Dm755 "$startdir/archpad-sync-sddm-wallpaper" "$pkgdir/usr/bin/archpad-sync-sddm-wallpaper"
+    install -Dm644 "$startdir/archpad-sync-sddm-wallpaper.service" "$pkgdir/usr/lib/systemd/user/archpad-sync-sddm-wallpaper.service"
+    install -Dm644 "$startdir/archpad-sync-sddm-wallpaper.path" "$pkgdir/usr/lib/systemd/user/archpad-sync-sddm-wallpaper.path"
+    ln -s /usr/lib/systemd/user/archpad-sync-sddm-wallpaper.service \
+        "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-sync-sddm-wallpaper.service"
+    ln -s /usr/lib/systemd/user/archpad-sync-sddm-wallpaper.path \
+        "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-sync-sddm-wallpaper.path"
+
+    # SDDM shared wallpaper tmpfiles
+    install -Dm644 "$startdir/archpad-sddm-tmpfiles.conf" "$pkgdir/usr/lib/tmpfiles.d/archpad-sddm.conf"
 
     # Lockscreen Virtual Keyboard integration via standard XDG /usr/local layering
     install -d "$pkgdir/usr/local/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen"

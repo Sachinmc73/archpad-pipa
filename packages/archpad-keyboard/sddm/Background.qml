@@ -25,6 +25,11 @@ FocusScope {
         sourceSize.height: parent.height
         fillMode: Image.PreserveAspectCrop
         smooth: true;
+        onStatusChanged: {
+            if (status === Image.Error && source != "file:///usr/share/wallpapers/ArchPad/contents/images/2880x1800.png") {
+                source = "file:///usr/share/wallpapers/ArchPad/contents/images/2880x1800.png";
+            }
+        }
     }
 
     states: [

@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch KDE Lock Screen Configuration for Wallpaper Changes
+
+[Path]
+PathModified=%h/.config/kscreenlockerrc
+Unit=archpad-sync-sddm-wallpaper.service
+
+[Install]
+WantedBy=graphical-session.target
