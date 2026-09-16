@@ -68,7 +68,7 @@ PlasmaExtras.Representation {
     }
 
     readonly property string dataProviderScript:
-        "/usr/local/bin/archpad-agent-manager-provider"
+        "/usr/bin/archpad-agent-manager-provider"
 
     function fetchData(forceRefresh) {
         if (fullRoot.refreshing) return;
