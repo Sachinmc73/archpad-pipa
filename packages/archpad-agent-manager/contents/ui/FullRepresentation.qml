@@ -85,13 +85,12 @@ Item {
                 spacing: Kirigami.Units.smallSpacing
 
                 // Bot hero icon
-                Image {
+                Kirigami.Icon {
                     source: (root && root.currentBotIcon) ? root.currentBotIcon : ""
                     Layout.preferredWidth: Kirigami.Units.iconSizes.medium
                     Layout.preferredHeight: Kirigami.Units.iconSizes.medium
-                    fillMode: Image.PreserveAspectFit
-                    smooth: true
-                    mipmap: true
+                    isMask: true
+                    color: Kirigami.Theme.textColor
                 }
 
                 ColumnLayout {

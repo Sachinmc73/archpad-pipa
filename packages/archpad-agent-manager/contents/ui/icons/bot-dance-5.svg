@@ -1,6 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <circle cx="12" cy="12" r="10.8" fill="#deddda"/>
-  <circle cx="8.4" cy="10.3" r="1.8" fill="#1e2029"/>
-  <line x1="14.05" y1="10.6" x2="17.7" y2="10.6" stroke="#1e2029" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M 9.0 15.4 Q 12 18.4 15.0 15.4" fill="none" stroke="#1e2029" stroke-width="1.8" stroke-linecap="round"/>
+  <defs>
+    <style id="current-color-scheme" type="text/css">
+      .ColorScheme-Text { color:#232629; }
+    </style>
+  </defs>
+  <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8" class="ColorScheme-Text"/>
+  <circle cx="8.5" cy="10.5" r="1.7" fill="currentColor" class="ColorScheme-Text"/>
+  <line x1="13.8" y1="10.8" x2="17.2" y2="10.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="ColorScheme-Text"/>
+  <path d="M 9.2 15.0 Q 12 17.8 14.8 15.0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="ColorScheme-Text"/>
 </svg>

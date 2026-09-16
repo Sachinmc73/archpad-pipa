@@ -10,12 +10,12 @@ import org.kde.plasma.plasma5support as Plasma5Support
 PlasmoidItem {
     id: root
 
+    Plasmoid.title: "Agent Manager"
     Plasmoid.icon: "utilities-terminal-symbolic"
     Plasmoid.status: PlasmaCore.Types.ActiveStatus
 
     compactRepresentation: CompactRepresentation { plasmoidItem: root }
     fullRepresentation: FullRepresentation { plasmoidItem: root }
-    preferredRepresentation: compactRepresentation
 
     // ── Data Properties ───────────────────────────────────────────────────────
     property var  providers:       []
