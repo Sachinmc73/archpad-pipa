@@ -1,0 +1,43 @@
+# Maintainer: ArchPad project
+pkgname=archpad-agent-manager
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='AGY / Claude / Codex agent session monitor Plasma plasmoid for ArchPad'
+arch=('any')
+url='https://github.com/Sachinmc73/archpad-pipa'
+license=('GPL-3.0-or-later')
+depends=(
+    'plasma-workspace>=6.7.5'
+    'kirigami'
+    'python3'
+    'konsole'
+)
+source=(
+    'metadata.json'
+    'contents/ui/main.qml'
+    'contents/ui/CompactRepresentation.qml'
+    'contents/ui/FullRepresentation.qml'
+    'contents/ui/agy-data-provider.py'
+    'contents/ui/icons/bot-idle.svg'
+    'contents/ui/icons/bot-dance-1.svg'
+    'contents/ui/icons/bot-dance-2.svg'
+    'contents/ui/icons/bot-dance-3.svg'
+    'contents/ui/icons/bot-dance-4.svg'
+    'contents/ui/icons/bot-dance-5.svg'
+)
+sha512sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+    local _dest="$pkgdir/usr/share/plasma/plasmoids/com.archpad.agentmanager"
+
+    install -Dm644 metadata.json "$_dest/metadata.json"
+
+    install -Dm644 contents/ui/main.qml                 "$_dest/contents/ui/main.qml"
+    install -Dm644 contents/ui/CompactRepresentation.qml "$_dest/contents/ui/CompactRepresentation.qml"
+    install -Dm644 contents/ui/FullRepresentation.qml    "$_dest/contents/ui/FullRepresentation.qml"
+    install -Dm755 contents/ui/agy-data-provider.py      "$_dest/contents/ui/agy-data-provider.py"
+
+    for icon in bot-idle bot-dance-1 bot-dance-2 bot-dance-3 bot-dance-4 bot-dance-5; do
+        install -Dm644 "contents/ui/icons/${icon}.svg" "$_dest/contents/ui/icons/${icon}.svg"
+    done
+}
