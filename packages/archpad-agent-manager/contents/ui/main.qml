@@ -10,12 +10,11 @@ import org.kde.plasma.plasma5support as Plasma5Support
 PlasmoidItem {
     id: root
 
-    Plasmoid.status: activeCount > 0
-        ? PlasmaCore.Types.ActiveStatus
-        : PlasmaCore.Types.PassiveStatus
+    Plasmoid.icon: "utilities-terminal-symbolic"
+    Plasmoid.status: PlasmaCore.Types.ActiveStatus
 
     compactRepresentation: CompactRepresentation { plasmoidItem: root }
-    fullRepresentation: FullRepresentation {}
+    fullRepresentation: FullRepresentation { plasmoidItem: root }
     preferredRepresentation: compactRepresentation
 
     // ── Data Properties ───────────────────────────────────────────────────────

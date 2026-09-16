@@ -12,6 +12,8 @@ import org.kde.kirigami as Kirigami
 
 Item {
     id: fullRoot
+    property var plasmoidItem: null
+    readonly property var root: plasmoidItem
 
     implicitWidth: Kirigami.Units.gridUnit * 22
     implicitHeight: Math.min(mainLayout.implicitHeight + Kirigami.Units.largeSpacing * 2,
@@ -19,11 +21,13 @@ Item {
 
     // ── Resolve current provider from root state ───────────────────────────────
     readonly property var currentProvider: {
-        if (!root.providers || root.providers.length === 0) return {};
-        for (var i = 0; i < root.providers.length; i++) {
-            if (root.providers[i].id === root.selectedProviderId) return root.providers[i];
+        var pList = (root && root.providers) ? root.providers : [];
+        if (!pList || pList.length === 0) return {};
+        var selId = root ? root.selectedProviderId : "agy";
+        for (var i = 0; i < pList.length; i++) {
+            if (pList[i] && pList[i].id === selId) return pList[i];
         }
-        return root.providers[0] || {};
+        return pList[0] || {};
     }
 
     // ── Launch helper ─────────────────────────────────────────────────────────
@@ -42,7 +46,7 @@ Item {
             cmd = "konsole --workdir '" + workdir + "' -e /home/archpad/.local/bin/agy";
         }
         launchEngine.connectSource(cmd);
-        root.expanded = false;
+        if (root) root.expanded = false;
     }
 
     function resumeLastSession() {
@@ -53,9 +57,8 @@ Item {
             if (p.sessions[i].is_active) { active = p.sessions[i]; break; }
         }
         if (active) {
-            // Try to focus existing window via KWin D-Bus; fall back to new launch
             launchEngine.connectSource("qdbus6 org.kde.KWin /KWin activateWindow 0 2>/dev/null || true");
-            root.expanded = false;
+            if (root) root.expanded = false;
         } else if (p.sessions.length > 0) {
             var last = p.sessions[0];
             launchSession(last.workspace || "/home/archpad/Work", "--continue");
@@ -83,7 +86,7 @@ Item {
 
                 // Bot hero icon
                 Image {
-                    source: root.currentBotIcon
+                    source: (root && root.currentBotIcon) ? root.currentBotIcon : ""
                     Layout.preferredWidth: Kirigami.Units.iconSizes.medium
                     Layout.preferredHeight: Kirigami.Units.iconSizes.medium
                     fillMode: Image.PreserveAspectFit
@@ -97,13 +100,13 @@ Item {
                     RowLayout {
                         spacing: Kirigami.Units.smallSpacing
                         PlasmaComponents3.Label {
-                            text: fullRoot.currentProvider.name || "Agent Manager"
+                            text: (fullRoot.currentProvider && fullRoot.currentProvider.name) ? fullRoot.currentProvider.name : "Agent Manager"
                             font.bold: true
                             font.pointSize: Kirigami.Theme.defaultFont.pointSize + 1
                         }
                         // Account badge
                         Rectangle {
-                            visible: (fullRoot.currentProvider.account || "").length > 0
+                            visible: !!(fullRoot.currentProvider && fullRoot.currentProvider.account)
                             color: Qt.rgba(0.2, 0.47, 0.9, 0.15)
                             border.color: Qt.rgba(0.2, 0.47, 0.9, 0.3)
                             border.width: 1
@@ -113,14 +116,14 @@ Item {
                             PlasmaComponents3.Label {
                                 id: accountLabel
                                 anchors.centerIn: parent
-                                text: fullRoot.currentProvider.account || ""
+                                text: (fullRoot.currentProvider && fullRoot.currentProvider.account) ? fullRoot.currentProvider.account : ""
                                 font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
                                 color: Kirigami.Theme.highlightColor
                             }
                         }
                     }
                     PlasmaComponents3.Label {
-                        text: fullRoot.currentProvider.tier || ""
+                        text: (fullRoot.currentProvider && fullRoot.currentProvider.tier) ? fullRoot.currentProvider.tier : ""
                         font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
                         color: Kirigami.Theme.disabledTextColor
                     }
@@ -128,10 +131,10 @@ Item {
 
                 // Status pill
                 Rectangle {
-                    color: root.activeCount > 0
+                    color: (root && root.activeCount > 0)
                         ? Qt.rgba(0.18, 0.76, 0.49, 0.18)
                         : Qt.rgba(1, 1, 1, 0.06)
-                    border.color: root.activeCount > 0
+                    border.color: (root && root.activeCount > 0)
                         ? Qt.rgba(0.18, 0.76, 0.49, 0.35)
                         : Qt.rgba(1, 1, 1, 0.1)
                     border.width: 1
@@ -141,20 +144,20 @@ Item {
                     PlasmaComponents3.Label {
                         id: statusLabel
                         anchors.centerIn: parent
-                        text: root.activeCount > 0 ? root.activeCount + " active" : "Idle"
+                        text: (root && root.activeCount > 0) ? root.activeCount + " active" : "Idle"
                         font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
-                        font.bold: root.activeCount > 0
-                        color: root.activeCount > 0 ? "#2ec27e" : Kirigami.Theme.disabledTextColor
+                        font.bold: root ? root.activeCount > 0 : false
+                        color: (root && root.activeCount > 0) ? "#2ec27e" : Kirigami.Theme.disabledTextColor
                     }
                 }
 
                 // Refresh button
                 PlasmaComponents3.ToolButton {
-                    icon.name: root.refreshing ? "process-working-symbolic" : "view-refresh-symbolic"
-                    enabled: !root.refreshing
+                    icon.name: (root && root.refreshing) ? "process-working-symbolic" : "view-refresh-symbolic"
+                    enabled: !root || !root.refreshing
                     implicitWidth: Kirigami.Units.gridUnit * 2
                     implicitHeight: Kirigami.Units.gridUnit * 2
-                    onClicked: root.fetchData(true)
+                    onClicked: if (root) root.fetchData(true)
                     PlasmaComponents3.ToolTip { text: "Refresh" }
                 }
             }
@@ -168,15 +171,15 @@ Item {
                 spacing: 4
 
                 Repeater {
-                    model: root.providers
+                    model: (root && root.providers) ? root.providers : []
                     delegate: PlasmaComponents3.Button {
                         required property var modelData
-                        text: modelData.name
-                        flat: modelData.id !== root.selectedProviderId
-                        highlighted: modelData.id === root.selectedProviderId
+                        text: modelData.name || ""
+                        flat: !root || (modelData.id !== root.selectedProviderId)
+                        highlighted: !!(root && modelData.id === root.selectedProviderId)
                         Layout.fillWidth: true
                         font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
-                        onClicked: root.selectedProviderId = modelData.id
+                        onClicked: if (root) root.selectedProviderId = modelData.id
                     }
                 }
             }
@@ -195,7 +198,7 @@ Item {
             }
 
             Repeater {
-                model: fullRoot.currentProvider.limits || []
+                model: (fullRoot.currentProvider && fullRoot.currentProvider.limits) ? fullRoot.currentProvider.limits : []
                 delegate: ColumnLayout {
                     required property var modelData
                     Layout.fillWidth: true
@@ -207,7 +210,7 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         PlasmaComponents3.Label {
-                            text: modelData.title
+                            text: modelData.title || ""
                             Layout.fillWidth: true
                             font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
                         }
@@ -247,7 +250,7 @@ Item {
             }
 
             Repeater {
-                model: fullRoot.currentProvider.recent_days || []
+                model: (fullRoot.currentProvider && fullRoot.currentProvider.recent_days) ? fullRoot.currentProvider.recent_days : []
                 delegate: RowLayout {
                     required property var modelData
                     Layout.fillWidth: true
@@ -257,9 +260,9 @@ Item {
                     spacing: Kirigami.Units.smallSpacing
 
                     PlasmaComponents3.Label {
-                        text: modelData.day
+                        text: modelData.day || ""
                         font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
-                        font.bold: modelData.is_today
+                        font.bold: !!modelData.is_today
                         color: modelData.is_today ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 3
                     }
@@ -273,7 +276,7 @@ Item {
                     PlasmaComponents3.Label {
                         text: modelData.count_str || "0"
                         font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
-                        font.bold: modelData.is_today
+                        font.bold: !!modelData.is_today
                         color: modelData.is_today ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 2
                         horizontalAlignment: Text.AlignRight
@@ -321,18 +324,18 @@ Item {
                     color: Kirigami.Theme.disabledTextColor
                 }
                 PlasmaComponents3.Label {
-                    text: (fullRoot.currentProvider.sessions || []).length
+                    text: (fullRoot.currentProvider && fullRoot.currentProvider.sessions) ? fullRoot.currentProvider.sessions.length : 0
                     font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
                     color: Kirigami.Theme.disabledTextColor
                 }
             }
 
             Repeater {
-                model: fullRoot.currentProvider.sessions || []
+                model: (fullRoot.currentProvider && fullRoot.currentProvider.sessions) ? fullRoot.currentProvider.sessions : []
                 delegate: Item {
                     required property var modelData
                     Layout.fillWidth: true
-                    width: parent.width
+                    width: parent ? parent.width : 0
                     height: sessionCol.implicitHeight + Kirigami.Units.smallSpacing
 
                     // Hover background
@@ -372,7 +375,7 @@ Item {
                             PlasmaComponents3.Label {
                                 text: modelData.title || "Untitled"
                                 Layout.fillWidth: true
-                                font.bold: modelData.is_active
+                                font.bold: !!modelData.is_active
                                 elide: Text.ElideRight
                             }
 
@@ -401,7 +404,7 @@ Item {
                                 font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
                                 onClicked: {
                                     if (modelData.is_active) {
-                                        root.expanded = false;
+                                        if (root) root.expanded = false;
                                     } else {
                                         fullRoot.launchSession(
                                             modelData.workspace || "/home/archpad/Work",
@@ -424,7 +427,7 @@ Item {
                                     modelData.id
                                 );
                             } else {
-                                root.expanded = false;
+                                if (root) root.expanded = false;
                             }
                         }
                     }
@@ -433,7 +436,7 @@ Item {
 
             // ── 7. WORKSPACES ─────────────────────────────────────────────────
             PlasmaComponents3.Label {
-                visible: (fullRoot.currentProvider.workspaces || []).length > 0
+                visible: !!(fullRoot.currentProvider && fullRoot.currentProvider.workspaces && fullRoot.currentProvider.workspaces.length > 0)
                 Layout.leftMargin: Kirigami.Units.largeSpacing
                 Layout.topMargin: Kirigami.Units.smallSpacing
                 text: "WORKSPACES"
@@ -451,13 +454,13 @@ Item {
                 spacing: 6
 
                 Repeater {
-                    model: fullRoot.currentProvider.workspaces || []
+                    model: (fullRoot.currentProvider && fullRoot.currentProvider.workspaces) ? fullRoot.currentProvider.workspaces : []
                     delegate: PlasmaComponents3.Button {
                         required property var modelData
-                        text: modelData.name
+                        text: modelData.name || ""
                         flat: true
                         font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
-                        onClicked: fullRoot.launchSession(modelData.path, "")
+                        onClicked: fullRoot.launchSession(modelData.path || "/home/archpad/Work", "")
                     }
                 }
             }
