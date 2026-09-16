@@ -60,9 +60,10 @@ static void context_handle_surrounding_text(void *data,
     g_app.ctx_state.has_surrounding = (text != NULL && strlen(text) > 0);
     g_app.ctx_state.surrounding_cursor = cursor;
     g_app.ctx_state.surrounding_anchor = anchor;
-    printf("[probe] surrounding_text event: available=%s cursor=%u anchor=%u (text content suppressed)\n",
+    bool has_sel = (cursor != anchor);
+    printf("[probe] surrounding_text event: available=%s cursor=%u anchor=%u selection=%s (text content suppressed)\n",
            g_app.ctx_state.has_surrounding ? "true" : "false",
-           cursor, anchor);
+           cursor, anchor, has_sel ? "true" : "false");
     fflush(stdout);
 }
 
@@ -151,6 +152,8 @@ static void input_method_handle_activate(void *data,
     g_app.ctx_state.is_active = true;
     g_app.ctx_state.has_serial = false;
     g_app.ctx_state.has_surrounding = false;
+    g_app.ctx_state.surrounding_cursor = 0;
+    g_app.ctx_state.surrounding_anchor = 0;
 
     zwp_input_method_context_v1_add_listener(id, &context_listener, NULL);
 }
@@ -173,6 +176,8 @@ static void input_method_handle_deactivate(void *data,
         g_app.ctx_state.is_active = false;
         g_app.ctx_state.has_serial = false;
         g_app.ctx_state.has_surrounding = false;
+        g_app.ctx_state.surrounding_cursor = 0;
+        g_app.ctx_state.surrounding_anchor = 0;
     }
 }
 
@@ -192,6 +197,7 @@ static void registry_handle_global(void *data,
     (void)data;
     if (strcmp(interface, zwp_input_method_v1_interface.name) == 0) {
         printf("[probe] Discovered %s v%u (id %u)\n", interface, version, name);
+        fflush(stdout);
         g_app.input_method = wl_registry_bind(registry, name, &zwp_input_method_v1_interface, 1);
         zwp_input_method_v1_add_listener(g_app.input_method, &input_method_listener, NULL);
     }
@@ -225,16 +231,19 @@ static int method_commit(sd_bus_message *m, void *userdata, sd_bus_error *ret_er
 
     if (!g_app.ctx_state.is_active || !g_app.ctx_state.context) {
         printf("[probe] Rejecting Commit: no active input-method context\n");
+        fflush(stdout);
         return sd_bus_reply_method_return(m, "bs", 0, "No active input-method context");
     }
 
     if (!g_app.ctx_state.has_serial) {
         printf("[probe] Rejecting Commit: no serial received from compositor yet\n");
+        fflush(stdout);
         return sd_bus_reply_method_return(m, "bs", 0, "No serial received from compositor");
     }
 
     printf("[probe] Committing text (serial=%u, bytes=%zu)\n",
            g_app.ctx_state.serial, strlen(text));
+    fflush(stdout);
     zwp_input_method_context_v1_commit_string(g_app.ctx_state.context,
                                               g_app.ctx_state.serial,
                                               text);
@@ -259,19 +268,20 @@ static int method_replace_previous(sd_bus_message *m, void *userdata, sd_bus_err
 
     if (!g_app.ctx_state.is_active || !g_app.ctx_state.context) {
         printf("[probe] Rejecting ReplacePrevious: no active input-method context\n");
+        fflush(stdout);
         return sd_bus_reply_method_return(m, "bs", 0, "No active input-method context");
     }
 
     if (!g_app.ctx_state.has_serial) {
         printf("[probe] Rejecting ReplacePrevious: no serial received from compositor yet\n");
+        fflush(stdout);
         return sd_bus_reply_method_return(m, "bs", 0, "No serial received from compositor");
     }
 
     printf("[probe] Replacing previous %u bytes with text (serial=%u, new_bytes=%zu)\n",
            before_bytes, g_app.ctx_state.serial, strlen(text));
+    fflush(stdout);
 
-    // zwp_input_method_context_v1 delete_surrounding_text:
-    // index is relative to current cursor (negative for before), length is number of bytes to delete.
     int32_t delete_index = -(int32_t)before_bytes;
     zwp_input_method_context_v1_delete_surrounding_text(g_app.ctx_state.context,
                                                         delete_index,
@@ -287,16 +297,56 @@ static int method_replace_previous(sd_bus_message *m, void *userdata, sd_bus_err
     return sd_bus_reply_method_return(m, "bs", 1, resp);
 }
 
+static int method_commit_selection(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
+{
+    (void)userdata;
+    (void)ret_error;
+    const char *text = NULL;
+    int r = sd_bus_message_read(m, "s", &text);
+    if (r < 0) {
+        return sd_bus_reply_method_return(m, "bs", 0, "Invalid argument: string expected");
+    }
+
+    if (!g_app.ctx_state.is_active || !g_app.ctx_state.context) {
+        printf("[probe] Rejecting CommitSelection: no active input-method context\n");
+        fflush(stdout);
+        return sd_bus_reply_method_return(m, "bs", 0, "No active input-method context");
+    }
+
+    if (!g_app.ctx_state.has_serial) {
+        printf("[probe] Rejecting CommitSelection: no serial received from compositor yet\n");
+        fflush(stdout);
+        return sd_bus_reply_method_return(m, "bs", 0, "No serial received from compositor");
+    }
+
+    printf("[probe] Committing selection replacement text (serial=%u, bytes=%zu)\n",
+           g_app.ctx_state.serial, strlen(text));
+    fflush(stdout);
+    zwp_input_method_context_v1_commit_string(g_app.ctx_state.context,
+                                              g_app.ctx_state.serial,
+                                              text);
+    wl_display_flush(g_app.display);
+
+    char resp[128];
+    snprintf(resp, sizeof(resp), "Committed %zu bytes replacing selection at serial %u",
+             strlen(text), g_app.ctx_state.serial);
+    return sd_bus_reply_method_return(m, "bs", 1, resp);
+}
+
 static int method_get_status(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
 {
     (void)userdata;
     (void)ret_error;
-    return sd_bus_reply_method_return(m, "buuub",
+    bool has_sel = (g_app.ctx_state.surrounding_cursor != g_app.ctx_state.surrounding_anchor);
+    return sd_bus_reply_method_return(m, "buuubuub",
                                       (int)g_app.ctx_state.is_active,
                                       g_app.ctx_state.serial,
                                       g_app.ctx_state.content_hint,
                                       g_app.ctx_state.content_purpose,
-                                      (int)g_app.ctx_state.has_surrounding);
+                                      (int)g_app.ctx_state.has_surrounding,
+                                      g_app.ctx_state.surrounding_cursor,
+                                      g_app.ctx_state.surrounding_anchor,
+                                      (int)has_sel);
 }
 
 static int method_quit(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
@@ -304,6 +354,7 @@ static int method_quit(sd_bus_message *m, void *userdata, sd_bus_error *ret_erro
     (void)userdata;
     (void)ret_error;
     printf("[probe] Quit request received via D-Bus\n");
+    fflush(stdout);
     g_running = 0;
     return sd_bus_reply_method_return(m, "");
 }
@@ -312,7 +363,8 @@ static const sd_bus_vtable probe_vtable[] = {
     SD_BUS_VTABLE_START(0),
     SD_BUS_METHOD("Commit", "s", "bs", method_commit, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("ReplacePrevious", "us", "bs", method_replace_previous, SD_BUS_VTABLE_UNPRIVILEGED),
-    SD_BUS_METHOD("GetStatus", "", "buuub", method_get_status, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("CommitSelection", "s", "bs", method_commit_selection, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetStatus", "", "buuubuub", method_get_status, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("Quit", "", "", method_quit, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_VTABLE_END
 };
@@ -326,6 +378,7 @@ int main(int argc, char *argv[])
     signal(SIGTERM, sig_handler);
 
     printf("[probe] Starting input-method-v1-probe...\n");
+    fflush(stdout);
 
     g_app.display = wl_display_connect(NULL);
     if (!g_app.display) {
@@ -450,6 +503,7 @@ int main(int argc, char *argv[])
     }
 
     printf("[probe] Cleaning up and exiting...\n");
+    fflush(stdout);
 
     if (g_app.ctx_state.context) {
         zwp_input_method_context_v1_destroy(g_app.ctx_state.context);
@@ -479,5 +533,6 @@ int main(int argc, char *argv[])
     }
 
     printf("[probe] Shutdown complete.\n");
+    fflush(stdout);
     return 0;
 }
