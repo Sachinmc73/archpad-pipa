@@ -611,5 +611,13 @@ def get_all_data(force_refresh=False):
 
 if __name__ == "__main__":
     force_refresh = "--force-refresh" in sys.argv
-    json.dump(get_all_data(force_refresh=force_refresh), sys.stdout)
+    data = get_all_data(force_refresh=force_refresh)
+    try:
+        cache_dir = os.path.expanduser("~/.cache/archpad-agent-manager")
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(os.path.join(cache_dir, "data.json"), "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+    json.dump(data, sys.stdout)
     sys.stdout.write("\n")

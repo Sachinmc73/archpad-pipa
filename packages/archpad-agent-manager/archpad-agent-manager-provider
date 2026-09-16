@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ -f "/usr/share/plasma/plasmoids/com.archpad.agentmanager/contents/ui/agy-data-provider.py" ]; then
+    exec /usr/bin/python3 /usr/share/plasma/plasmoids/com.archpad.agentmanager/contents/ui/agy-data-provider.py "$@"
+elif [ -f "/home/archpad/.local/share/plasma/plasmoids/com.archpad.agentmanager/contents/ui/agy-data-provider.py" ]; then
+    exec /usr/bin/python3 /home/archpad/.local/share/plasma/plasmoids/com.archpad.agentmanager/contents/ui/agy-data-provider.py "$@"
+else
+    exec /usr/bin/python3 "$(dirname "$0")/../share/plasma/plasmoids/com.archpad.agentmanager/contents/ui/agy-data-provider.py" "$@"
+fi

@@ -12,32 +12,24 @@ depends=(
     'python3'
     'konsole'
 )
-source=(
-    'metadata.json'
-    'contents/ui/main.qml'
-    'contents/ui/CompactRepresentation.qml'
-    'contents/ui/FullRepresentation.qml'
-    'contents/ui/agy-data-provider.py'
-    'contents/ui/icons/bot-idle.svg'
-    'contents/ui/icons/bot-dance-1.svg'
-    'contents/ui/icons/bot-dance-2.svg'
-    'contents/ui/icons/bot-dance-3.svg'
-    'contents/ui/icons/bot-dance-4.svg'
-    'contents/ui/icons/bot-dance-5.svg'
-)
-sha512sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+options=('!strip')
 
 package() {
     local _dest="$pkgdir/usr/share/plasma/plasmoids/com.archpad.agentmanager"
 
-    install -Dm644 metadata.json "$_dest/metadata.json"
+    install -d "$_dest"
+    install -Dm755 "$startdir/archpad-agent-manager-provider" "$pkgdir/usr/bin/archpad-agent-manager-provider"
+    install -Dm644 "$startdir/metadata.json" "$_dest/metadata.json"
 
-    install -Dm644 contents/ui/main.qml                 "$_dest/contents/ui/main.qml"
-    install -Dm644 contents/ui/CompactRepresentation.qml "$_dest/contents/ui/CompactRepresentation.qml"
-    install -Dm644 contents/ui/FullRepresentation.qml    "$_dest/contents/ui/FullRepresentation.qml"
-    install -Dm755 contents/ui/agy-data-provider.py      "$_dest/contents/ui/agy-data-provider.py"
+    install -d "$_dest/contents/ui"
+    install -Dm644 "$startdir/contents/ui/main.qml"                  "$_dest/contents/ui/main.qml"
+    install -Dm644 "$startdir/contents/ui/CompactRepresentation.qml" "$_dest/contents/ui/CompactRepresentation.qml"
+    install -Dm644 "$startdir/contents/ui/FullRepresentation.qml"    "$_dest/contents/ui/FullRepresentation.qml"
+    install -Dm755 "$startdir/contents/ui/agy-data-provider.py"      "$_dest/contents/ui/agy-data-provider.py"
 
-    for icon in bot-idle bot-dance-1 bot-dance-2 bot-dance-3 bot-dance-4 bot-dance-5; do
-        install -Dm644 "contents/ui/icons/${icon}.svg" "$_dest/contents/ui/icons/${icon}.svg"
-    done
+    install -d "$_dest/contents/ui/icons"
+    cp -a "$startdir/contents/ui/icons/." "$_dest/contents/ui/icons/"
+
+    find "$_dest" -type d -exec chmod 0755 {} +
+    find "$_dest/contents/ui/icons" -type f -exec chmod 0644 {} +
 }

@@ -14,7 +14,7 @@ PlasmoidItem {
     Plasmoid.status: PlasmaCore.Types.ActiveStatus
 
     compactRepresentation: CompactRepresentation { plasmoidItem: root }
-    fullRepresentation: FullRepresentation { plasmoidItem: root }
+    fullRepresentation: FullRepresentation {}
 
     // ── Data Properties ───────────────────────────────────────────────────────
     property var  providers:       []
@@ -70,13 +70,13 @@ PlasmoidItem {
                 }
                 root.activeCount = total;
             } catch (e) {
-                console.log("[AgentManager] JSON parse error:", e);
+                console.warn("[AgentManager] JSON parse error:", e);
             }
         }
     }
 
     readonly property string dataProviderScript:
-        "/home/archpad/.local/bin/archpad-agent-manager-provider"
+        "/usr/local/bin/archpad-agent-manager-provider"
 
     function fetchData(forceRefresh) {
         if (root.refreshing) return;
