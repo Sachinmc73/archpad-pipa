@@ -1,0 +1,48 @@
+# Maintainer: ArchPad Project <https://github.com/pipa-mainline>
+pkgname=archpad-futo-swipe-en
+pkgver=1.0.0
+pkgrel=2
+pkgdesc="Pinned English models and dictionary for ArchPad FUTO Swipe engine"
+arch=('any')
+url="https://github.com/Sachinmc73/archpad-pipa"
+license=('LicenseRef-FUTO-Model-Weights-1.0' 'Apache-2.0')
+options=('!strip')
+provides=('archpad-futo-swipe-model-en')
+source=("archpad-futo-swipe-en-1.0.0.tar.xz")
+sha512sums=('bc822bea31d8313a365d3371b8611d913fd84e388cd97ef5626dad8705786c81ff7afa4346675b0c147dad565f109ff997ff2d79833c2630848f712f2db0d8ba')
+
+package() {
+  local src="${srcdir}/archpad-futo-swipe-en-1.0.0"
+  local dest="${pkgdir}/usr/share/archpad-futo-swipe"
+  local lic="${pkgdir}/usr/share/licenses/${pkgname}"
+
+  mkdir -p "${dest}/models/en" "${dest}/dictionaries" "${dest}/layouts" "${lic}"
+
+  # 1. Models
+  cp -r "${src}/models/en/honorable_sturgeon" "${dest}/models/en/"
+  cp -r "${src}/models/en/magic_macaw" "${dest}/models/en/"
+  cp -r "${src}/models/en/hungry_jellyfish" "${dest}/models/en/"
+
+  # 2. Dictionaries
+  install -Dm644 "${src}/dictionaries/en.combined" "${dest}/dictionaries/en.combined"
+  install -Dm644 "${src}/dictionaries/en.combined.gz" "${dest}/dictionaries/en.combined.gz"
+
+  # 3. Layouts & scoring
+  install -Dm644 "${src}/layouts/en_qwerty.json" "${dest}/layouts/en_qwerty.json"
+  install -Dm644 "${src}/scoring.json" "${dest}/scoring.json"
+  install -Dm644 "${src}/manifest.json" "${dest}/manifest.json"
+
+  # 4. Compatibility symlinks for qualification CLI and flat path consumers
+  ln -s models/en/honorable_sturgeon "${dest}/honorable_sturgeon"
+  ln -s models/en/magic_macaw "${dest}/magic_macaw"
+  ln -s models/en/hungry_jellyfish "${dest}/hungry_jellyfish"
+  ln -s dictionaries "${dest}/vocabs"
+
+  # 5. Licenses & notices
+  install -Dm644 "${src}/LICENSE.md" "${lic}/LICENSE.md"
+  install -Dm644 "${src}/NOTICE" "${lic}/NOTICE"
+
+  # Standard permissions
+  find "${pkgdir}/usr" -type d -exec chmod 0755 {} +
+  find "${pkgdir}/usr" -type f -exec chmod 0644 {} +
+}

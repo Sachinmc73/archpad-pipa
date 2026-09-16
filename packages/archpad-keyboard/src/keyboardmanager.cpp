@@ -1,5 +1,7 @@
 #include "keyboardmanager.h"
+#include "swipeengineworker.h"
 
+#include <QThread>
 #include <linux/uinput.h>
 #include <linux/input-event-codes.h>
 #include <fcntl.h>
@@ -117,10 +119,40 @@ KeyboardManager::KeyboardManager(QObject *parent)
         m_cachedSystemDark = detectSystemDark();
         updateResolvedDark();
     });
+
+    // Initialize background single-owner SwipeEngineWorker thread
+    m_swipeThread = new QThread(this);
+    m_swipeWorker = new SwipeEngineWorker();
+    m_swipeWorker->moveToThread(m_swipeThread);
+
+    connect(m_swipeThread, &QThread::finished, m_swipeWorker, &QObject::deleteLater);
+
+    connect(m_swipeWorker, &SwipeEngineWorker::stateChanged, this, [this](SwipeEngineWorker::State state, const QString &) {
+        const bool ready = (state == SwipeEngineWorker::State::Ready);
+        if (m_swipeReady != ready) {
+            m_swipeReady = ready;
+            Q_EMIT swipeReadyChanged(m_swipeReady);
+        }
+        Q_EMIT swipeStateChanged(m_swipeWorker->stateString());
+    });
+
+    connect(m_swipeWorker, &SwipeEngineWorker::decodeFinished, this, [this](quint64 reqId, const QStringList &candidates, const QVariantMap &timings) {
+        Q_EMIT swipeCandidatesReady(reqId, candidates, timings);
+    });
+
+    connect(m_swipeWorker, &SwipeEngineWorker::decodeError, this, [this](quint64 reqId, const QString &err) {
+        Q_EMIT swipeDecodeError(reqId, err);
+    });
+
+    m_swipeThread->start();
 }
 
 KeyboardManager::~KeyboardManager()
 {
+    if (m_swipeThread) {
+        m_swipeThread->quit();
+        m_swipeThread->wait(1000);
+    }
     if (m_saveSettingsTimer && m_saveSettingsTimer->isActive()) {
         m_saveSettingsTimer->stop();
         saveSettings();
@@ -1161,3 +1193,63 @@ void KeyboardManager::OpenQuickPadConfig()
 {
     openSettingsApp();
 }
+
+void KeyboardManager::setSwipeActive(bool active)
+{
+    if (m_swipeActive != active) {
+        m_swipeActive = active;
+        Q_EMIT swipeActiveChanged(m_swipeActive);
+    }
+}
+
+QString KeyboardManager::swipeState() const
+{
+    if (!m_swipeWorker) return QStringLiteral("Unloaded");
+    return m_swipeWorker->stateString();
+}
+
+void KeyboardManager::requestSwipeDecode(quint64 requestId, const QVariantList &points, const QStringList &contextWords)
+{
+    if (!m_swipeReady || !m_swipeWorker) {
+        return;
+    }
+    QVector<float> x, y, t;
+    x.reserve(points.size());
+    y.reserve(points.size());
+    t.reserve(points.size());
+    for (const auto &p : points) {
+        const QVariantMap map = p.toMap();
+        x.append(map.value(QStringLiteral("x")).toFloat());
+        y.append(map.value(QStringLiteral("y")).toFloat());
+        t.append(map.value(QStringLiteral("t")).toFloat());
+    }
+    QMetaObject::invokeMethod(m_swipeWorker, "requestDecode",
+                             Qt::QueuedConnection,
+                             Q_ARG(quint64, requestId),
+                             Q_ARG(QVector<float>, x),
+                             Q_ARG(QVector<float>, y),
+                             Q_ARG(QVector<float>, t),
+                             Q_ARG(QStringList, contextWords),
+                             Q_ARG(int, 4),
+                             Q_ARG(int, 100));
+}
+
+void KeyboardManager::loadSwipeEngine()
+{
+    if (m_swipeWorker) {
+        QMetaObject::invokeMethod(m_swipeWorker, "initEngine", Qt::QueuedConnection, Q_ARG(QString, QString()));
+    }
+}
+
+void KeyboardManager::unloadSwipeEngine()
+{
+    if (m_swipeWorker) {
+        QMetaObject::invokeMethod(m_swipeWorker, "unloadEngine", Qt::QueuedConnection);
+    }
+}
+
+quint64 KeyboardManager::getSwipeMemoryPssKiB() const
+{
+    return SwipeEngineWorker::getMemoryPssKiB();
+}
+

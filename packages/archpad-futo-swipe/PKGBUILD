@@ -1,0 +1,43 @@
+# Maintainer: ArchPad Project <https://github.com/pipa-mainline>
+pkgname=archpad-futo-swipe
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Standalone FUTO Swipe C++ Engine and verification tool for ArchPad"
+arch=('aarch64')
+url="https://github.com/Sachinmc73/archpad-pipa"
+license=('GPL-3.0-only' 'BSD-3-Clause' 'Apache-2.0' 'MIT' 'BSD-2-Clause')
+depends=('glibc' 'gcc-libs')
+provides=('archpad-futo-swipe' 'libarchpad_futo_swipe.so')
+options=('!strip')
+source=("archpad-futo-swipe-${pkgver}.tar.xz")
+sha512sums=('ce3b9749fa30dc43358ae2e50e1ed40a55b8bab2ef62c61df8f32f5406e9cfade9ae6503e0b99a12033c75947d5273e4d48fd6dac3ffbbb8558fcbff5faae45d')
+
+package() {
+  local src="${srcdir}/archpad-futo-swipe-${pkgver}"
+
+  mkdir -p "${pkgdir}/usr/lib/pkgconfig" \
+           "${pkgdir}/usr/bin" \
+           "${pkgdir}/usr/include/archpad/futo" \
+           "${pkgdir}/usr/share/licenses/${pkgname}"
+
+  # 1. Libraries & Symlinks
+  cp -a "${src}/lib/." "${pkgdir}/usr/lib/"
+
+  # 2. Binaries
+  install -Dm755 "${src}/bin/archpad-futo-swipe-qualify" "${pkgdir}/usr/bin/archpad-futo-swipe-qualify"
+
+  # 3. Headers
+  cp -a "${src}/include/archpad/futo/." "${pkgdir}/usr/include/archpad/futo/"
+
+  # 4. Pkg-config
+  install -Dm644 "${src}/lib/pkgconfig/archpad-futo-swipe.pc" "${pkgdir}/usr/lib/pkgconfig/archpad-futo-swipe.pc"
+
+  # 5. Licenses
+  cp -a "${src}/licenses/." "${pkgdir}/usr/share/licenses/${pkgname}/"
+
+  # Standard permissions
+  find "${pkgdir}/usr" -type d -exec chmod 0755 {} +
+  find "${pkgdir}/usr/include" -type f -exec chmod 0644 {} +
+  find "${pkgdir}/usr/share/licenses" -type f -exec chmod 0644 {} +
+  chmod 0644 "${pkgdir}/usr/lib/pkgconfig/archpad-futo-swipe.pc"
+}

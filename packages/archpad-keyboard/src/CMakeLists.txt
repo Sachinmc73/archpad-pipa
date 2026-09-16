@@ -15,15 +15,21 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml DBus)
 find_package(LayerShellQt REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CANBERRA REQUIRED libcanberra)
+pkg_check_modules(FUTO_SWIPE REQUIRED archpad-futo-swipe)
 
 add_executable(archpad-keyboard
     main.cpp
     keyboardmanager.h
     keyboardmanager.cpp
+    swipeengineworker.h
+    swipeengineworker.cpp
     resources.qrc
 )
 
-target_include_directories(archpad-keyboard PRIVATE ${CANBERRA_INCLUDE_DIRS})
+target_include_directories(archpad-keyboard PRIVATE
+    ${CANBERRA_INCLUDE_DIRS}
+    ${FUTO_SWIPE_INCLUDE_DIRS}
+)
 
 target_link_libraries(archpad-keyboard PRIVATE
     Qt6::Core
@@ -32,7 +38,23 @@ target_link_libraries(archpad-keyboard PRIVATE
     Qt6::Qml
     Qt6::DBus
     ${CANBERRA_LIBRARIES}
+    ${FUTO_SWIPE_LIBRARIES}
     LayerShellQt::Interface
+)
+
+add_executable(test_swipe_worker
+    test_swipe_worker.cpp
+    swipeengineworker.h
+    swipeengineworker.cpp
+)
+
+target_include_directories(test_swipe_worker PRIVATE
+    ${FUTO_SWIPE_INCLUDE_DIRS}
+)
+
+target_link_libraries(test_swipe_worker PRIVATE
+    Qt6::Core
+    ${FUTO_SWIPE_LIBRARIES}
 )
 
 add_executable(archpad-keyboard-settings

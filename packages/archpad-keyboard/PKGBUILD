@@ -1,7 +1,7 @@
 # Maintainer: ArchPad project
 pkgname=archpad-keyboard
 pkgver=1.0.0
-pkgrel=58
+pkgrel=59
 pkgdesc="Touch-first on-screen keyboard for ArchPad"
 arch=('aarch64')
 url="https://github.com/Sachinmc73/archpad-pipa"
@@ -13,6 +13,8 @@ depends=(
     'qt6-declarative'
     'libcanberra'
     'layer-shell-qt'
+    'archpad-futo-swipe'
+    'archpad-futo-swipe-en'
 )
 makedepends=(
     'cmake'

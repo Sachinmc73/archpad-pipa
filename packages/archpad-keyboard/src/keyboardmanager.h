@@ -7,6 +7,8 @@
 
 struct ca_context;
 class QDBusServiceWatcher;
+class QThread;
+class SwipeEngineWorker;
 
 class KeyboardManager : public QObject
 {
@@ -50,6 +52,11 @@ class KeyboardManager : public QObject
     Q_PROPERTY(bool quickPadPinned READ quickPadPinned WRITE setQuickPadPinned NOTIFY quickPadPinnedChanged)
     Q_PROPERTY(int quickPadKeyCount READ quickPadKeyCount WRITE setQuickPadKeyCount NOTIFY quickPadKeyCountChanged)
     Q_PROPERTY(qreal quickPadSize READ quickPadSize WRITE setQuickPadSize NOTIFY quickPadSizeChanged)
+
+    // Swipe Typing Engine
+    Q_PROPERTY(bool swipeReady READ swipeReady NOTIFY swipeReadyChanged)
+    Q_PROPERTY(bool swipeActive READ swipeActive WRITE setSwipeActive NOTIFY swipeActiveChanged)
+    Q_PROPERTY(QString swipeState READ swipeState NOTIFY swipeStateChanged)
 
 public:
     struct QuickPadSlot {
@@ -165,12 +172,27 @@ public:
     Q_INVOKABLE void toggleSplitMode() { setSplitMode(!m_splitMode); }
     Q_INVOKABLE void openSettingsApp();
 
+    // Swipe Typing Invocables
+    bool swipeReady() const { return m_swipeReady; }
+    bool swipeActive() const { return m_swipeActive; }
+    void setSwipeActive(bool active);
+    QString swipeState() const;
+
+    Q_INVOKABLE void requestSwipeDecode(quint64 requestId, const QVariantList &points, const QStringList &contextWords);
+    Q_INVOKABLE void loadSwipeEngine();
+    Q_INVOKABLE void unloadSwipeEngine();
+    Q_INVOKABLE quint64 getSwipeMemoryPssKiB() const;
+
 public Q_SLOTS:
     // D-Bus accessible methods
     void Show();
     void Hide();
     void Toggle();
     void ToggleFloating();
+    void LoadSwipeEngine() { loadSwipeEngine(); }
+    void UnloadSwipeEngine() { unloadSwipeEngine(); }
+    QString GetSwipeState() { return swipeState(); }
+    qulonglong GetSwipeMemoryPssKiB() { return static_cast<qulonglong>(getSwipeMemoryPssKiB()); }
     void SetFloating(bool floating);
     void OpenSettingsApp();
     void CycleThemeMode();
@@ -238,6 +260,11 @@ Q_SIGNALS:
     void quickPadSizeChanged(qreal size);
     void quickPadConfigChanged();
     void openQuickPadConfigRequested();
+    void swipeReadyChanged(bool ready);
+    void swipeActiveChanged(bool active);
+    void swipeStateChanged(const QString &state);
+    void swipeCandidatesReady(quint64 requestId, const QStringList &candidates, const QVariantMap &timings);
+    void swipeDecodeError(quint64 requestId, const QString &errorMessage);
 
 private:
     bool initUInput();
@@ -294,4 +321,8 @@ private:
     bool m_clickPlaybackErrorLogged = false;
     QDBusServiceWatcher *m_kwinServiceWatcher = nullptr;
     QTimer *m_saveSettingsTimer = nullptr;
+    bool m_swipeReady = false;
+    bool m_swipeActive = false;
+    QThread *m_swipeThread = nullptr;
+    SwipeEngineWorker *m_swipeWorker = nullptr;
 };
