@@ -201,7 +201,7 @@ We propose executing the following tasks in Phase 3.5 before beginning Phase 4:
 
 1. **Initialize Git Repository:**
    - Initialize `/home/sachin/projects/personal/archpad` as a Git repository.
-   - Commit all authoritative sources: `packages/`, `device/`, `tools/`, `ROADMAP.md`, `HANDOFF-ANTIGRAVITY.md`, `AUDIT-2026-09-08.md`, and this response.
+   - Commit all authoritative sources: `packages/`, `device/`, `tools/`, `ROADMAP.md`, `AUDIT-2026-09-08.md`, and this response. The historical handoff named in the original recommendation was later retired after consolidation.
 2. **Implement Reproducible Image Builder:**
    - Create `tools/build-archpad-release.sh` encapsulating the exact steps from Q1.
    - Regenerate and verify `artifacts/private/archpad-release/SHA256SUMS`.

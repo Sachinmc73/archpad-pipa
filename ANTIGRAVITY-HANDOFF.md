@@ -11,20 +11,20 @@ the checkpoint commit containing this file.
 Read these files completely before running commands or editing source:
 
 1. `AGENTS.md` — binding engineering and safety rules.
-2. `HANDOFF-CODEX.md` — hardware, package, and architecture history.
-3. `implementation_plan.md` — completed repairs and FUTO qualification gates.
-4. `swipe_integration_plan.md` — proposed product integration architecture.
-5. `artifacts/manifests/futo-swipe-phase-a-2026-09-16.md`
-6. `artifacts/manifests/futo-swipe-phase-b-2026-09-16.md`
-7. `artifacts/manifests/futo-swipe-phase-c-2026-09-16.md`
-8. `artifacts/manifests/futo-swipe-phase-d1-2026-09-16.md`
+2. `implementation_plan.md` — completed repairs and FUTO qualification gates.
+3. `swipe_integration_plan.md` — proposed product integration architecture.
+4. `artifacts/manifests/futo-swipe-phase-a-2026-09-16.md`
+5. `artifacts/manifests/futo-swipe-phase-b-2026-09-16.md`
+6. `artifacts/manifests/futo-swipe-phase-c-2026-09-16.md`
+7. `artifacts/manifests/futo-swipe-phase-d1-2026-09-16.md`
 
 Do not infer permission to skip an approval checkpoint from older chat text.
 
 ## 2. Verified current state
 
 - The production tablet is a Xiaomi Pad 6 running Arch Linux ARM, KWin/Plasma
-  6.7.5, Qt 6.11.2, and Wayland only.
+  6.7.5, Qt 6.11.2, and Wayland only. The known deployed kernel generation is
+  `7.1.4-pipa-r16`; verify every live version before relying on it.
 - Installed unlocked-session keyboard: `archpad-keyboard 1.0.0-58`.
 - The main keyboard is independent from `archpad-plasma-lockscreen` and
   `archpad-sddm-theme`.
@@ -45,6 +45,22 @@ Do not infer permission to skip an approval checkpoint from older chat text.
 - Tablet qualification workspaces:
   - `/home/archpad/builds/futo-phase-b-20260916/`
   - `/home/archpad/builds/futo-phase-c-20260916/`
+
+### Operational access and integrity
+
+- Prefer the configured `ssh archpad` host after verifying its current DHCP
+  address. USB recovery is available as
+  `ssh -F /dev/null -o StrictHostKeyChecking=no root@172.16.42.1`.
+- Run session commands as UID 10000 with
+  `XDG_RUNTIME_DIR=/run/user/10000`; do not guess a different runtime or bus.
+- Package sources are under `packages/`. Build in a dedicated tablet build
+  directory with `makepkg -f`; never build as root or edit installed files.
+- Screen capture uses `/usr/local/bin/kwin-shot` in the `archpad` Wayland
+  session when visual evidence is required.
+- The verified package boundary is `archpad-keyboard`,
+  `archpad-plasma-lockscreen`, and `archpad-sddm-theme`. Upstream KDE/SDDM
+  packages must remain pristine and all relevant `pacman -Qkk` checks must
+  report zero altered files.
 
 ## 3. Git safety before continuation
 

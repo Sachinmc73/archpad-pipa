@@ -340,8 +340,9 @@ environment; package signing remains a later repository-release requirement.
 - **[COMPLETE: FIRST SHELL TOUCH PROOF]** Official Arch Linux ARM Quickshell
   `0.3.1-1` and independently packaged `archpad-shell 0.1.0-1` provide the
   first top bar, workspace switcher and bottom dock. Both native layer surfaces,
-  package integrity and UWSM autostart wiring are verified.
-  `PHASE4-SHELL-STATUS.md` is the exact handoff and physical checklist.
+  package integrity and UWSM autostart wiring are verified. The superseded
+  Phase 4 shell handoff and physical checklist remain recoverable from Git
+  history.
 - **[COMPLETE: NATIVE SENSOR/ROTATION PIPELINE]** Official ALARM
   `iio-sensor-proxy 3.9-1` reads pipa's Qualcomm SSC accelerometer through a
   systemd-managed HexagonRPC 0.4.0 service and a device-specific udev opt-in.
@@ -370,8 +371,8 @@ environment; package signing remains a later repository-release requirement.
 
 ## Immediate next action
 
-Complete the short cold-login and four-orientation physical check in
-`PHASE4-SHELL-STATUS.md`, then execute the dependable interim OSK compatibility
+Complete the short cold-login and four-orientation physical check recorded in
+the Phase 4 Git history, then execute the dependable interim OSK compatibility
 gate. Continue with the real app
 drawer only after touch text entry is usable without a hardware keyboard.
 Keep the reboot path and `CONFIG_CRYPTO_USER` as explicit low-level backlog;
