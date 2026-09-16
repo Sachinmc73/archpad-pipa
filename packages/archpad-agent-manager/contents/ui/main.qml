@@ -1,6 +1,5 @@
 /* main.qml
  * ArchPad Agent Manager — Plasma 6 Plasmoid
- * Follows the same pattern as com.archpad.quicksettings
  */
 import QtQuick
 import org.kde.plasma.plasmoid
@@ -47,7 +46,7 @@ PlasmoidItem {
         onRunningChanged: if (!running) root.danceFrameIdx = 0
     }
 
-    // ── Executable DataEngine (same pattern as quicksettings) ─────────────────
+    // ── Executable DataEngine ─────────────────────────────────────────────────
     Plasma5Support.DataSource {
         id: execEngine
         engine: "executable"
@@ -65,7 +64,6 @@ PlasmoidItem {
             try {
                 var parsed = JSON.parse(stdout.substring(sIdx, eIdx + 1));
                 root.providers = parsed.providers || [];
-                // Sum active_count across all providers
                 var total = 0;
                 for (var i = 0; i < root.providers.length; i++) {
                     total += root.providers[i].active_count || 0;
@@ -78,13 +76,12 @@ PlasmoidItem {
     }
 
     readonly property string dataProviderScript:
-        Qt.resolvedUrl("agy-data-provider.py").toString().replace("file://", "")
+        "/home/archpad/.local/bin/archpad-agent-manager-provider"
 
     function fetchData(forceRefresh) {
         if (root.refreshing) return;
         root.refreshing = true;
-        var cmd = "python3 '" + root.dataProviderScript + "'";
-        if (forceRefresh) cmd += " --force-refresh";
+        var cmd = root.dataProviderScript + (forceRefresh ? " --force-refresh" : "");
         execEngine.connectSource(cmd);
     }
 
@@ -94,11 +91,11 @@ PlasmoidItem {
         interval: 15000
         repeat: true
         running: true
-        triggeredOnStart: false
+        triggeredOnStart: true
         onTriggered: root.fetchData(false)
     }
 
-    // ── Fetch on open ─────────────────────────────────────────────────────────
+    // ── Fetch immediately on open ─────────────────────────────────────────────
     onExpandedChanged: {
         if (root.expanded) root.fetchData(false);
     }
