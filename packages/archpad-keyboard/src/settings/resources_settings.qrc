@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/settings">
+        <file>SettingsMain.qml</file>
+        <file alias="Theme.qml">../qml/Theme.qml</file>
+        <file alias="VectorIcon.qml">../qml/components/VectorIcon.qml</file>
+    </qresource>
+</RCC>

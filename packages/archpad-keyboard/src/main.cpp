@@ -7,7 +7,6 @@
 #include <QQuickWindow>
 #include <QDebug>
 #include <QDBusInterface>
-#include <QDBusConnectionInterface>
 #include <LayerShellQt/Window>
 
 #include "keyboardmanager.h"
@@ -24,7 +23,7 @@ int main(int argc, char **argv)
     app.setWindowIcon(QIcon::fromTheme(QStringLiteral("input-keyboard-virtual")));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Ultra-lightweight Virtual Keyboard for ArchPad"));
+    parser.setApplicationDescription(QStringLiteral("Touch-first virtual keyboard for ArchPad"));
     parser.addHelpOption();
     parser.addVersionOption();
 
@@ -41,9 +40,11 @@ int main(int argc, char **argv)
     parser.addOption(daemonOpt);
     parser.process(app);
 
-    // Single-instance handling: forward to active instance if already running
+    // Atomically acquire the well-known name before initializing QML or uinput.
+    // KWin and the user service can start at the same time, so a separate
+    // isServiceRegistered() check would have a check-then-register race.
     QDBusConnection bus = QDBusConnection::sessionBus();
-    if (bus.isConnected() && bus.interface() && bus.interface()->isServiceRegistered(QStringLiteral("org.archpad.Keyboard"))) {
+    if (bus.isConnected() && !bus.registerService(QStringLiteral("org.archpad.Keyboard"))) {
         QDBusInterface iface(QStringLiteral("org.archpad.Keyboard"),
                              QStringLiteral("/org/archpad/Keyboard"),
                              QStringLiteral("org.archpad.Keyboard"),
@@ -58,6 +59,8 @@ int main(int argc, char **argv)
             } else if (!parser.isSet(daemonOpt)) {
                 iface.call(QStringLiteral("Toggle"));
             }
+        } else {
+            qWarning() << "Another process owns org.archpad.Keyboard but does not expose the expected interface";
         }
         return 0;
     }

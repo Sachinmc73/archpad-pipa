@@ -1,0 +1,68 @@
+diff --git a/tests/test_engine.cpp b/tests/test_engine.cpp
+index 7a0a1b0..14f041f 100644
+--- a/tests/test_engine.cpp
++++ b/tests/test_engine.cpp
+@@ -228,6 +228,51 @@ static void test_encoder_only_runtime_setlayout() {
+     ASSERT_MSG(!out.empty(), "recognize after setMode(layout) returned empty");
+ }
+
++static void test_serial_dictionary_swap_roundtrip() {
++    SwipeEngine engine;
++    SwipeEngine::Config cfg;
++    cfg.encoder_path = g_encoder_path;
++    cfg.dictionaries = {g_vocab.itrie()};
++    cfg.layout = g_layout;
++    cfg.num_threads = 1;
++    ASSERT_MSG(engine.init(cfg), "engine.init failed");
++
++    std::vector<float> x, y, t;
++    make_swipe(x, y, t);
++    auto baseline = engine.recognize(
++        x.data(), y.data(), t.data(), static_cast<int>(x.size()));
++    ASSERT_MSG(!baseline.empty(), "baseline recognize returned empty");
++
++    Trie restricted;
++    restricted.insert(baseline.front().word, 1.0f);
++    SwipeEngine::Mode restrict_mode;
++    restrict_mode.dictionaries = std::vector<ITrie*>{restricted.itrie()};
++    ASSERT_MSG(engine.setMode(restrict_mode), "restricted dictionary swap failed");
++
++    auto restricted_output = engine.recognize(
++        x.data(), y.data(), t.data(), static_cast<int>(x.size()));
++    ASSERT_MSG(restricted_output.size() == 1,
++               "restricted dictionary should return exactly one candidate");
++    ASSERT_MSG(restricted_output.front().word == baseline.front().word,
++               "restricted dictionary returned an unexpected word");
++
++    SwipeEngine::Mode restore_mode;
++    restore_mode.dictionaries = std::vector<ITrie*>{g_vocab.itrie()};
++    ASSERT_MSG(engine.setMode(restore_mode), "full dictionary restore failed");
++
++    auto restored = engine.recognize(
++        x.data(), y.data(), t.data(), static_cast<int>(x.size()));
++    ASSERT_MSG(restored.size() == baseline.size(),
++               "candidate count changed after dictionary round-trip");
++    for (size_t i = 0; i < baseline.size(); ++i) {
++        ASSERT_MSG(restored[i].word == baseline[i].word,
++                   "candidate order changed after dictionary round-trip");
++        ASSERT_MSG(approx_eq(restored[i].final_score,
++                             baseline[i].final_score, 1e-4f),
++                   "candidate score changed after dictionary round-trip");
++    }
++}
++
+ static void test_setlayout_json_vs_array_equivalence() {
+     // Regression test: layout built via load_layout_json (C++ path) must match
+     // layout built via make_layout (JNI path) when arrays are in alphabetical order.
+@@ -761,8 +806,11 @@ int main(int argc, char* argv[]) {
+
+     if (have_encoder) {
+         run_test("encoder_only_init_and_recognize",      test_encoder_only_init_and_recognize);
++        run_test("serial_dictionary_swap_roundtrip",
++                 test_serial_dictionary_swap_roundtrip);
+     } else {
+         skip_test("encoder_only_init_and_recognize",      "no encoder/vocab/layout args");
++        skip_test("serial_dictionary_swap_roundtrip",      "no encoder/vocab/layout args");
+     }
+
+     if (have_encoder && !g_alt_layout_path.empty()) {

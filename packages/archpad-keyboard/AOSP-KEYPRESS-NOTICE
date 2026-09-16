@@ -1,0 +1,31 @@
+AOSP mobile keyboard sound profiles
+===================================
+
+The four packaged profiles are volume-normalized derivatives of keyboard
+effects from the Android Open Source Project `platform/frameworks/base`
+repository, directory `data/sounds/effects/ogg/`:
+
+Profile   Upstream file                 Upstream SHA-256
+Standard  KeypressStandard_48k.ogg      4dc642306a49aa939374d619bf7b18d9052f7f376177c17614affd217c8b994b
+Soft      KeypressSpacebar_48k.ogg      2b21793d6c92255b1b4c3f8d03db6039f50f3a60a3086180617a46b1ed425592
+Crisp     KeypressDelete_48k.ogg        ea717886390901f5dbff2702552a81db26723f37fb6118cb5eef270d7a2bd9f7
+Deep      KeypressReturn_48k.ogg        73979c7df62a461e6bd2b61080c6cc34c55ccfdef3249f80049b2f7993e7fd35
+
+Source directory:
+https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/data/sounds/effects/ogg/
+
+Each source was decoded with FFmpeg, adjusted only by a fixed gain, retained
+or resampled at 48 kHz stereo, and encoded as Vorbis quality 5. The resulting
+files are volume-matched to approximately -18 dB peak:
+
+File                       Gain       Packaged SHA-256
+keypress-standard.ogg      -0.5 dB    5f3b0f19e81a937a04a2a1d88e6a6b1578cd4be9fd82e93b66db98269cd3e17e
+keypress-soft.ogg          -11.0 dB   cb9cd39726e7d1d554842e6849b1e6a78d24e5c8bffede5924a187ca226f7caa
+keypress-crisp.ogg         -5.5 dB    d32499e84ef77e266e9af7139aa3afdfafb5d2946f8c7fa07e09c3efc2621768
+keypress-deep.ogg          -8.5 dB    5ad22752539734805fd6ac94849466a3f3c7102e2d29ee658b86be14653c5dc8
+
+Copyright (C) The Android Open Source Project
+SPDX-License-Identifier: Apache-2.0
+
+The Apache License 2.0 text is provided by the system licenses package at
+/usr/share/licenses/common/Apache/license.txt.

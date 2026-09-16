@@ -10,11 +10,12 @@ ColumnLayout {
     anchors.leftMargin: 8
     anchors.rightMargin: 8
 
-    readonly property bool isShifted: km.shiftActive || km.capsLockActive
+    readonly property bool isShifted: km.shiftActive
+    readonly property bool isLetterUpper: km.shiftActive ? !km.capsLockActive : km.capsLockActive
     property bool symbolMode: false
 
     function l(letter) {
-        return isShifted ? letter.toUpperCase() : letter.toLowerCase()
+        return isLetterUpper ? letter.toUpperCase() : letter.toLowerCase()
     }
 
     readonly property real clusterWidth: Math.min(365, (root.width - 120) / 2)
@@ -246,7 +247,10 @@ ColumnLayout {
                 weight: 1.25
                 customKeyColor: theme.keySpecialColor
                 customFontSize: theme.fontSizeSmall
-                onClicked: root.symbolMode = !root.symbolMode
+                onClicked: {
+                    km.playClick()
+                    root.symbolMode = !root.symbolMode
+                }
             }
             KeyButton {
                 text: ","

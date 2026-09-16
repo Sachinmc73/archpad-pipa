@@ -1,0 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0703baa..b911b44 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -101,5 +101,11 @@ if(HAVE_EXECUTORCH AND ETI_IS_TOP_LEVEL)
+     target_include_directories(infer_jsonl PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/executorch/third-party/json/include)
++
++    add_executable(archpad-futo-swipe-qualify targets/qualification_cli.cpp)
++    target_link_libraries(archpad-futo-swipe-qualify PRIVATE swipe_decoder)
++    target_link_executorch(archpad-futo-swipe-qualify)
++    target_include_directories(archpad-futo-swipe-qualify PRIVATE
++        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/executorch/third-party/json/include)
+ endif()
+
+ # ===========================================================================

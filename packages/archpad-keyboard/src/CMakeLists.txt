@@ -35,8 +35,33 @@ target_link_libraries(archpad-keyboard PRIVATE
     LayerShellQt::Interface
 )
 
+add_executable(archpad-keyboard-settings
+    settings/main.cpp
+    settings/settingscontroller.h
+    settings/settingscontroller.cpp
+    settings/resources_settings.qrc
+)
+
+target_link_libraries(archpad-keyboard-settings PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Quick
+    Qt6::Qml
+    Qt6::DBus
+)
+
 include(GNUInstallDirs)
 
-install(TARGETS archpad-keyboard DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../archpad-keyboard.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
-install(FILES sounds/tick.wav DESTINATION ${CMAKE_INSTALL_DATADIR}/archpad-keyboard/sounds)
+install(TARGETS archpad-keyboard archpad-keyboard-settings DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/../archpad-keyboard.desktop
+    ${CMAKE_CURRENT_SOURCE_DIR}/../archpad-keyboard-settings.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+install(FILES
+    sounds/keypress-standard.ogg
+    sounds/keypress-soft.ogg
+    sounds/keypress-crisp.ogg
+    sounds/keypress-deep.ogg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/archpad-keyboard/sounds
+)

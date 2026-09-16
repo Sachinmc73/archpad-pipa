@@ -1,8 +1,9 @@
 import QtQuick
 
 QtObject {
-    // Dynamic Mode: Synced with km.resolvedDark (Follow System, Light, or Dark)
-    readonly property bool isDark: (typeof km !== "undefined") ? km.resolvedDark : true
+    // Dynamic Mode: Synced with km.resolvedDark or controller.resolvedDark (Follow System, Light, or Dark)
+    readonly property bool isDark: (typeof km !== "undefined") ? km.resolvedDark :
+                                   ((typeof controller !== "undefined") ? controller.resolvedDark : true)
 
     // Surface & Window Colors: Pure white background in Light mode
     readonly property color backgroundColor: isDark ? "#14171A" : "#FFFFFF"

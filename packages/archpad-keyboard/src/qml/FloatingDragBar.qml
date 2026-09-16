@@ -171,8 +171,8 @@ Rectangle {
         // Pop Back Button (180 degree rotated floating icon)
         Rectangle {
             id: dockBtn
-            width: 32
-            height: 26
+            implicitWidth: 32
+            implicitHeight: 26
             radius: theme.keyRadius
             color: dockArea.pressed ? theme.keyPressedColor : "transparent"
             border.color: theme.borderColor
@@ -198,8 +198,8 @@ Rectangle {
         // Minimise Icon (Rightmost)
         Rectangle {
             id: hideBtn
-            width: 32
-            height: 26
+            implicitWidth: 32
+            implicitHeight: 26
             radius: theme.keyRadius
             color: hideArea.pressed ? theme.keyPressedColor : "transparent"
             border.color: theme.borderColor
@@ -217,7 +217,7 @@ Rectangle {
             MouseArea {
                 id: hideArea
                 anchors.fill: parent
-                onClicked: km.isVisible = false
+                onClicked: km.Hide()
             }
         }
     }

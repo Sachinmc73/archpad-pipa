@@ -4,17 +4,26 @@
 #include <linux/input-event-codes.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cerrno>
+#include <cmath>
 #include <cstring>
 #include <canberra.h>
 
 #include <QDebug>
+#include <QGuiApplication>
 #include <QDBusConnection>
+#include <QDBusConnectionInterface>
 #include <QDBusError>
 #include <QDBusInterface>
+#include <QDBusReply>
+#include <QDBusServiceWatcher>
 #include <QUrl>
 #include <QSettings>
 #include <QDir>
 #include <QFile>
+#include <QPalette>
+#include <QProcess>
+#include <QStyleHints>
 
 KeyboardManager::KeyboardManager(QObject *parent)
     : QObject(parent)
@@ -25,9 +34,6 @@ KeyboardManager::KeyboardManager(QObject *parent)
     // Register DBus interface
     QDBusConnection connection = QDBusConnection::sessionBus();
     if (connection.isConnected()) {
-        if (!connection.registerService(QStringLiteral("org.archpad.Keyboard"))) {
-            qWarning() << "Could not register DBus service org.archpad.Keyboard:" << connection.lastError().message();
-        }
         if (!connection.registerObject(QStringLiteral("/org/archpad/Keyboard"), this, QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals)) {
             qWarning() << "Could not register DBus object /org/archpad/Keyboard:" << connection.lastError().message();
         }
@@ -49,42 +55,65 @@ KeyboardManager::KeyboardManager(QObject *parent)
             this,
             SLOT(onKWinVisibleChanged())
         );
+
+        m_kwinServiceWatcher = new QDBusServiceWatcher(
+            QStringLiteral("org.kde.KWin"),
+            connection,
+            QDBusServiceWatcher::WatchForOwnerChange,
+            this);
+        connect(m_kwinServiceWatcher, &QDBusServiceWatcher::serviceOwnerChanged,
+                this, [this](const QString &, const QString &, const QString &newOwner) {
+                    if (!newOwner.isEmpty()) {
+                        syncKWinVirtualKeyboardState();
+                    } else if (!m_manuallyShown) {
+                        clearTransientState();
+                        setIsVisible(false);
+                    }
+                });
+
+        if (QDBusConnectionInterface *busInterface = connection.interface()) {
+            const QDBusReply<bool> kwinRegistered = busInterface->isServiceRegistered(QStringLiteral("org.kde.KWin"));
+            if (kwinRegistered.isValid() && kwinRegistered.value()) {
+                syncKWinVirtualKeyboardState();
+            }
+        }
     }
 
-    // Initialize lightweight XDG event sound via libcanberra
-    ca_context_create(&m_caContext);
+    // Initialize lightweight XDG event sound via libcanberra.
+    int soundResult = ca_context_create(&m_caContext);
+    if (soundResult < 0) {
+        qWarning() << "Could not create libcanberra context:" << ca_strerror(soundResult);
+        m_caContext = nullptr;
+    }
     if (m_caContext) {
-        ca_context_open(m_caContext);
-        ca_context_change_props(m_caContext,
+        soundResult = ca_context_change_props(m_caContext,
             CA_PROP_APPLICATION_ID, "org.archpad.Keyboard",
             CA_PROP_APPLICATION_NAME, "ArchPad Keyboard",
             nullptr);
-        QString soundPath = QStringLiteral("/usr/share/archpad-keyboard/sounds/tick.wav");
-        if (!QFile::exists(soundPath)) {
-            soundPath = QStringLiteral("/home/archpad/archpad-keyboard/src/sounds/tick.wav");
+        if (soundResult < 0) {
+            qWarning() << "Could not configure libcanberra context:" << ca_strerror(soundResult);
         }
-        if (QFile::exists(soundPath)) {
-            ca_context_cache(m_caContext,
-                CA_PROP_EVENT_ID, "key-click",
-                CA_PROP_MEDIA_FILENAME, soundPath.toUtf8().constData(),
-                nullptr);
+
+        soundResult = ca_context_open(m_caContext);
+        if (soundResult < 0) {
+            qWarning() << "Could not open libcanberra context:" << ca_strerror(soundResult);
+            ca_context_destroy(m_caContext);
+            m_caContext = nullptr;
+        }
+
+        m_clickSoundPath = soundPathForProfile(m_soundProfile);
+        if (m_caContext && !QFile::exists(m_clickSoundPath)) {
+            qWarning() << "Keyboard click sound is missing:" << m_clickSoundPath;
         }
     }
 
-    // Initialize Theme System & Watcher
+    // Initialize standard Qt system appearance tracking.
     m_cachedSystemDark = detectSystemDark();
     updateResolvedDark();
     saveSettings();
 
-    m_themeWatcher = new QFileSystemWatcher(this);
-    QString kdeGlobals = QDir::homePath() + QStringLiteral("/.config/kdeglobals");
-    if (QFile::exists(kdeGlobals)) {
-        m_themeWatcher->addPath(kdeGlobals);
-    }
-    connect(m_themeWatcher, &QFileSystemWatcher::fileChanged, this, [this](const QString &path) {
-        if (!m_themeWatcher->files().contains(path) && QFile::exists(path)) {
-            m_themeWatcher->addPath(path);
-        }
+    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
+            this, [this](Qt::ColorScheme) {
         m_cachedSystemDark = detectSystemDark();
         updateResolvedDark();
     });
@@ -96,6 +125,7 @@ KeyboardManager::~KeyboardManager()
         m_saveSettingsTimer->stop();
         saveSettings();
     }
+    clearTransientState();
     closeUInput();
     if (m_caContext) {
         ca_context_destroy(m_caContext);
@@ -121,7 +151,11 @@ bool KeyboardManager::initUInput()
 
     // Enable all standard keyboard keys
     for (int key = 1; key <= KEY_MICMUTE; ++key) {
-        ioctl(m_uinputFd, UI_SET_KEYBIT, key);
+        if (ioctl(m_uinputFd, UI_SET_KEYBIT, key) < 0) {
+            qWarning() << "Failed to enable uinput key" << key << ":" << strerror(errno);
+            closeUInput();
+            return false;
+        }
     }
 
     struct uinput_setup usetup;
@@ -192,7 +226,12 @@ void KeyboardManager::emitRawEvent(int type, int code, int value)
     ie.type = static_cast<__u16>(type);
     ie.code = static_cast<__u16>(code);
     ie.value = value;
-    write(m_uinputFd, &ie, sizeof(ie));
+    const ssize_t written = write(m_uinputFd, &ie, sizeof(ie));
+    if (written < 0) {
+        qWarning() << "Failed to emit uinput event:" << strerror(errno);
+    } else if (written != static_cast<ssize_t>(sizeof(ie))) {
+        qWarning() << "Short uinput write:" << written << "of" << sizeof(ie) << "bytes";
+    }
 }
 
 void KeyboardManager::emitKey(int code, int value)
@@ -209,38 +248,57 @@ void KeyboardManager::emitKeyPressAndRelease(int code)
 
 void KeyboardManager::playClick()
 {
-    if (!m_soundEnabled || !m_caContext) return;
-    ca_context_play(m_caContext, 1,
-        CA_PROP_EVENT_ID, "key-click",
+    if (!m_soundEnabled) return;
+    playSoundFile(m_clickSoundPath);
+}
+
+void KeyboardManager::previewSoundProfile(int profile)
+{
+    if (!m_soundEnabled) return;
+    playSoundFile(soundPathForProfile(qBound(0, profile, 3)));
+}
+
+QString KeyboardManager::soundPathForProfile(int profile) const
+{
+    static const char *const fileNames[] = {
+        "keypress-standard.ogg",
+        "keypress-soft.ogg",
+        "keypress-crisp.ogg",
+        "keypress-deep.ogg"
+    };
+    const int boundedProfile = qBound(0, profile, 3);
+    return QStringLiteral("/usr/share/archpad-keyboard/sounds/")
+        + QString::fromLatin1(fileNames[boundedProfile]);
+}
+
+void KeyboardManager::playSoundFile(const QString &path)
+{
+    if (!m_caContext || path.isEmpty() || m_soundVolume <= 0) return;
+
+    const double linearGain = static_cast<double>(m_soundVolume) / 100.0;
+    const QByteArray volumeDb = QByteArray::number(20.0 * std::log10(linearGain), 'f', 2);
+
+    const int result = ca_context_play(m_caContext, 0,
+        CA_PROP_MEDIA_FILENAME, path.toUtf8().constData(),
+        CA_PROP_CANBERRA_VOLUME, volumeDb.constData(),
         nullptr);
+    if (result < 0 && !m_clickPlaybackErrorLogged) {
+        m_clickPlaybackErrorLogged = true;
+        qWarning() << "Could not play keyboard click sound:" << ca_strerror(result);
+    }
 }
 
 bool KeyboardManager::detectSystemDark()
 {
-    QString kdeGlobals = QDir::homePath() + QStringLiteral("/.config/kdeglobals");
-    if (QFile::exists(kdeGlobals)) {
-        QFile file(kdeGlobals);
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            bool inColorsWindow = false;
-            while (!file.atEnd()) {
-                QString line = QString::fromUtf8(file.readLine()).trimmed();
-                if (line.startsWith(QLatin1Char('['))) {
-                    inColorsWindow = (line == QStringLiteral("[Colors:Window]"));
-                } else if (inColorsWindow && line.startsWith(QStringLiteral("BackgroundNormal="))) {
-                    QString val = line.section(QLatin1Char('='), 1).trimmed();
-                    QStringList rgb = val.split(QLatin1Char(','));
-                    if (rgb.size() >= 3) {
-                        int r = rgb[0].trimmed().toInt();
-                        int g = rgb[1].trimmed().toInt();
-                        int b = rgb[2].trimmed().toInt();
-                        int brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                        return brightness < 128;
-                    }
-                }
-            }
-        }
+    const Qt::ColorScheme scheme = QGuiApplication::styleHints()->colorScheme();
+    if (scheme == Qt::ColorScheme::Dark) {
+        return true;
     }
-    return true; // Default to dark
+    if (scheme == Qt::ColorScheme::Light) {
+        return false;
+    }
+
+    return QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
 }
 
 void KeyboardManager::updateResolvedDark()
@@ -274,13 +332,61 @@ void KeyboardManager::loadSettings()
     m_themeMode = s.value(QStringLiteral("themeMode"), 0).toInt();
     m_heightScale = s.value(QStringLiteral("heightScale"), 1.0).toReal();
     m_soundEnabled = s.value(QStringLiteral("soundEnabled"), true).toBool();
+    m_soundProfile = qBound(0, s.value(QStringLiteral("soundProfile"), 0).toInt(), 3);
+    m_soundVolume = qBound(0, s.value(QStringLiteral("soundVolume"), 70).toInt(), 100);
+    m_splitMode = s.value(QStringLiteral("splitMode"), false).toBool();
     m_themePinned = s.value(QStringLiteral("themePinned"), false).toBool();
     m_soundPinned = s.value(QStringLiteral("soundPinned"), false).toBool();
     m_splitPinned = s.value(QStringLiteral("splitPinned"), false).toBool();
     m_floatingWidth = s.value(QStringLiteral("floatingWidth"), 420.0).toReal();
+    m_longPressDelay = s.value(QStringLiteral("longPressDelay"), 350).toInt();
     s.endGroup();
     if (m_floatingWidth < 340.0) m_floatingWidth = 340.0;
     if (m_floatingWidth > 580.0) m_floatingWidth = 580.0;
+    m_longPressDelay = qBound(150, m_longPressDelay, 1000);
+
+    s.beginGroup(QStringLiteral("QuickPad"));
+    m_quickPadPinned = s.value(QStringLiteral("pinned"), false).toBool();
+    m_quickPadKeyCount = s.value(QStringLiteral("keyCount"), 4).toInt();
+    if (m_quickPadKeyCount < 1) m_quickPadKeyCount = 1;
+    if (m_quickPadKeyCount > 4) m_quickPadKeyCount = 4;
+    m_quickPadSize = s.value(QStringLiteral("size"), 220.0).toReal();
+    if (m_quickPadSize < 160.0) m_quickPadSize = 160.0;
+    if (m_quickPadSize > 380.0) m_quickPadSize = 380.0;
+
+    m_quickPadSlots[0] = {
+        s.value(QStringLiteral("slot0_label"), QStringLiteral("Esc")).toString(),
+        s.value(QStringLiteral("slot0_code"), KEY_ESC).toInt(),
+        s.value(QStringLiteral("slot0_ctrl"), false).toBool(),
+        s.value(QStringLiteral("slot0_alt"), false).toBool(),
+        s.value(QStringLiteral("slot0_shift"), false).toBool(),
+        s.value(QStringLiteral("slot0_meta"), false).toBool()
+    };
+    m_quickPadSlots[1] = {
+        s.value(QStringLiteral("slot1_label"), QStringLiteral("Tab")).toString(),
+        s.value(QStringLiteral("slot1_code"), KEY_TAB).toInt(),
+        s.value(QStringLiteral("slot1_ctrl"), false).toBool(),
+        s.value(QStringLiteral("slot1_alt"), false).toBool(),
+        s.value(QStringLiteral("slot1_shift"), false).toBool(),
+        s.value(QStringLiteral("slot1_meta"), false).toBool()
+    };
+    m_quickPadSlots[2] = {
+        s.value(QStringLiteral("slot2_label"), QStringLiteral("Ctrl+C")).toString(),
+        s.value(QStringLiteral("slot2_code"), KEY_C).toInt(),
+        s.value(QStringLiteral("slot2_ctrl"), true).toBool(),
+        s.value(QStringLiteral("slot2_alt"), false).toBool(),
+        s.value(QStringLiteral("slot2_shift"), false).toBool(),
+        s.value(QStringLiteral("slot2_meta"), false).toBool()
+    };
+    m_quickPadSlots[3] = {
+        s.value(QStringLiteral("slot3_label"), QStringLiteral("Ctrl+V")).toString(),
+        s.value(QStringLiteral("slot3_code"), KEY_V).toInt(),
+        s.value(QStringLiteral("slot3_ctrl"), true).toBool(),
+        s.value(QStringLiteral("slot3_alt"), false).toBool(),
+        s.value(QStringLiteral("slot3_shift"), false).toBool(),
+        s.value(QStringLiteral("slot3_meta"), false).toBool()
+    };
+    s.endGroup();
 }
 
 void KeyboardManager::saveSettings()
@@ -294,10 +400,28 @@ void KeyboardManager::saveSettings()
     s.setValue(QStringLiteral("resolvedDark"), m_resolvedDark);
     s.setValue(QStringLiteral("heightScale"), m_heightScale);
     s.setValue(QStringLiteral("soundEnabled"), m_soundEnabled);
+    s.setValue(QStringLiteral("soundProfile"), m_soundProfile);
+    s.setValue(QStringLiteral("soundVolume"), m_soundVolume);
+    s.setValue(QStringLiteral("splitMode"), m_splitMode);
     s.setValue(QStringLiteral("themePinned"), m_themePinned);
     s.setValue(QStringLiteral("soundPinned"), m_soundPinned);
     s.setValue(QStringLiteral("splitPinned"), m_splitPinned);
     s.setValue(QStringLiteral("floatingWidth"), m_floatingWidth);
+    s.setValue(QStringLiteral("longPressDelay"), m_longPressDelay);
+    s.endGroup();
+
+    s.beginGroup(QStringLiteral("QuickPad"));
+    s.setValue(QStringLiteral("pinned"), m_quickPadPinned);
+    s.setValue(QStringLiteral("keyCount"), m_quickPadKeyCount);
+    s.setValue(QStringLiteral("size"), m_quickPadSize);
+    for (int i = 0; i < 4; ++i) {
+        s.setValue(QStringLiteral("slot%1_label").arg(i), m_quickPadSlots[i].label);
+        s.setValue(QStringLiteral("slot%1_code").arg(i), m_quickPadSlots[i].keycode);
+        s.setValue(QStringLiteral("slot%1_ctrl").arg(i), m_quickPadSlots[i].ctrl);
+        s.setValue(QStringLiteral("slot%1_alt").arg(i), m_quickPadSlots[i].alt);
+        s.setValue(QStringLiteral("slot%1_shift").arg(i), m_quickPadSlots[i].shift);
+        s.setValue(QStringLiteral("slot%1_meta").arg(i), m_quickPadSlots[i].meta);
+    }
     s.endGroup();
     s.sync();
 }
@@ -333,7 +457,6 @@ void KeyboardManager::setCtrlActive(bool active)
 {
     if (m_ctrlActive != active) {
         m_ctrlActive = active;
-        emitKey(KEY_LEFTCTRL, m_ctrlActive ? 1 : 0);
         Q_EMIT ctrlActiveChanged(m_ctrlActive);
     }
 }
@@ -342,7 +465,6 @@ void KeyboardManager::setAltActive(bool active)
 {
     if (m_altActive != active) {
         m_altActive = active;
-        emitKey(KEY_LEFTALT, m_altActive ? 1 : 0);
         Q_EMIT altActiveChanged(m_altActive);
     }
 }
@@ -351,7 +473,6 @@ void KeyboardManager::setMetaActive(bool active)
 {
     if (m_metaActive != active) {
         m_metaActive = active;
-        emitKey(KEY_LEFTMETA, m_metaActive ? 1 : 0);
         Q_EMIT metaActiveChanged(m_metaActive);
     }
 }
@@ -381,11 +502,25 @@ void KeyboardManager::setSoundEnabled(bool enabled)
     }
 }
 
-void KeyboardManager::setOptionsVisible(bool visible)
+void KeyboardManager::setSoundProfile(int profile)
 {
-    if (m_optionsVisible != visible) {
-        m_optionsVisible = visible;
-        Q_EMIT optionsVisibleChanged(m_optionsVisible);
+    profile = qBound(0, profile, 3);
+    if (m_soundProfile != profile) {
+        m_soundProfile = profile;
+        m_clickSoundPath = soundPathForProfile(m_soundProfile);
+        m_clickPlaybackErrorLogged = false;
+        saveSettings();
+        Q_EMIT soundProfileChanged(m_soundProfile);
+    }
+}
+
+void KeyboardManager::setSoundVolume(int volume)
+{
+    volume = qBound(0, volume, 100);
+    if (m_soundVolume != volume) {
+        m_soundVolume = volume;
+        saveSettings();
+        Q_EMIT soundVolumeChanged(m_soundVolume);
     }
 }
 
@@ -416,10 +551,21 @@ void KeyboardManager::setHeightScale(qreal scale)
     }
 }
 
+void KeyboardManager::setLongPressDelay(int delay)
+{
+    delay = qBound(150, delay, 1000);
+    if (m_longPressDelay != delay) {
+        m_longPressDelay = delay;
+        saveSettings();
+        Q_EMIT longPressDelayChanged(m_longPressDelay);
+    }
+}
+
 void KeyboardManager::setSplitMode(bool split)
 {
     if (m_splitMode != split) {
         m_splitMode = split;
+        saveSettings();
         Q_EMIT splitModeChanged(m_splitMode);
     }
 }
@@ -462,11 +608,206 @@ void KeyboardManager::setSplitPinned(bool pinned)
     }
 }
 
+void KeyboardManager::setIsQuickPad(bool active)
+{
+    if (m_isQuickPad != active) {
+        m_isQuickPad = active;
+        Q_EMIT isQuickPadChanged(m_isQuickPad);
+    }
+}
+
+void KeyboardManager::setQuickPadPinned(bool pinned)
+{
+    if (m_quickPadPinned != pinned) {
+        m_quickPadPinned = pinned;
+        saveSettings();
+        Q_EMIT quickPadPinnedChanged(m_quickPadPinned);
+    }
+}
+
+void KeyboardManager::setQuickPadKeyCount(int count)
+{
+    count = qBound(1, count, 4);
+    if (m_quickPadKeyCount != count) {
+        m_quickPadKeyCount = count;
+        saveSettings();
+        Q_EMIT quickPadKeyCountChanged(m_quickPadKeyCount);
+    }
+}
+
+void KeyboardManager::setQuickPadSize(qreal size)
+{
+    size = qBound(160.0, size, 380.0);
+    if (!qFuzzyCompare(m_quickPadSize, size)) {
+        m_quickPadSize = size;
+        scheduleSaveSettings();
+        Q_EMIT quickPadSizeChanged(m_quickPadSize);
+    }
+}
+
+QString KeyboardManager::quickPadLabel(int slot) const
+{
+    if (slot >= 0 && slot < 4) {
+        return m_quickPadSlots[slot].label;
+    }
+    return QString();
+}
+
+int KeyboardManager::quickPadKeycode(int slot) const
+{
+    if (slot >= 0 && slot < 4) {
+        return m_quickPadSlots[slot].keycode;
+    }
+    return 0;
+}
+
+bool KeyboardManager::quickPadCtrl(int slot) const
+{
+    if (slot >= 0 && slot < 4) {
+        return m_quickPadSlots[slot].ctrl;
+    }
+    return false;
+}
+
+bool KeyboardManager::quickPadAlt(int slot) const
+{
+    if (slot >= 0 && slot < 4) {
+        return m_quickPadSlots[slot].alt;
+    }
+    return false;
+}
+
+bool KeyboardManager::quickPadShift(int slot) const
+{
+    if (slot >= 0 && slot < 4) {
+        return m_quickPadSlots[slot].shift;
+    }
+    return false;
+}
+
+bool KeyboardManager::quickPadMeta(int slot) const
+{
+    if (slot >= 0 && slot < 4) {
+        return m_quickPadSlots[slot].meta;
+    }
+    return false;
+}
+
+void KeyboardManager::setQuickPadSlot(int slot, const QString &label, int keycode, bool ctrl, bool alt, bool shift, bool meta)
+{
+    if (slot >= 0 && slot < 4) {
+        m_quickPadSlots[slot] = { label, keycode, ctrl, alt, shift, meta };
+        saveSettings();
+        Q_EMIT quickPadConfigChanged();
+    }
+}
+
+void KeyboardManager::setQuickPadLabel(int slot, const QString &label)
+{
+    if (slot >= 0 && slot < 4) {
+        m_quickPadSlots[slot].label = label;
+        scheduleSaveSettings();
+        Q_EMIT quickPadConfigChanged();
+    }
+}
+
+void KeyboardManager::setQuickPadKeycode(int slot, int keycode)
+{
+    if (slot >= 0 && slot < 4) {
+        m_quickPadSlots[slot].keycode = keycode;
+        saveSettings();
+        Q_EMIT quickPadConfigChanged();
+    }
+}
+
+void KeyboardManager::setQuickPadCtrl(int slot, bool ctrl)
+{
+    if (slot >= 0 && slot < 4) {
+        m_quickPadSlots[slot].ctrl = ctrl;
+        saveSettings();
+        Q_EMIT quickPadConfigChanged();
+    }
+}
+
+void KeyboardManager::setQuickPadAlt(int slot, bool alt)
+{
+    if (slot >= 0 && slot < 4) {
+        m_quickPadSlots[slot].alt = alt;
+        saveSettings();
+        Q_EMIT quickPadConfigChanged();
+    }
+}
+
+void KeyboardManager::setQuickPadShift(int slot, bool shift)
+{
+    if (slot >= 0 && slot < 4) {
+        m_quickPadSlots[slot].shift = shift;
+        saveSettings();
+        Q_EMIT quickPadConfigChanged();
+    }
+}
+
+void KeyboardManager::setQuickPadMeta(int slot, bool meta)
+{
+    if (slot >= 0 && slot < 4) {
+        m_quickPadSlots[slot].meta = meta;
+        saveSettings();
+        Q_EMIT quickPadConfigChanged();
+    }
+}
+
+void KeyboardManager::tapQuickPadKey(int slot)
+{
+    if (slot < 0 || slot >= 4) return;
+    const QuickPadSlot &s = m_quickPadSlots[slot];
+    if (s.keycode <= 0) return;
+
+    playClick();
+
+    if (s.ctrl) emitKey(KEY_LEFTCTRL, 1);
+    if (s.alt) emitKey(KEY_LEFTALT, 1);
+    if (s.meta) emitKey(KEY_LEFTMETA, 1);
+    if (s.shift) emitKey(KEY_LEFTSHIFT, 1);
+
+    emitKeyPressAndRelease(s.keycode);
+
+    if (s.shift) emitKey(KEY_LEFTSHIFT, 0);
+    if (s.meta) emitKey(KEY_LEFTMETA, 0);
+    if (s.alt) emitKey(KEY_LEFTALT, 0);
+    if (s.ctrl) emitKey(KEY_LEFTCTRL, 0);
+}
+
+void KeyboardManager::toggleQuickPad()
+{
+    if (m_isQuickPad && m_isVisible) {
+        Hide();
+    } else {
+        setIsQuickPad(true);
+        Show();
+    }
+}
+
+
 void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift, bool forceAltGr)
 {
     playClick();
 
-    bool needsShift = forceShift || m_shiftActive || m_capsLockActive;
+    const bool isAlpha = (keycode >= KEY_Q && keycode <= KEY_P) ||
+                         (keycode >= KEY_A && keycode <= KEY_L) ||
+                         (keycode >= KEY_Z && keycode <= KEY_M);
+
+    bool needsShift = forceShift;
+    if (isAlpha) {
+        // On alphabetic keys, Shift inverts CapsLock state (standard XKB / hardware behavior)
+        if (m_shiftActive != m_capsLockActive) {
+            needsShift = true;
+        }
+    } else {
+        // On non-alphabetic keys (numbers, symbols), CapsLock has zero effect; only Shift applies
+        if (m_shiftActive) {
+            needsShift = true;
+        }
+    }
 
     if (m_ctrlActive) emitKey(KEY_LEFTCTRL, 1);
     if (m_altActive) emitKey(KEY_LEFTALT, 1);
@@ -478,9 +819,9 @@ void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift, b
 
     if (needsShift) {
         emitKey(KEY_LEFTSHIFT, 0);
-        if (m_shiftActive && !m_capsLockActive) {
-            setShiftActive(false);
-        }
+    }
+    if (m_shiftActive) {
+        setShiftActive(false);
     }
     if (forceAltGr) {
         emitKey(KEY_RIGHTALT, 0);
@@ -497,6 +838,15 @@ void KeyboardManager::emitKeyWithActiveModifiers(int keycode, bool forceShift, b
         emitKey(KEY_LEFTCTRL, 0);
         setCtrlActive(false);
     }
+}
+
+void KeyboardManager::clearTransientState()
+{
+    setShiftActive(false);
+    setCapsLockActive(false);
+    setCtrlActive(false);
+    setAltActive(false);
+    setMetaActive(false);
 }
 
 void KeyboardManager::tapKey(int keycode)
@@ -711,6 +1061,7 @@ void KeyboardManager::Show()
 void KeyboardManager::Hide()
 {
     m_manuallyShown = false;
+    clearTransientState();
     setIsVisible(false);
     QDBusInterface kwinVk(QStringLiteral("org.kde.KWin"),
                           QStringLiteral("/VirtualKeyboard"),
@@ -732,6 +1083,11 @@ void KeyboardManager::Toggle()
 
 void KeyboardManager::onKWinActiveChanged()
 {
+    syncKWinVirtualKeyboardState();
+}
+
+void KeyboardManager::syncKWinVirtualKeyboardState()
+{
     QDBusInterface kwinVk(QStringLiteral("org.kde.KWin"),
                           QStringLiteral("/VirtualKeyboard"),
                           QStringLiteral("org.kde.kwin.VirtualKeyboard"),
@@ -743,6 +1099,7 @@ void KeyboardManager::onKWinActiveChanged()
             m_manuallyShown = false;
             setIsVisible(true);
         } else if (!m_manuallyShown) {
+            clearTransientState();
             setIsVisible(false);
         }
     }
@@ -761,16 +1118,6 @@ void KeyboardManager::ToggleFloating()
 void KeyboardManager::SetFloating(bool floating)
 {
     setIsFloating(floating);
-}
-
-void KeyboardManager::ToggleOptions()
-{
-    setOptionsVisible(!m_optionsVisible);
-}
-
-void KeyboardManager::SetOptionsVisible(bool visible)
-{
-    setOptionsVisible(visible);
 }
 
 void KeyboardManager::CycleThemeMode()
@@ -796,4 +1143,21 @@ void KeyboardManager::ToggleSplitMode()
 void KeyboardManager::SetSplitMode(bool split)
 {
     setSplitMode(split);
+}
+
+void KeyboardManager::openSettingsApp()
+{
+    if (!QProcess::startDetached(QStringLiteral("/usr/bin/archpad-keyboard-settings"), {})) {
+        qWarning() << "Could not launch archpad-keyboard-settings";
+    }
+}
+
+void KeyboardManager::OpenSettingsApp()
+{
+    openSettingsApp();
+}
+
+void KeyboardManager::OpenQuickPadConfig()
+{
+    openSettingsApp();
 }

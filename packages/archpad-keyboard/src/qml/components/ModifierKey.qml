@@ -8,6 +8,7 @@ Item {
     property bool active: false
     property bool isLocked: false
     property real weight: 1.0
+    property bool allowFlickSteal: false
     property int customFontSize: 0
 
     readonly property int autoFontSize: Math.max(11, Math.min(theme.fontSizeNormal, Math.round(parent.height * 0.36)))
@@ -59,8 +60,11 @@ Item {
         MouseArea {
             id: touchArea
             anchors.fill: parent
-            preventStealing: true
-            onClicked: root.clicked()
+            preventStealing: !root.allowFlickSteal
+            onClicked: {
+                km.playClick()
+                root.clicked()
+            }
         }
     }
 }

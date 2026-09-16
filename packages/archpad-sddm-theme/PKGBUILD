@@ -1,0 +1,26 @@
+# Maintainer: ArchPad project
+pkgname=archpad-sddm-theme
+pkgver=1.0.0
+pkgrel=4
+pkgdesc="ArchPad touch-first SDDM greeter theme"
+arch=('any')
+url="https://github.com/Sachinmc73/archpad-pipa"
+license=('GPL-3.0-or-later' 'LGPL-2.0-or-later')
+depends=(
+    'archpad-artwork'
+    'kirigami'
+    'plasma-workspace=6.7.5'
+    'qt6-5compat'
+    'qt6-declarative'
+    'sddm'
+)
+options=('!strip')
+
+package() {
+    install -d "$pkgdir/usr/share/sddm/themes/archpad"
+    cp -a "$startdir/theme/." "$pkgdir/usr/share/sddm/themes/archpad/"
+    install -Dm644 "$startdir/10-archpad-theme.conf" \
+        "$pkgdir/usr/lib/sddm/sddm.conf.d/10-archpad-theme.conf"
+    find "$pkgdir/usr/share/sddm/themes/archpad" -type d -exec chmod 0755 {} +
+    find "$pkgdir/usr/share/sddm/themes/archpad" -type f -exec chmod 0644 {} +
+}

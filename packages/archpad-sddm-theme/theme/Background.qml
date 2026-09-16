@@ -37,24 +37,20 @@ FocusScope {
             name: "imageBackground"
             when: sceneBackgroundType === "image"
             PropertyChanges {
-                target: sceneColorBackground
-                visible: false
+                sceneColorBackground.visible: false
             }
             PropertyChanges {
-                target: sceneImageBackground
-                visible: true
+                sceneImageBackground.visible: true
             }
         },
         State {
             name: "colorBackground"
             when: sceneBackgroundType !== "image"
             PropertyChanges {
-                target: sceneColorBackground
-                visible: true
+                sceneColorBackground.visible: true
             }
             PropertyChanges {
-                target: sceneImageBackground
-                visible: false
+                sceneImageBackground.visible: false
             }
         }
     ]

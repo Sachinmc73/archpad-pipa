@@ -1,0 +1,13 @@
+diff --git a/include/flatcc/portable/grisu3_print.h b/include/flatcc/portable/grisu3_print.h
+index d748408..1722366 100644
+--- a/include/flatcc/portable/grisu3_print.h
++++ b/include/flatcc/portable/grisu3_print.h
+@@ -183,7 +183,7 @@ static int grisu3_i_to_str(int val, char *str)
+
+ static int grisu3_print_nan(uint64_t v, char *dst)
+ {
+-    static char hexdigits[16] = "0123456789ABCDEF";
++    static char hexdigits[17] = "0123456789ABCDEF";
+     int i = 0;
+
+     dst[0] = 'N';

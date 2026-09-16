@@ -1,9 +1,9 @@
 # ArchPad System Handoff & Technical Briefing (for Codex / Future Agents)
 
-**Last Updated**: 2026-09-14 16:15 IST  
+**Last Updated**: 2026-09-16 13:10 IST
 **Target Hardware**: Xiaomi Pad 6 (`pipa`) / Qualcomm Snapdragon 870 (SM8250)  
 **Primary Git Branch**: `fixes/system-usability`  
-**Working Tree Status**: 100% Clean (`git status` clean, all packages cleanly committed)
+**Working Tree Status**: Intentional uncommitted keyboard/package work is present; preserve unrelated changes
 
 ---
 
@@ -20,7 +20,7 @@
 | **Desktop Shell** | KDE Plasma 6.7.5 (`plasmashell`) |
 | **Display Manager** | SDDM 0.21.0 on Wayland (with custom `archpad` theme) |
 | **Toolkit** | Qt 6.11.2 (C++20 / QtQuick / QML) |
-| **Network & SSH** | Wi-Fi (`192.168.1.12` / `archpad.local`) & USB Gadget (`172.16.42.1`) |
+| **Network & SSH** | Wi-Fi DHCP (currently `192.168.29.231`; previous `192.168.1.4` is stale) & USB Gadget (`172.16.42.1`) |
 
 ---
 
@@ -57,20 +57,20 @@ Codex / future agents **MUST strictly adhere** to the following project guidelin
     $$\alpha(\Delta t) = 1.0 - \exp(-\lambda \cdot \Delta t) \quad (\lambda \approx 96.0\text{ s}^{-1})$$
   - Invariant across display refresh rates (60Hz, 120Hz).
   - Deadband filtering for touch ADC sensor noise (`Math.abs(err) < 0.5 -> 0`).
-- **Clean Lock Screen Packaging**:
-  - Upstream `plasma-desktop` remains 100% pristine.
-  - Custom `ArchpadLockKeyboard.qml` and `LockScreenUi.qml` are installed into `/usr/local/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/`, tracked cleanly by `archpad-keyboard`.
-  - Fixes upstream touch-bounce bug by removing `onExited: { uiVisible = false; }`.
+- **Independent Lock-Screen Integration**:
+  - `archpad-keyboard` contains only the unlocked-session keyboard daemon and settings companion.
+  - The version-pinned `archpad-plasma-lockscreen` package owns the Plasma shell overlay under `/usr/local/share/plasma/shells/org.kde.plasma.desktop/`.
+  - The secure keyboard neither runs nor reads configuration from `archpad-keyboard`.
+  - Upstream `plasma-desktop`, `plasma-workspace`, and `kscreenlocker` files remain pristine.
 - **Daemon Lifecycle**:
-  - Started by `archpad-keyboard.service` with `--hidden` on login.
+  - Started by `archpad-keyboard.service` with `--daemon` on login.
   - Controlled dynamically via `--show`, `--hide`, `--toggle`, or KWin VirtualKeyboard D-Bus state.
 
-### B. SDDM Login & Wallpaper Sync
+### B. Independent SDDM Login Theme
 - **Touch Screen Keyboard at Login**:
-  - Standalone SDDM theme at `/usr/share/sddm/themes/archpad/` containing integrated `ArchpadLockKeyboard`.
-- **Dynamic Lockscreen Wallpaper Sync**:
-  - Systemd user path watcher `archpad-sync-sddm-wallpaper.path` watches `~/.config/kscreenlockerrc`.
-  - On change, syncs the user's wallpaper to `/var/lib/sddm/theme/lockscreen-wallpaper.png` (`chmod 644`) via standard `systemd-tmpfiles` permissions (`/usr/lib/tmpfiles.d/archpad-sddm.conf`).
+  - `archpad-sddm-theme` owns the standalone theme under `/usr/share/sddm/themes/archpad/`.
+  - It uses packaged ArchPad artwork and does not read user-home wallpaper or keyboard configuration.
+  - No wallpaper watcher, tmpfiles state, or user-to-SDDM configuration copying exists.
 - **SDDM Sensor Claim & Auto-Rotation**:
   - Polkit rule in `/usr/share/polkit-1/rules.d/10-archpad-power.rules` authorizes user `sddm` to claim `net.hadess.SensorProxy.claim-sensor`.
   - Fallback orientation configured in `/var/lib/sddm/.config/kwinoutputconfig.json` with `"transform": "Rotated270"` so cold boots start in landscape immediately.
@@ -94,23 +94,51 @@ Codex / future agents **MUST strictly adhere** to the following project guidelin
 
 ## 4. Current State & Cleanliness Verification
 
-The system is in a pristine, verified operational state:
+The keyboard, secure integrations, and their upstream KDE packages have verified package integrity:
 
 1. **Pacman Package Integrity**:
    ```sh
-   pacman -Qkk archpad-keyboard archpad-pipa-device plasma-desktop kwin
+   pacman -Qkk archpad-keyboard archpad-plasma-lockscreen archpad-sddm-theme \
+       plasma-desktop plasma-workspace kscreenlocker sddm
    # Output: 0 altered files across all packages
    ```
-2. **Systemd Services**:
-   - `systemctl --failed` returns **0 failed units**.
-3. **Storage & Cleanup**:
-   - Disk space: **12 GB used / 89 GB available (12% utilization)**.
-   - Journal vacuumed and bounded.
-   - Old build trees and temporary files purged.
-   - Waydroid experiment uninstalled cleanly with 0 leftover files, services, or package traces.
-4. **Git Repository**:
-   - `git status` clean on `fixes/system-usability`.
-   - All commits follow conventional commits format.
+2. **Keyboard Runtime**:
+   - Atomic D-Bus ownership prevents the KWin/systemd startup race from leaving two live keyboard instances.
+   - Installed on the tablet: `archpad-keyboard 1.0.0-58`, `archpad-plasma-lockscreen 6.7.5-3`, and `archpad-sddm-theme 1.0.0-4`.
+   - Keyboard r57 packages four volume-normalized AOSP mobile keypress profiles
+     (`Standard`, `Soft`, `Crisp`, `Deep`) with Apache-2.0 provenance. The
+     settings companion persists and previews `soundProfile` and applies an
+     independent `soundVolume` (`0..100`, default `70`) through libcanberra's
+     decibel gain property without changing PipeWire system volume.
+   - r57 removes the settings companion's Kirigami dependency, follows the
+     system appearance through Qt `QStyleHints`, flushes pending settings on
+     exit, removes unimplemented gesture preview cards, and passes Qt 6.11 QML
+     lint without layout-positioning diagnostics.
+   - r58 makes the standard Qt settings `ApplicationWindow` visible on initial
+     construction, so the first toolbar tap opens it; the existing D-Bus
+     `Activate()` path still raises an already-running copy.
+   - FUTO Swipe qualification Phases A, B, and C are complete. Exact upstream revisions,
+     model/dictionary hashes, licenses, dependency pins, reproducibility
+     requirements, and upstream false-positive test findings are recorded in
+     `artifacts/manifests/futo-swipe-phase-a-2026-09-16.md`. The isolated
+     ARM64 full-engine build, truthful test fixes, CLI hash, and smoke result
+     are in `artifacts/manifests/futo-swipe-phase-b-2026-09-16.md`. Automated
+     boundaries, lifecycle, serial mode changes, and the official 20,000-trace
+     result are in `artifacts/manifests/futo-swipe-phase-c-2026-09-16.md`.
+     Phase D1's essential performance gate is complete and supports beginning
+     integration planning; its measurements are in
+     `artifacts/manifests/futo-swipe-phase-d1-2026-09-16.md`. D2 endurance,
+     thermal, true cold-cache, and 60/120 Hz checks remain required before
+     release. The r58 keyboard remains unchanged.
+   - The final audit identified one intentionally unresolved product boundary:
+     the daemon still forces `LayoutList=us` in KDE `kxkbrc` and emits text as
+     uinput keycodes. Do not connect FUTO candidate insertion to `tapText()` as
+     a final design. Plan a text-commit backend using KWin's exposed
+     input-method-v1 protocol and input-method-v2 on supporting compositors;
+     retain uinput for raw shortcut/navigation fallback.
+   - Prepared locally but not yet deployed: lock-screen `6.7.5-4`.
+3. **Working Tree**:
+   - Do not describe the repository as clean or discard unrelated changes without checking current `git status`.
 
 ---
 
@@ -128,6 +156,8 @@ ssh -F /dev/null -o StrictHostKeyChecking=no root@172.16.42.1
 ### Building and Deploying Packages
 Package directories live in `packages/`:
 - `packages/archpad-keyboard`
+- `packages/archpad-plasma-lockscreen`
+- `packages/archpad-sddm-theme`
 - `packages/archpad-pipa-device`
 - `packages/linux-archpad-pipa`
 

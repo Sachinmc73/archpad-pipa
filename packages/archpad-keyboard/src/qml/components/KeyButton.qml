@@ -11,6 +11,8 @@ Item {
     property real weight: 1.0
     property bool isAccent: false
     property bool autoRepeat: false
+    property bool allowFlickSteal: false
+    property bool triggerOnPress: true
     property int customFontSize: 0
     property string iconName: ""
 
@@ -82,10 +84,11 @@ Item {
         MouseArea {
             id: touchArea
             anchors.fill: parent
-            preventStealing: true
-            pressAndHoldInterval: 400
+            preventStealing: !root.allowFlickSteal
+            pressAndHoldInterval: km.longPressDelay
 
             property bool longPressed: false
+            property bool autoRepeatTriggered: false
 
             // Lightweight auto-repeat timer for Backspace / Space
             Timer {
@@ -95,6 +98,7 @@ Item {
                 running: root.autoRepeat && touchArea.pressed
                 onTriggered: {
                     interval = 50
+                    touchArea.autoRepeatTriggered = true
                     root.clicked()
                 }
             }
@@ -108,16 +112,21 @@ Item {
 
             onPressed: {
                 touchArea.longPressed = false
+                touchArea.autoRepeatTriggered = false
                 if (root.autoRepeat) {
                     repeatTimer.interval = 380
-                    root.clicked()
-                } else if (root.secondaryText === "") {
+                    if (root.triggerOnPress) {
+                        root.clicked()
+                    }
+                } else if (root.secondaryText === "" && root.triggerOnPress) {
                     root.clicked()
                 }
             }
 
             onClicked: {
                 if (root.secondaryText !== "" && !touchArea.longPressed && !root.autoRepeat) {
+                    root.clicked()
+                } else if (!root.triggerOnPress && !touchArea.longPressed && !touchArea.autoRepeatTriggered) {
                     root.clicked()
                 }
                 touchArea.longPressed = false

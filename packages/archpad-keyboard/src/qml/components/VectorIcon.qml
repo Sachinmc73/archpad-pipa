@@ -68,6 +68,9 @@ Item {
                     case "pin":
                         // Pinned pushpin
                         return "M16 4 v4 l2 3 v2 h-5 v7 l-1 1 l-1-1 v-7 H6 v-2 l2-3 V4 z"
+                    case "quickpad":
+                        // 4-quadrant square grid icon (macro pad)
+                        return "M4 4 h6 v6 H4 z M14 4 h6 v6 H14 z M4 14 h6 v6 H4 z M14 14 h6 v6 H14 z"
                     case "height":
                         // Vertical height adjust arrows
                         return "M12 3 v18 M7 8 l5-5 5 5 M7 16 l5 5 5-5"

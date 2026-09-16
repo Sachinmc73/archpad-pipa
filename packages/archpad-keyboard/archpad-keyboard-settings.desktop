@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Keyboard Settings
+GenericName=ArchPad Keyboard Settings
+Comment=Customize layouts, Quick-Pad macros, themes, and sound
+Exec=/usr/bin/archpad-keyboard-settings
+Icon=input-keyboard-virtual
+Terminal=false
+Categories=Qt;Settings;HardwareSettings;
+Keywords=keyboard;virtual;osk;input;quickpad;macro;settings;
+StartupNotify=true
+StartupWMClass=archpad-keyboard-settings

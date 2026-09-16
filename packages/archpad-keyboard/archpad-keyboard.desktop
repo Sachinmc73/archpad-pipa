@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=ArchPad Keyboard
-Comment=Ultra-lightweight On-Screen Keyboard for ArchPad
+Comment=Touch-first On-Screen Keyboard for ArchPad
 Exec=archpad-keyboard --daemon
 Type=Application
 Icon=input-keyboard-virtual

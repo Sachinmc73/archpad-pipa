@@ -8,10 +8,11 @@ ColumnLayout {
     anchors.fill: parent
     anchors.margins: 4
 
-    readonly property bool isShifted: km.shiftActive || km.capsLockActive
+    readonly property bool isShifted: km.shiftActive
+    readonly property bool isLetterUpper: km.shiftActive ? !km.capsLockActive : km.capsLockActive
 
     function l(letter) {
-        return isShifted ? letter.toUpperCase() : letter.toLowerCase()
+        return isLetterUpper ? letter.toUpperCase() : letter.toLowerCase()
     }
 
     // Row 1: Esc, ` ~, 1-0, - _, = +, Backspace

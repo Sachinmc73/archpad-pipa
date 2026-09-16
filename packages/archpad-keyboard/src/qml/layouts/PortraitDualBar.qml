@@ -8,11 +8,12 @@ ColumnLayout {
     anchors.fill: parent
     anchors.margins: 4
 
-    readonly property bool isShifted: km.shiftActive || km.capsLockActive
+    readonly property bool isShifted: km.shiftActive
+    readonly property bool isLetterUpper: km.shiftActive ? !km.capsLockActive : km.capsLockActive
     property bool symbolMode: false
 
     function l(letter) {
-        return isShifted ? letter.toUpperCase() : letter.toLowerCase()
+        return isLetterUpper ? letter.toUpperCase() : letter.toLowerCase()
     }
 
     // Bar 1 (Upper Special Bar): Linux Special Keys
@@ -193,7 +194,10 @@ ColumnLayout {
             weight: 1.4
             customKeyColor: theme.keySpecialColor
             customFontSize: theme.fontSizeSmall
-            onClicked: root.symbolMode = !root.symbolMode
+            onClicked: {
+                km.playClick()
+                root.symbolMode = !root.symbolMode
+            }
         }
         KeyButton {
             text: ","

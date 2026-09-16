@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtCore
 import org.kde.kirigami as Kirigami
 
 Item {
@@ -52,15 +51,12 @@ Item {
         passwordField.accepted();
     }
 
-    // Theme resolution synchronized with ~/.config/archpad/keyboard.conf & system theme
-    Settings {
-        id: archpadSettings
-        category: "General"
-        location: StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/archpad/keyboard.conf"
-        property bool resolvedDark: false
-    }
-
-    readonly property bool isDark: archpadSettings.resolvedDark
+    // Resolve the secure keyboard palette from this greeter's own Plasma theme.
+    // It intentionally has no dependency on the unlocked-session keyboard.
+    readonly property color systemBackgroundColor: Kirigami.Theme.backgroundColor
+    readonly property bool isDark: (systemBackgroundColor.r * 0.299
+                                    + systemBackgroundColor.g * 0.587
+                                    + systemBackgroundColor.b * 0.114) < 0.5
 
     QtObject {
         id: lockTheme
@@ -132,27 +128,23 @@ Item {
         State {
             name: "visible"
             PropertyChanges {
-                target: mainStack
-                y: Math.min(0, screenRoot.height - root.height - (mainBlock.visibleBoundary || 110))
+                mainStack.y: Math.min(0, screenRoot.height - root.height - (mainBlock.visibleBoundary || 110))
             }
             PropertyChanges {
-                target: root
-                y: screenRoot.height - root.height
-                opacity: 1
-                visible: true
+                root.y: screenRoot.height - root.height
+                root.opacity: 1
+                root.visible: true
             }
         },
         State {
             name: "hidden"
             PropertyChanges {
-                target: mainStack
-                y: 0
+                mainStack.y: 0
             }
             PropertyChanges {
-                target: root
-                y: screenRoot.height
-                opacity: 0
-                visible: false
+                root.y: screenRoot.height
+                root.opacity: 0
+                root.visible: false
             }
         }
     ]
@@ -375,8 +367,8 @@ Item {
                 spacing: 6
 
                 Rectangle {
-                    width: 6
-                    height: 6
+                    implicitWidth: 6
+                    implicitHeight: 6
                     radius: 3
                     color: lockTheme.keyActiveColor
                 }
@@ -392,8 +384,8 @@ Item {
                 Item { Layout.fillWidth: true }
 
                 Rectangle {
-                    width: 32
-                    height: 22
+                    implicitWidth: 32
+                    implicitHeight: 22
                     radius: lockTheme.keyRadius
                     color: hideMouse.pressed ? lockTheme.keyPressedColor : "transparent"
                     border.color: lockTheme.borderColor

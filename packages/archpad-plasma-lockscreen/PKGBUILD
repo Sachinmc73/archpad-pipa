@@ -1,0 +1,27 @@
+# Maintainer: ArchPad project
+pkgname=archpad-plasma-lockscreen
+pkgver=6.7.5
+pkgrel=4
+pkgdesc="ArchPad touch lock-screen integration for Plasma 6.7.5"
+arch=('any')
+url="https://github.com/Sachinmc73/archpad-pipa"
+license=('GPL-2.0-or-later' 'GPL-3.0-or-later' 'LGPL-2.0-or-later')
+depends=(
+    'kirigami'
+    'kscreenlocker=6.7.5'
+    'plasma-desktop=6.7.5'
+    'plasma-workspace=6.7.5'
+    'qt6-5compat'
+)
+provides=('archpad-lockscreen-integration')
+options=('!strip')
+
+package() {
+    local shell_root="$pkgdir/usr/local/share/plasma/shells/org.kde.plasma.desktop"
+
+    install -d "$shell_root/contents/lockscreen"
+    install -m644 "$startdir/shell/metadata.json" "$shell_root/metadata.json"
+    cp -a "$startdir/shell/contents/lockscreen/." "$shell_root/contents/lockscreen/"
+    find "$shell_root" -type d -exec chmod 0755 {} +
+    find "$shell_root" -type f -exec chmod 0644 {} +
+}

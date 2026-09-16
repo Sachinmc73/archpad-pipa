@@ -8,11 +8,12 @@ ColumnLayout {
     anchors.fill: parent
     anchors.margins: 3
 
-    readonly property bool isShifted: km.shiftActive || km.capsLockActive
+    readonly property bool isShifted: km.shiftActive
+    readonly property bool isLetterUpper: km.shiftActive ? !km.capsLockActive : km.capsLockActive
     property bool symbolMode: false
 
     function l(letter) {
-        return isShifted ? letter.toUpperCase() : letter.toLowerCase()
+        return isLetterUpper ? letter.toUpperCase() : letter.toLowerCase()
     }
 
     // 1. Compact Horizontally Scrollable Special Key Bar
@@ -32,18 +33,18 @@ ColumnLayout {
             height: 28
             spacing: 2
 
-            KeyButton { text: "Esc"; Layout.preferredWidth: 36; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Esc") }
-            KeyButton { text: "Tab"; Layout.preferredWidth: 36; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Tab") }
-            ModifierKey { text: "Ctrl"; Layout.preferredWidth: 36; active: km.ctrlActive; customFontSize: theme.fontSizeSmall; onClicked: km.ctrlActive = !km.ctrlActive }
-            ModifierKey { text: "Alt"; Layout.preferredWidth: 36; active: km.altActive; customFontSize: theme.fontSizeSmall; onClicked: km.altActive = !km.altActive }
-            KeyButton { text: "~"; Layout.preferredWidth: 32; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("~") }
-            KeyButton { text: "|"; Layout.preferredWidth: 32; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("|") }
-            KeyButton { text: "\\"; Layout.preferredWidth: 32; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("\\") }
-            KeyButton { text: "/"; Layout.preferredWidth: 32; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("/") }
-            KeyButton { iconName: "arrow-left"; Layout.preferredWidth: 34; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Left") }
-            KeyButton { iconName: "arrow-up"; Layout.preferredWidth: 34; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Up") }
-            KeyButton { iconName: "arrow-down"; Layout.preferredWidth: 34; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Down") }
-            KeyButton { iconName: "arrow-right"; Layout.preferredWidth: 34; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Right") }
+            KeyButton { text: "Esc"; Layout.preferredWidth: 36; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Esc") }
+            KeyButton { text: "Tab"; Layout.preferredWidth: 36; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Tab") }
+            ModifierKey { text: "Ctrl"; Layout.preferredWidth: 36; allowFlickSteal: true; active: km.ctrlActive; customFontSize: theme.fontSizeSmall; onClicked: km.ctrlActive = !km.ctrlActive }
+            ModifierKey { text: "Alt"; Layout.preferredWidth: 36; allowFlickSteal: true; active: km.altActive; customFontSize: theme.fontSizeSmall; onClicked: km.altActive = !km.altActive }
+            KeyButton { text: "~"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("~") }
+            KeyButton { text: "|"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("|") }
+            KeyButton { text: "\\"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("\\") }
+            KeyButton { text: "/"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("/") }
+            KeyButton { iconName: "arrow-left"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Left") }
+            KeyButton { iconName: "arrow-up"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Up") }
+            KeyButton { iconName: "arrow-down"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Down") }
+            KeyButton { iconName: "arrow-right"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Right") }
         }
     }
 
@@ -335,7 +336,10 @@ ColumnLayout {
             weight: 1.3
             customKeyColor: theme.keySpecialColor
             customFontSize: theme.fontSizeSmall
-            onClicked: root.symbolMode = !root.symbolMode
+            onClicked: {
+                km.playClick()
+                root.symbolMode = !root.symbolMode
+            }
         }
         KeyButton {
             text: ","
@@ -367,4 +371,5 @@ ColumnLayout {
             onClicked: km.tapNavKey("Enter")
         }
     }
+
 }

@@ -142,19 +142,24 @@ This file is the authoritative guide and persistent memory for all AI agents wor
   - The physical Novatek NT36532 panel is natively portrait (1800x2880), so `"transform": "Normal"` forces portrait.
   - Setting `"transform": "Rotated270"` with `"scale": 2.25` and `"autoRotation": "Always"` ensures SDDM boots directly in landscape, and once sensors are online, seamlessly auto-rotates when tilted.
 
-### H. SDDM Dynamic Lock Screen Wallpaper Synchronization
-- **Zero-Hardcoding Wallpaper Parity**:
-  - User home directories are `0700` (`drwx------`), preventing user `sddm` from reading `~/.config/kscreenlockerrc` or custom wallpapers in `~/Pictures/`.
-  - Never hardcode specific wallpaper filenames into SDDM themes.
-  - Instead, use standard `systemd-tmpfiles` (`/usr/lib/tmpfiles.d/archpad-sddm.conf`):
-    ```
-    d /var/lib/sddm/theme 0775 sddm users -
-    ```
-  - Package a systemd user path watcher (`archpad-sync-sddm-wallpaper.path`) in `archpad-keyboard`:
-    - Monitors `~/.config/kscreenlockerrc` for changes.
-    - Whenever the user updates the lock screen wallpaper in KDE System Settings, it automatically copies the image to `/var/lib/sddm/theme/lockscreen-wallpaper.png` (`chmod 644`).
-  - SDDM `theme.conf` points to `/var/lib/sddm/theme/lockscreen-wallpaper.png` with a QML fallback to the default ArchPad artwork if the custom wallpaper is absent.
+### H. SDDM Theme Independence
+- **No User-Home or Keyboard Coupling**:
+  - User home directories are `0700`; the `sddm` user must not read a user's lock-screen configuration, wallpaper, or keyboard settings.
+  - `archpad-sddm-theme` owns its theme and uses packaged `archpad-artwork` as its background.
+  - Do not restore wallpaper-copy watchers, keyboard-owned tmpfiles state, home-directory scanning, or user-to-SDDM configuration copying.
+  - The SDDM secure keyboard derives its palette from its own Kirigami theme and remains independent from the unlocked-session `archpad-keyboard` daemon and configuration.
 
-
-
-
+### I. Virtual Keyboard Settings & The "Chicken-and-Egg" In-Surface Input Paradox
+- **The Dilemma**:
+  - The virtual keyboard daemon runs in `LayerShellQt` (`zwlr_layer_surface_v1`) with `keyboardInteractivity: KeyboardInteractivityNone` to ensure KWin never shifts focus away from active application text fields (Kate, Firefox, Terminal, Edge).
+  - Consequently, an in-surface configuration drawer or popup within the keyboard surface cannot accept text input (e.g., typing custom macro labels or keycodes). Attempting to enable interactive keyboard focus inside a layer-surface causes focus oscillation and dismisses the keyboard.
+- **The Clean Architecture (The Gboard Companion App Pattern)**:
+  - Decouple keyboard settings into a dedicated standalone `xdg_toplevel` companion application (`archpad-keyboard-settings`).
+  - Being a standard application window, tapping any `TextField` inside the settings companion app causes KWin to automatically summon `archpad-keyboard`, allowing the user to type custom labels and shortcuts with the full virtual keyboard.
+  - The main typing daemon stays substantially smaller than keeping the
+    companion settings UI resident. Do not quote the historical `~6.8 MB`
+    figure: the Qt 6.11 service measured about 40 MB immediately after a hidden
+    restart and can retain more after rendering. Re-measure RSS/PSS as part of
+    each performance qualification.
+  - When closed, the companion application consumes **0 MB RAM and 0% CPU**.
+  - Real-time two-way IPC over D-Bus (`org.archpad.Keyboard` <-> `org.archpad.KeyboardSettings`) and INI configuration (`~/.config/archpad/keyboard.conf`) keeps keyboard parameters synchronized instantaneously.

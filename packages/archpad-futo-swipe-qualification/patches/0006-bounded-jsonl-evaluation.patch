@@ -1,0 +1,39 @@
+diff --git a/targets/infer_jsonl.cpp b/targets/infer_jsonl.cpp
+index f3fa637..3d54ba7 100644
+--- a/targets/infer_jsonl.cpp
++++ b/targets/infer_jsonl.cpp
+@@ -43,6 +43,7 @@ static void usage(const char* argv0) {
+     std::cerr << "  --threads N          Encoder/decoder threads (default: 1)\n";
+     std::cerr << "  --freq-key KEY       Frequency key in combined vocab (default: f)\n";
+     std::cerr << "  --expansion          Enable surface-form expansion (default: on)\n";
++    std::cerr << "  --limit N            Stop after N evaluated non-single-letter swipes\n";
+     std::cerr << "  --no-expansion       Disable surface-form expansion\n";
+     std::cerr << "  --skip-oov           Skip out of vocabulary words\n";
+     std::cerr << "  --gamma F            Length-norm exponent override\n";
+@@ -57,6 +58,7 @@ int main(int argc, char* argv[]) {
+     int beam_width = 100;
+     int top_k = 4;
+     int num_threads = 1;
++    int limit = 0;
+     std::string freq_key = "f";
+     bool use_expansion = true;
+     bool skip_oov = false;
+@@ -74,6 +76,7 @@ int main(int argc, char* argv[]) {
+         else if (arg == "--no-expansion") use_expansion = false;
+         else if (arg == "--skip-oov") skip_oov = true;
+         else if (arg == "--gamma" && i + 1 < argc) gamma_opt = (float)std::atof(argv[++i]);
++        else if (arg == "--limit" && i + 1 < argc) limit = std::atoi(argv[++i]);
+         else if (arg == "--lambda" && i + 1 < argc) lambda_opt = (float)std::atof(argv[++i]);
+         else if (arg == "--beta" && i + 1 < argc) beta_opt = (float)std::atof(argv[++i]);
+         else if (arg == "--alpha" && i + 1 < argc) alpha_opt = (float)std::atof(argv[++i]);
+@@ -134,6 +137,10 @@ int main(int argc, char* argv[]) {
+             std::string tgt = normalize_word(j["word"].get<std::string>());
+             if (tgt.length() <= 1) continue;
+
++            if (limit > 0 && num_good + num_ok + num_bad >= limit) {
++                break;
++            }
++
+             if(skip_oov && !dict.contains(tgt)) {
+                 std::cout << "oov " << tgt << "\n";
+                 continue;

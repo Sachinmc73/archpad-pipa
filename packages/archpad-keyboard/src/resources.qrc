@@ -4,14 +4,14 @@
         <file>qml/Theme.qml</file>
         <file>qml/HeaderBar.qml</file>
         <file>qml/FloatingDragBar.qml</file>
-        <file>qml/OptionsDrawer.qml</file>
+        <file>qml/QuickPadDragBar.qml</file>
         <file>qml/layouts/LandscapeLaptop.qml</file>
         <file>qml/layouts/PortraitDualBar.qml</file>
         <file>qml/layouts/LandscapeSplit.qml</file>
         <file>qml/layouts/FloatingMobile.qml</file>
+        <file>qml/layouts/QuickPadLayout.qml</file>
         <file>qml/components/KeyButton.qml</file>
         <file>qml/components/ModifierKey.qml</file>
         <file>qml/components/VectorIcon.qml</file>
-        <file>sounds/tick.wav</file>
     </qresource>
 </RCC>

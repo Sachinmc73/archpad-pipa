@@ -1,0 +1,74 @@
+diff --git a/src/model_metadata.cpp b/src/model_metadata.cpp
+index 859834a..df1c620 100644
+--- a/src/model_metadata.cpp
++++ b/src/model_metadata.cpp
+@@ -233,6 +233,13 @@ bool load_contextlm_metadata(const std::string& metadata_path, ContextLMMetadata
+
+     extract_string(content, "codename", out.codename);
+     extract_string(content, "kind", out.kind);
++    if (out.kind != "contextlm" || out.codename.empty()) {
++        MLOG("ModelMeta: '%s' has invalid context LM identity "
++             "(kind='%s' codename='%s')\n",
++             metadata_path.c_str(), out.kind.c_str(), out.codename.c_str());
++        return false;
++    }
++
+     return true;
+ }
+
+diff --git a/tests/test_metadata.cpp b/tests/test_metadata.cpp
+index 6cc810f..506b7c0 100644
+--- a/tests/test_metadata.cpp
++++ b/tests/test_metadata.cpp
+@@ -34,8 +34,8 @@ static std::string slurp(const fs::path& p) {
+ }
+
+ // Heuristic: check which kind of metadata this is by looking for a
+-// top-level "kind": "<value>" field. LM/vocab metadata files without a kind
+-// field are skipped. This test only covers encoder + decoder sidecars.
++// top-level "kind": "<value>" field. Metadata files without a kind field are
++// rejected because every model sidecar is part of the runtime contract.
+ static std::string detect_kind(const std::string& content) {
+     size_t p = content.find("\"kind\"");
+     if (p == std::string::npos) return {};
+@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
+     int failures = 0;
+     int encoder_count = 0;
+     int decoder_count = 0;
++    int contextlm_count = 0;
+
+     for (const auto& path : files) {
+         std::string path_str = path.string();
+@@ -112,6 +113,20 @@ int main(int argc, char** argv) {
+             printf("OK (decoder, layout=%s T=%d D=%d K=%d)\n",
+                    m.layout.c_str(), m.input_length, m.input_dim, m.num_chars);
+             decoder_count++;
++        } else if (kind == "contextlm") {
++            ContextLMMetadata m;
++            if (!load_contextlm_metadata(path_str, m)) {
++                printf("FAIL (parse)\n");
++                failures++;
++                continue;
++            }
++            if (m.codename.empty()) {
++                printf("FAIL (empty codename)\n");
++                failures++;
++                continue;
++            }
++            printf("OK (contextlm, codename=%s)\n", m.codename.c_str());
++            contextlm_count++;
+         } else {
+             printf("FAIL (unknown or missing \"kind\" field: '%s')\n", kind.c_str());
+             failures++;
+@@ -119,8 +134,9 @@ int main(int argc, char** argv) {
+         }
+     }
+
+-    printf("\n%zu file(s) checked: %d encoder, %d decoder, %d failure(s)\n",
+-           files.size(), encoder_count, decoder_count, failures);
++    printf("\n%zu file(s) checked: %d encoder, %d decoder, %d contextlm, "
++           "%d failure(s)\n",
++           files.size(), encoder_count, decoder_count, contextlm_count, failures);
+
+     return failures == 0 ? 0 : 1;
+ }

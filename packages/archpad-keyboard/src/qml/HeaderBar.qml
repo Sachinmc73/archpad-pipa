@@ -13,7 +13,6 @@ Rectangle {
     property string modeTitle: "ArchPad Keyboard"
     readonly property bool isLandscape: Screen.width > Screen.height
 
-    signal toggleOptions()
     signal hideKeyboard()
 
     RowLayout {
@@ -26,8 +25,8 @@ Rectangle {
         RowLayout {
             spacing: 6
             Rectangle {
-                width: 6
-                height: 6
+                implicitWidth: 6
+                implicitHeight: 6
                 radius: 3
                 color: theme.keyActiveColor
             }
@@ -47,8 +46,8 @@ Rectangle {
         // 1. Pop-up / Floating Mode (Always Pinned)
         Rectangle {
             id: floatBtn
-            width: 34
-            height: 26
+            implicitWidth: 34
+            implicitHeight: 26
             radius: theme.keyRadius
             color: floatArea.pressed ? theme.keyPressedColor : "transparent"
             border.color: theme.borderColor
@@ -70,12 +69,39 @@ Rectangle {
             }
         }
 
+        // QuickPad Launcher (Visible when pinned)
+        Rectangle {
+            id: quickPadBtn
+            visible: km.quickPadPinned
+            implicitWidth: 34
+            implicitHeight: 26
+            radius: theme.keyRadius
+            color: quickPadArea.pressed ? theme.keyPressedColor : "transparent"
+            border.color: theme.borderColor
+            border.width: 1
+
+            VectorIcon {
+                name: "quickpad"
+                anchors.centerIn: parent
+                width: 16
+                height: 16
+                color: theme.textColor
+                strokeWidth: 1.8
+            }
+
+            MouseArea {
+                id: quickPadArea
+                anchors.fill: parent
+                onClicked: km.isQuickPad = true
+            }
+        }
+
         // 2. Split Mode Toggle (Only visible if pinned AND in Landscape mode)
         Rectangle {
             id: splitBtn
             visible: km.splitPinned && root.isLandscape
-            width: 34
-            height: 26
+            implicitWidth: 34
+            implicitHeight: 26
             radius: theme.keyRadius
             color: km.splitMode ? theme.keyActiveColor : (splitArea.pressed ? theme.keyPressedColor : "transparent")
             border.color: km.splitMode ? theme.keyActiveColor : theme.borderColor
@@ -101,8 +127,8 @@ Rectangle {
         Rectangle {
             id: themeBtn
             visible: km.themePinned
-            width: 34
-            height: 26
+            implicitWidth: 34
+            implicitHeight: 26
             radius: theme.keyRadius
             color: themeArea.pressed ? theme.keyPressedColor : "transparent"
             border.color: theme.borderColor
@@ -128,8 +154,8 @@ Rectangle {
         Rectangle {
             id: soundBtn
             visible: km.soundPinned
-            width: 34
-            height: 26
+            implicitWidth: 34
+            implicitHeight: 26
             radius: theme.keyRadius
             color: soundArea.pressed ? theme.keyPressedColor : "transparent"
             border.color: theme.borderColor
@@ -154,8 +180,8 @@ Rectangle {
         // 5. Settings Gear Icon (Always Pinned)
         Rectangle {
             id: gearBtn
-            width: 34
-            height: 26
+            implicitWidth: 34
+            implicitHeight: 26
             radius: theme.keyRadius
             color: gearArea.pressed ? theme.keyPressedColor : "transparent"
             border.color: theme.borderColor
@@ -173,15 +199,15 @@ Rectangle {
             MouseArea {
                 id: gearArea
                 anchors.fill: parent
-                onClicked: root.toggleOptions()
+                onClicked: km.openSettingsApp()
             }
         }
 
         // 6. Hide Keyboard Button (Always Pinned)
         Rectangle {
             id: hideBtn
-            width: 34
-            height: 26
+            implicitWidth: 34
+            implicitHeight: 26
             radius: theme.keyRadius
             color: hideArea.pressed ? theme.keyPressedColor : "transparent"
             border.color: theme.borderColor

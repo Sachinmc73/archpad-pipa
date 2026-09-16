@@ -1,12 +1,11 @@
 # Maintainer: ArchPad project
 pkgname=archpad-keyboard
 pkgver=1.0.0
-pkgrel=30
-pkgdesc="Ultra-lightweight on-screen keyboard for ArchPad (Xiaomi Pad 6)"
+pkgrel=58
+pkgdesc="Touch-first on-screen keyboard for ArchPad"
 arch=('aarch64')
 url="https://github.com/Sachinmc73/archpad-pipa"
-license=('GPL-3.0-or-later')
-install=archpad-keyboard.install
+license=('GPL-3.0-or-later' 'Apache-2.0')
 depends=(
     'glibc'
     'libstdc++'
@@ -35,26 +34,7 @@ package() {
     ln -s /usr/lib/systemd/user/archpad-keyboard.service \
         "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-keyboard.service"
 
-    # SDDM wallpaper sync tool & systemd user units
-    install -Dm755 "$startdir/archpad-sync-sddm-wallpaper" "$pkgdir/usr/bin/archpad-sync-sddm-wallpaper"
-    install -Dm644 "$startdir/archpad-sync-sddm-wallpaper.service" "$pkgdir/usr/lib/systemd/user/archpad-sync-sddm-wallpaper.service"
-    install -Dm644 "$startdir/archpad-sync-sddm-wallpaper.path" "$pkgdir/usr/lib/systemd/user/archpad-sync-sddm-wallpaper.path"
-    ln -s /usr/lib/systemd/user/archpad-sync-sddm-wallpaper.service \
-        "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-sync-sddm-wallpaper.service"
-    ln -s /usr/lib/systemd/user/archpad-sync-sddm-wallpaper.path \
-        "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/archpad-sync-sddm-wallpaper.path"
+    install -Dm644 "$startdir/AOSP-KEYPRESS-NOTICE" \
+        "$pkgdir/usr/share/licenses/$pkgname/AOSP-KEYPRESS-NOTICE"
 
-    # SDDM shared wallpaper tmpfiles
-    install -Dm644 "$startdir/archpad-sddm-tmpfiles.conf" "$pkgdir/usr/lib/tmpfiles.d/archpad-sddm.conf"
-
-    # Lockscreen Virtual Keyboard integration via standard XDG /usr/local layering
-    install -d "$pkgdir/usr/local/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen"
-    install -m644 "$startdir/lockscreen/metadata.json" \
-        "$pkgdir/usr/local/share/plasma/shells/org.kde.plasma.desktop/metadata.json"
-    cp -r "$startdir/lockscreen/contents/lockscreen/"* \
-        "$pkgdir/usr/local/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/"
-
-    # SDDM Greeter Theme integration
-    install -d "$pkgdir/usr/share/sddm/themes/archpad"
-    cp -r "$startdir/sddm/"* "$pkgdir/usr/share/sddm/themes/archpad/"
 }

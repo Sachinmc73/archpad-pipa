@@ -145,9 +145,6 @@ Item {
         }
         onExited: {
             // Touchscreen fix: do not collapse UI on touch release
-            return;
-
-            uiVisible = false;
         }
         Keys.onEscapePressed: {
             // If the escape key is pressed, kscreenlocker will turn off the screen.
