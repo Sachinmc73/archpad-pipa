@@ -136,11 +136,25 @@ KeyboardManager::KeyboardManager(QObject *parent)
         Q_EMIT swipeStateChanged(m_swipeWorker->stateString());
     });
 
+    m_textCommitBackend = new ArchPad::WaylandInputMethodV1Backend(this);
+    connect(m_textCommitBackend, &ArchPad::TextCommitBackend::activeChanged, this, [this](bool active) {
+        qInfo() << "[KeyboardManager] TextCommitBackend activeChanged:" << active;
+        if (!active) {
+            dismissSwipeAlternatives();
+        }
+    });
+    connect(m_textCommitBackend, &ArchPad::TextCommitBackend::contentPurposeChanged, this, [this](ArchPad::ContentPurpose purpose) {
+        qInfo() << "[KeyboardManager] ContentPurpose changed:" << static_cast<int>(purpose);
+        if (m_textCommitBackend->isSensitiveField() || m_textCommitBackend->isTerminalField()) {
+            dismissSwipeAlternatives();
+        }
+    });
+    connect(m_textCommitBackend, &ArchPad::TextCommitBackend::stateReset, this, [this]() {
+        dismissSwipeAlternatives();
+    });
+
     connect(m_swipeWorker, &SwipeEngineWorker::decodeFinished, this, [this](quint64 reqId, const QStringList &candidates, const QVariantMap &timings) {
-        qInfo() << "Swipe decode finished for req" << reqId
-                << "candidates:" << candidates
-                << "inference:" << timings.value(QStringLiteral("inference_us")).toDouble() / 1000.0 << "ms";
-        Q_EMIT swipeCandidatesReady(reqId, candidates, timings);
+        handleDecodeFinished(reqId, candidates, timings);
     });
 
     connect(m_swipeWorker, &SwipeEngineWorker::decodeError, this, [this](quint64 reqId, const QString &err) {
@@ -884,15 +898,24 @@ void KeyboardManager::clearTransientState()
     setCtrlActive(false);
     setAltActive(false);
     setMetaActive(false);
+    dismissSwipeAlternatives();
+    m_lastCommittedBytes = 0;
+    m_lastCommittedWord.clear();
 }
 
 void KeyboardManager::tapKey(int keycode)
 {
+    dismissSwipeAlternatives();
+    m_lastCommittedBytes = 0;
+    m_lastCommittedWord.clear();
     emitKeyWithActiveModifiers(keycode, false);
 }
 
 void KeyboardManager::tapKeyWithModifiers(int keycode, bool shift, bool ctrl, bool alt)
 {
+    dismissSwipeAlternatives();
+    m_lastCommittedBytes = 0;
+    m_lastCommittedWord.clear();
     playClick();
 
     if (shift) emitKey(KEY_LEFTSHIFT, 1);
@@ -908,6 +931,10 @@ void KeyboardManager::tapKeyWithModifiers(int keycode, bool shift, bool ctrl, bo
 
 void KeyboardManager::tapNavKey(const QString &navKey)
 {
+    dismissSwipeAlternatives();
+    m_lastCommittedBytes = 0;
+    m_lastCommittedWord.clear();
+
     int keycode = 0;
     if (navKey == QLatin1String("Esc")) {
         keycode = KEY_ESC;
@@ -946,12 +973,27 @@ void KeyboardManager::tapNavKey(const QString &navKey)
 
 void KeyboardManager::tapSymbol(const QString &symbol)
 {
+    dismissSwipeAlternatives();
+    m_lastCommittedBytes = 0;
+    m_lastCommittedWord.clear();
+
     if (symbol.isEmpty()) return;
     if (symbol == QLatin1String("...")) {
         tapSymbol(QStringLiteral("."));
         tapSymbol(QStringLiteral("."));
         tapSymbol(QStringLiteral("."));
         return;
+    }
+
+    // Direct Wayland text-commit optimization: if Wayland text-input context is active and no special modifiers held
+    if (m_textCommitBackend && m_textCommitBackend->isActive() && !m_ctrlActive && !m_altActive && !m_metaActive) {
+        if (m_textCommitBackend->commitText(symbol)) {
+            playClick();
+            if (m_shiftActive) {
+                setShiftActive(false);
+            }
+            return;
+        }
     }
 
     QChar c = symbol.at(0);
@@ -1257,4 +1299,89 @@ quint64 KeyboardManager::getSwipeMemoryPssKiB() const
 {
     return SwipeEngineWorker::getMemoryPssKiB();
 }
+
+void KeyboardManager::selectSwipeAlternative(int index)
+{
+    if (index < 0 || index >= m_swipeAlternatives.size()) {
+        return;
+    }
+
+    const QString altWord = m_swipeAlternatives.at(index);
+    const QString newCommit = altWord + QLatin1Char(' ');
+
+    bool replaced = false;
+    if (m_textCommitBackend && m_textCommitBackend->isActive() && m_lastCommittedBytes > 0) {
+        replaced = m_textCommitBackend->replacePrevious(m_lastCommittedBytes, newCommit);
+    }
+
+    if (!replaced) {
+        qWarning() << "[KeyboardManager] ReplacePrevious failed or backend inactive";
+    }
+
+    m_lastCommittedWord = altWord;
+    m_lastCommittedBytes = static_cast<size_t>(newCommit.toUtf8().size());
+    m_lastCommittedSerial = m_textCommitBackend ? m_textCommitBackend->currentSerial() : 0;
+
+    dismissSwipeAlternatives();
+}
+
+void KeyboardManager::dismissSwipeAlternatives()
+{
+    if (!m_swipeAlternatives.isEmpty()) {
+        m_swipeAlternatives.clear();
+        Q_EMIT swipeAlternativesChanged(m_swipeAlternatives);
+    }
+}
+
+void KeyboardManager::handleDecodeFinished(quint64 reqId, const QStringList &candidates, const QVariantMap &timings)
+{
+    qInfo() << "Swipe decode finished for req" << reqId
+            << "candidates:" << candidates
+            << "inference:" << timings.value(QStringLiteral("inference_us")).toDouble() / 1000.0 << "ms";
+    Q_EMIT swipeCandidatesReady(reqId, candidates, timings);
+
+    // Privacy/Terminal guard: never auto-commit in passwords, PINs, or terminals
+    if (m_textCommitBackend && (m_textCommitBackend->isSensitiveField() || m_textCommitBackend->isTerminalField())) {
+        qInfo() << "[KeyboardManager] Suppressed swipe commit in sensitive/terminal field";
+        return;
+    }
+
+    if (candidates.isEmpty()) {
+        dismissSwipeAlternatives();
+        return;
+    }
+
+    const QString c0 = candidates.at(0);
+    const QString commitWord = c0 + QLatin1Char(' ');
+    const QByteArray utf8 = commitWord.toUtf8();
+
+    bool committed = false;
+    if (m_textCommitBackend && m_textCommitBackend->isActive()) {
+        committed = m_textCommitBackend->commitText(commitWord);
+    }
+
+    if (!committed) {
+        tapText(commitWord);
+    }
+
+    m_lastCommittedWord = c0;
+    m_lastCommittedBytes = static_cast<size_t>(utf8.size());
+    m_lastCommittedSerial = m_textCommitBackend ? m_textCommitBackend->currentSerial() : 0;
+
+    if (candidates.size() > 1) {
+        m_swipeAlternatives = candidates.mid(1, 3);
+    } else {
+        m_swipeAlternatives.clear();
+    }
+    Q_EMIT swipeAlternativesChanged(m_swipeAlternatives);
+}
+
+void KeyboardManager::SimulateSwipeCandidates(const QStringList &candidates)
+{
+    QVariantMap timings;
+    timings[QStringLiteral("inference_us")] = 5000.0;
+    timings[QStringLiteral("total_us")] = 6000.0;
+    handleDecodeFinished(999, candidates, timings);
+}
+
 

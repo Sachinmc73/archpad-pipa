@@ -17,35 +17,47 @@ ColumnLayout {
         return isLetterUpper ? letter.toUpperCase() : letter.toLowerCase()
     }
 
-    // 1. Compact Horizontally Scrollable Special Key Bar
-    Flickable {
-        id: specialBarFlick
+    // 1. Top Bar: Switch between Special Key Bar and Candidate Alternative Bar
+    Item {
         Layout.fillWidth: true
         Layout.preferredHeight: 28
         Layout.maximumHeight: 28
-        contentWidth: specialBarRow.width
-        contentHeight: 28
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        flickableDirection: Flickable.HorizontalFlick
 
-        RowLayout {
-            id: specialBarRow
-            height: 28
-            spacing: 2
+        // Special Key Bar
+        Flickable {
+            id: specialBarFlick
+            anchors.fill: parent
+            visible: !km.hasSwipeAlternatives
+            contentWidth: specialBarRow.width
+            contentHeight: 28
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.HorizontalFlick
 
-            KeyButton { text: "Esc"; Layout.preferredWidth: 36; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Esc") }
-            KeyButton { text: "Tab"; Layout.preferredWidth: 36; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Tab") }
-            ModifierKey { text: "Ctrl"; Layout.preferredWidth: 36; allowFlickSteal: true; active: km.ctrlActive; customFontSize: theme.fontSizeSmall; onClicked: km.ctrlActive = !km.ctrlActive }
-            ModifierKey { text: "Alt"; Layout.preferredWidth: 36; allowFlickSteal: true; active: km.altActive; customFontSize: theme.fontSizeSmall; onClicked: km.altActive = !km.altActive }
-            KeyButton { text: "~"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("~") }
-            KeyButton { text: "|"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("|") }
-            KeyButton { text: "\\"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("\\") }
-            KeyButton { text: "/"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("/") }
-            KeyButton { iconName: "arrow-left"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Left") }
-            KeyButton { iconName: "arrow-up"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Up") }
-            KeyButton { iconName: "arrow-down"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Down") }
-            KeyButton { iconName: "arrow-right"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Right") }
+            RowLayout {
+                id: specialBarRow
+                height: 28
+                spacing: 2
+
+                KeyButton { text: "Esc"; Layout.preferredWidth: 36; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Esc") }
+                KeyButton { text: "Tab"; Layout.preferredWidth: 36; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; customFontSize: theme.fontSizeSmall; onClicked: km.tapNavKey("Tab") }
+                ModifierKey { text: "Ctrl"; Layout.preferredWidth: 36; allowFlickSteal: true; active: km.ctrlActive; customFontSize: theme.fontSizeSmall; onClicked: km.ctrlActive = !km.ctrlActive }
+                ModifierKey { text: "Alt"; Layout.preferredWidth: 36; allowFlickSteal: true; active: km.altActive; customFontSize: theme.fontSizeSmall; onClicked: km.altActive = !km.altActive }
+                KeyButton { text: "~"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("~") }
+                KeyButton { text: "|"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("|") }
+                KeyButton { text: "\\"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("\\") }
+                KeyButton { text: "/"; Layout.preferredWidth: 32; allowFlickSteal: true; triggerOnPress: false; customKeyColor: theme.keySpecialColor; onClicked: km.tapSymbol("/") }
+                KeyButton { iconName: "arrow-left"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Left") }
+                KeyButton { iconName: "arrow-up"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Up") }
+                KeyButton { iconName: "arrow-down"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Down") }
+                KeyButton { iconName: "arrow-right"; Layout.preferredWidth: 34; allowFlickSteal: true; triggerOnPress: false; autoRepeat: true; customKeyColor: theme.keySpecialColor; onClicked: km.tapNavKey("Right") }
+            }
+        }
+
+        // Candidate Alternative Bar (shown when swipe alternatives exist)
+        CandidateAlternativeBar {
+            anchors.fill: parent
+            visible: km.hasSwipeAlternatives
         }
     }
 

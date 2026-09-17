@@ -4,6 +4,9 @@
 #include <QString>
 #include <QSet>
 #include <QTimer>
+#include "swipeengineworker.h"
+#include "textcommitbackend.h"
+#include "waylandinputmethodv1backend.h"
 
 struct ca_context;
 class QDBusServiceWatcher;
@@ -57,6 +60,8 @@ class KeyboardManager : public QObject
     Q_PROPERTY(bool swipeReady READ swipeReady NOTIFY swipeReadyChanged)
     Q_PROPERTY(bool swipeActive READ swipeActive WRITE setSwipeActive NOTIFY swipeActiveChanged)
     Q_PROPERTY(QString swipeState READ swipeState NOTIFY swipeStateChanged)
+    Q_PROPERTY(QStringList swipeAlternatives READ swipeAlternatives NOTIFY swipeAlternativesChanged)
+    Q_PROPERTY(bool hasSwipeAlternatives READ hasSwipeAlternatives NOTIFY swipeAlternativesChanged)
 
 public:
     struct QuickPadSlot {
@@ -177,8 +182,12 @@ public:
     bool swipeActive() const { return m_swipeActive; }
     void setSwipeActive(bool active);
     QString swipeState() const;
+    QStringList swipeAlternatives() const { return m_swipeAlternatives; }
+    bool hasSwipeAlternatives() const { return !m_swipeAlternatives.isEmpty(); }
 
     Q_INVOKABLE void requestSwipeDecode(quint64 requestId, const QVariantList &points, const QStringList &contextWords);
+    Q_INVOKABLE void selectSwipeAlternative(int index);
+    Q_INVOKABLE void dismissSwipeAlternatives();
     Q_INVOKABLE void loadSwipeEngine();
     Q_INVOKABLE void unloadSwipeEngine();
     Q_INVOKABLE quint64 getSwipeMemoryPssKiB() const;
@@ -189,6 +198,9 @@ public Q_SLOTS:
     void Hide();
     void Toggle();
     void ToggleFloating();
+    void SelectSwipeAlternative(int index) { selectSwipeAlternative(index); }
+    void DismissSwipeAlternatives() { dismissSwipeAlternatives(); }
+    void SimulateSwipeCandidates(const QStringList &candidates);
     void LoadSwipeEngine() { loadSwipeEngine(); }
     void UnloadSwipeEngine() { unloadSwipeEngine(); }
     QString GetSwipeState() { return swipeState(); }
@@ -265,6 +277,7 @@ Q_SIGNALS:
     void swipeStateChanged(const QString &state);
     void swipeCandidatesReady(quint64 requestId, const QStringList &candidates, const QVariantMap &timings);
     void swipeDecodeError(quint64 requestId, const QString &errorMessage);
+    void swipeAlternativesChanged(const QStringList &alternatives);
 
 private:
     bool initUInput();
@@ -276,6 +289,7 @@ private:
     void clearTransientState();
     void syncKWinVirtualKeyboardState();
     void ensureXkbOptions();
+    void handleDecodeFinished(quint64 reqId, const QStringList &candidates, const QVariantMap &timings);
 
     bool detectSystemDark();
     void updateResolvedDark();
@@ -325,4 +339,9 @@ private:
     bool m_swipeActive = false;
     QThread *m_swipeThread = nullptr;
     SwipeEngineWorker *m_swipeWorker = nullptr;
+    ArchPad::TextCommitBackend *m_textCommitBackend = nullptr;
+    QStringList m_swipeAlternatives;
+    QString m_lastCommittedWord;
+    size_t m_lastCommittedBytes = 0;
+    uint32_t m_lastCommittedSerial = 0;
 };

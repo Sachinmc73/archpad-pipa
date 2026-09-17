@@ -13,5 +13,6 @@
         <file>qml/components/KeyButton.qml</file>
         <file>qml/components/ModifierKey.qml</file>
         <file>qml/components/VectorIcon.qml</file>
+        <file>qml/components/CandidateAlternativeBar.qml</file>
     </qresource>
 </RCC>
