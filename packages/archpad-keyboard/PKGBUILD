@@ -1,7 +1,7 @@
 # Maintainer: ArchPad project
 pkgname=archpad-keyboard
 pkgver=1.0.0
-pkgrel=59
+pkgrel=60
 pkgdesc="Touch-first on-screen keyboard for ArchPad"
 arch=('aarch64')
 url="https://github.com/Sachinmc73/archpad-pipa"

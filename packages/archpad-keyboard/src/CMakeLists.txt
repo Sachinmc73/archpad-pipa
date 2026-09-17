@@ -23,6 +23,8 @@ add_executable(archpad-keyboard
     keyboardmanager.cpp
     swipeengineworker.h
     swipeengineworker.cpp
+    gesturetrailitem.h
+    gesturetrailitem.cpp
     resources.qrc
 )
 

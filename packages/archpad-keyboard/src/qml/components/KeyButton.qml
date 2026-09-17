@@ -15,11 +15,14 @@ Item {
     property bool triggerOnPress: true
     property int customFontSize: 0
     property string iconName: ""
+    property bool swipeEnabled: false
+    property var gestureTracker: null
 
     readonly property color finalKeyColor: customKeyColor !== null ? customKeyColor : theme.keyColor
     readonly property color finalTextColor: customTextColor !== null ? customTextColor : (root.isAccent ? "#FFFFFF" : theme.textColor)
     readonly property int autoFontSize: Math.max(11, Math.min(theme.fontSizeNormal, Math.round(parent.height * 0.38)))
     readonly property int finalFontSize: customFontSize > 0 ? customFontSize : autoFontSize
+    readonly property bool effectiveTriggerOnPress: root.triggerOnPress && !root.swipeEnabled
 
     signal clicked()
     signal held()
@@ -33,11 +36,11 @@ Item {
         anchors.fill: parent
         anchors.margins: theme.keyMargin
         radius: theme.keyRadius
-        color: touchArea.pressed ? theme.keyPressedColor : (root.isAccent ? theme.keyAccentColor : root.finalKeyColor)
+        color: (touchArea.pressed && !touchArea.swipeTriggered) ? theme.keyPressedColor : (root.isAccent ? theme.keyAccentColor : root.finalKeyColor)
         border.color: theme.borderColor
         border.width: 1
 
-        scale: touchArea.pressed ? 0.94 : 1.0
+        scale: (touchArea.pressed && !touchArea.swipeTriggered) ? 0.94 : 1.0
         Behavior on scale {
             NumberAnimation { duration: 60; easing.type: Easing.OutQuad }
         }
@@ -89,6 +92,9 @@ Item {
 
             property bool longPressed: false
             property bool autoRepeatTriggered: false
+            property bool swipeTriggered: false
+            property real startGlobalX: 0
+            property real startGlobalY: 0
 
             // Lightweight auto-repeat timer for Backspace / Space
             Timer {
@@ -104,35 +110,73 @@ Item {
             }
 
             onPressAndHold: {
+                if (touchArea.swipeTriggered) return
                 if (root.secondaryText !== "") {
                     touchArea.longPressed = true
                     root.held()
                 }
             }
 
-            onPressed: {
+            onPressed: function(mouse) {
                 touchArea.longPressed = false
                 touchArea.autoRepeatTriggered = false
+                touchArea.swipeTriggered = false
+
+                if (root.swipeEnabled && root.gestureTracker) {
+                    var gPt = root.gestureTracker.mapPoint(root, mouse.x, mouse.y)
+                    touchArea.startGlobalX = gPt.x
+                    touchArea.startGlobalY = gPt.y
+                }
+
                 if (root.autoRepeat) {
                     repeatTimer.interval = 380
-                    if (root.triggerOnPress) {
+                    if (root.effectiveTriggerOnPress) {
                         root.clicked()
                     }
-                } else if (root.secondaryText === "" && root.triggerOnPress) {
+                } else if (root.secondaryText === "" && root.effectiveTriggerOnPress) {
                     root.clicked()
                 }
             }
 
+            onPositionChanged: function(mouse) {
+                if (!root.swipeEnabled || !root.gestureTracker) return
+
+                var gPt = root.gestureTracker.mapPoint(root, mouse.x, mouse.y)
+                var dx = gPt.x - touchArea.startGlobalX
+                var dy = gPt.y - touchArea.startGlobalY
+                var distSq = dx * dx + dy * dy
+
+                if (!touchArea.swipeTriggered) {
+                    // 14px touch slop threshold (14*14 = 196)
+                    if (distSq >= 196) {
+                        touchArea.swipeTriggered = true
+                        touchArea.longPressed = false
+                        root.gestureTracker.startSwipe(touchArea.startGlobalX, touchArea.startGlobalY)
+                        root.gestureTracker.addPoint(gPt.x, gPt.y)
+                    }
+                } else {
+                    root.gestureTracker.addPoint(gPt.x, gPt.y)
+                }
+            }
+
             onClicked: {
+                if (touchArea.swipeTriggered) {
+                    touchArea.swipeTriggered = false
+                    touchArea.longPressed = false
+                    return
+                }
                 if (root.secondaryText !== "" && !touchArea.longPressed && !root.autoRepeat) {
                     root.clicked()
-                } else if (!root.triggerOnPress && !touchArea.longPressed && !touchArea.autoRepeatTriggered) {
+                } else if (!root.effectiveTriggerOnPress && !touchArea.longPressed && !touchArea.autoRepeatTriggered) {
                     root.clicked()
                 }
                 touchArea.longPressed = false
             }
 
             onReleased: {
+                if (touchArea.swipeTriggered) {
+                    root.gestureTracker.finishSwipe()
+                }
                 if (root.autoRepeat) {
                     repeatTimer.stop()
                     repeatTimer.interval = 380
@@ -140,6 +184,10 @@ Item {
             }
 
             onCanceled: {
+                if (touchArea.swipeTriggered) {
+                    root.gestureTracker.cancelSwipe()
+                    touchArea.swipeTriggered = false
+                }
                 if (root.autoRepeat) {
                     repeatTimer.stop()
                     repeatTimer.interval = 380

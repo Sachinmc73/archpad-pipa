@@ -137,14 +137,19 @@ KeyboardManager::KeyboardManager(QObject *parent)
     });
 
     connect(m_swipeWorker, &SwipeEngineWorker::decodeFinished, this, [this](quint64 reqId, const QStringList &candidates, const QVariantMap &timings) {
+        qInfo() << "Swipe decode finished for req" << reqId
+                << "candidates:" << candidates
+                << "inference:" << timings.value(QStringLiteral("inference_us")).toDouble() / 1000.0 << "ms";
         Q_EMIT swipeCandidatesReady(reqId, candidates, timings);
     });
 
     connect(m_swipeWorker, &SwipeEngineWorker::decodeError, this, [this](quint64 reqId, const QString &err) {
+        qWarning() << "Swipe decode error for req" << reqId << ":" << err;
         Q_EMIT swipeDecodeError(reqId, err);
     });
 
     m_swipeThread->start();
+    loadSwipeEngine();
 }
 
 KeyboardManager::~KeyboardManager()

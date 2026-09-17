@@ -10,6 +10,7 @@
 #include <LayerShellQt/Window>
 
 #include "keyboardmanager.h"
+#include "gesturetrailitem.h"
 
 int main(int argc, char **argv)
 {
@@ -79,6 +80,8 @@ int main(int argc, char **argv)
             qWarning() << "QML Error:" << w.toString();
         }
     });
+
+    qmlRegisterType<GestureTrailItem>("org.archpad.keyboard", 1, 0, "GestureTrail");
 
     // Expose Theme as lowercase 'theme' context property
     QQmlComponent themeComp(&engine, QUrl(QStringLiteral("qrc:/qml/Theme.qml")));
