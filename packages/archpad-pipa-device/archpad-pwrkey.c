@@ -8,49 +8,47 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include <time.h>
 #include <dirent.h>
 #include <sys/ioctl.h>
 #include <linux/input.h>
-#include <linux/uinput.h>
 #include <glib.h>
 #include <glib-unix.h>
 #include <gio/gio.h>
 
-#define LONG_PRESS_MS 750
-#define RESUME_DEBOUNCE_MS 4000
+/*
+ * archpad-pwrkey — ArchPad Tablet Power Key Daemon
+ *
+ * Grabs pm8941_pwrkey exclusively (EVIOCGRAB) so that systemd-logind and
+ * PowerDevil never see KEY_POWER.  All decisions are made here:
+ *
+ *   Short press (while awake) → LockSessions() + 250 ms settle + Suspend()
+ *   Short press (while waking) → ignored; is_waking cleared on release
+ *   Long press  (≥ 750 ms)    → org.kde.LogoutPrompt.promptAll
+ *
+ * State machine driven entirely by the PrepareForSleep logind signal:
+ *   PrepareForSleep(true)  → is_sleeping = true,  is_waking = false
+ *   PrepareForSleep(false) → is_sleeping = false,  is_waking = true
+ *   KEY_POWER release while is_waking → is_waking = false  (debounce cleared)
+ */
+
+#define LONG_PRESS_MS  750
+#define LOCK_SETTLE_MS 250
 #define PWRKEY_DEV_NAME "pm8941_pwrkey"
 
 typedef struct {
-    GMainLoop *loop;
-    GDBusConnection *session_bus;
-    GDBusConnection *system_bus;
-    int pwr_fd;
-    int uinput_fd;
-    guint long_press_timer_id;
-    bool button_down;
-    bool long_press_handled;
-    bool wake_in_progress;
-    bool is_suspending;
-    uint64_t press_start_ms;
-    uint64_t last_sleep_delta;
+    GMainLoop        *loop;
+    GDBusConnection  *session_bus;
+    GDBusConnection  *system_bus;
+    int               pwr_fd;
+    guint             long_press_timer_id;
+    guint             suspend_settle_timer_id;
+    bool              button_down;
+    bool              long_press_handled;
+    bool              is_sleeping;
+    bool              is_waking;
 } DaemonContext;
 
-static uint64_t g_last_resume_time_ms = 0;
-
-static uint64_t get_time_ms(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
-}
-
-static uint64_t get_boottime_ms(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_BOOTTIME, &ts);
-    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
-}
+/* ── Device discovery ─────────────────────────────────────────────────────── */
 
 static int open_pwrkey_device(void)
 {
@@ -88,227 +86,77 @@ static int open_pwrkey_device(void)
     return fd;
 }
 
-static int setup_uinput_device(void)
+/* ── Actions ──────────────────────────────────────────────────────────────── */
+
+static void call_lock_sessions(GDBusConnection *system_bus)
 {
-    int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-    if (fd < 0) {
-        g_warning("Failed to open /dev/uinput: %s", strerror(errno));
-        return -1;
-    }
-
-    ioctl(fd, UI_SET_EVBIT, EV_KEY);
-    ioctl(fd, UI_SET_KEYBIT, KEY_POWER);
-    ioctl(fd, UI_SET_KEYBIT, KEY_WAKEUP);
-
-    struct uinput_setup usetup;
-    memset(&usetup, 0, sizeof(usetup));
-    usetup.id.bustype = BUS_USB;
-    usetup.id.vendor = 0x1d6b;
-    usetup.id.product = 0x0001;
-    strncpy(usetup.name, "ArchPad Virtual Wakeup Key", sizeof(usetup.name) - 1);
-
-    if (ioctl(fd, UI_DEV_SETUP, &usetup) < 0 || ioctl(fd, UI_DEV_CREATE) < 0) {
-        g_warning("Failed to create uinput device: %s", strerror(errno));
-        close(fd);
-        return -1;
-    }
-
-    g_message("ArchPad virtual input device created successfully");
-    return fd;
-}
-
-static void emit_uinput_key(int uinput_fd, int key)
-{
-    if (uinput_fd < 0)
+    if (!system_bus)
         return;
 
-    struct input_event ev;
-
-    memset(&ev, 0, sizeof(ev));
-    ev.type = EV_KEY;
-    ev.code = key;
-    ev.value = 1;
-    if (write(uinput_fd, &ev, sizeof(ev)) < 0)
-        g_warning("uinput write down failed: %s", strerror(errno));
-
-    memset(&ev, 0, sizeof(ev));
-    ev.type = EV_SYN;
-    ev.code = SYN_REPORT;
-    write(uinput_fd, &ev, sizeof(ev));
-
-    usleep(20000);
-
-    memset(&ev, 0, sizeof(ev));
-    ev.type = EV_KEY;
-    ev.code = key;
-    ev.value = 0;
-    if (write(uinput_fd, &ev, sizeof(ev)) < 0)
-        g_warning("uinput write up failed: %s", strerror(errno));
-
-    memset(&ev, 0, sizeof(ev));
-    ev.type = EV_SYN;
-    ev.code = SYN_REPORT;
-    write(uinput_fd, &ev, sizeof(ev));
+    g_message("Action: Locking all sessions via logind LockSessions()");
+    g_dbus_connection_call(
+        system_bus,
+        "org.freedesktop.login1",
+        "/org/freedesktop/login1",
+        "org.freedesktop.login1.Manager",
+        "LockSessions",
+        NULL,
+        NULL,
+        G_DBUS_CALL_FLAGS_NONE,
+        1000,
+        NULL,
+        NULL,
+        NULL
+    );
 }
 
-static bool is_screen_on(void)
+static void call_suspend(GDBusConnection *system_bus)
 {
-    // Check backlight brightness first (definitive hardware display state)
-    DIR *dir = opendir("/sys/class/backlight");
-    if (dir) {
-        struct dirent *ent;
-        while ((ent = readdir(dir)) != NULL) {
-            if (ent->d_name[0] == '.')
-                continue;
-
-            char path[512];
-            snprintf(path, sizeof(path), "/sys/class/backlight/%s/brightness", ent->d_name);
-            FILE *f = fopen(path, "r");
-            if (f) {
-                int brightness = -1;
-                if (fscanf(f, "%d", &brightness) == 1) {
-                    fclose(f);
-                    closedir(dir);
-                    return brightness > 0;
-                }
-                fclose(f);
-            }
-        }
-        closedir(dir);
+    if (!system_bus) {
+        g_warning("No system bus — cannot call Suspend");
+        return;
     }
 
-    // Check DRM connector status
-    dir = opendir("/sys/class/drm");
-    if (dir) {
-        struct dirent *ent;
-        while ((ent = readdir(dir)) != NULL) {
-            if (strstr(ent->d_name, "DSI") != NULL || strstr(ent->d_name, "eDP") != NULL) {
-                char path[512];
-                snprintf(path, sizeof(path), "/sys/class/drm/%s/enabled", ent->d_name);
-                FILE *f = fopen(path, "r");
-                if (f) {
-                    char buf[32] = {0};
-                    if (fgets(buf, sizeof(buf), f)) {
-                        fclose(f);
-                        closedir(dir);
-                        if (strncmp(buf, "enabled", 7) == 0)
-                            return true;
-                        if (strncmp(buf, "disabled", 8) == 0)
-                            return false;
-                    } else {
-                        fclose(f);
-                    }
-                }
-            }
-        }
-        closedir(dir);
-    }
-
-    return false; // Fail safe: default to false to prevent unwanted suspend loops
+    g_message("Action: Requesting system suspend via logind Suspend()");
+    g_dbus_connection_call(
+        system_bus,
+        "org.freedesktop.login1",
+        "/org/freedesktop/login1",
+        "org.freedesktop.login1.Manager",
+        "Suspend",
+        g_variant_new("(b)", FALSE),
+        NULL,
+        G_DBUS_CALL_FLAGS_NONE,
+        2000,
+        NULL,
+        NULL,
+        NULL
+    );
 }
 
-static void lock_and_suspend(DaemonContext *ctx)
+static void call_logout_prompt(GDBusConnection *session_bus)
 {
-    g_message("Action: Locking session and requesting system suspend (s2idle)");
+    if (!session_bus)
+        return;
 
-    ctx->is_suspending = true;
-    ctx->button_down = false;
-    ctx->long_press_handled = false;
-
-    system("loginctl lock-session 2>/dev/null &");
-
-    if (ctx->session_bus) {
-        g_dbus_connection_call(
-            ctx->session_bus,
-            "org.freedesktop.ScreenSaver",
-            "/ScreenSaver",
-            "org.freedesktop.ScreenSaver",
-            "Lock",
-            NULL,
-            NULL,
-            G_DBUS_CALL_FLAGS_NONE,
-            500,
-            NULL,
-            NULL,
-            NULL
-        );
-    }
-
-    if (ctx->system_bus) {
-        g_dbus_connection_call(
-            ctx->system_bus,
-            "org.freedesktop.login1",
-            "/org/freedesktop/login1",
-            "org.freedesktop.login1.Manager",
-            "Suspend",
-            g_variant_new("(b)", FALSE),
-            NULL,
-            G_DBUS_CALL_FLAGS_NONE,
-            2000,
-            NULL,
-            NULL,
-            NULL
-        );
-    } else {
-        system("systemctl suspend &");
-    }
+    g_message("Action: Triggering KDE LogoutPrompt (long press)");
+    g_dbus_connection_call(
+        session_bus,
+        "org.kde.LogoutPrompt",
+        "/LogoutPrompt",
+        "org.kde.LogoutPrompt",
+        "promptAll",
+        NULL,
+        NULL,
+        G_DBUS_CALL_FLAGS_NONE,
+        2000,
+        NULL,
+        NULL,
+        NULL
+    );
 }
 
-static void wake_screen(GDBusConnection *bus, int uinput_fd)
-{
-    g_message("Action: Waking screen (simulating user activity)");
-
-    emit_uinput_key(uinput_fd, KEY_WAKEUP);
-
-    if (bus) {
-        g_dbus_connection_call(
-            bus,
-            "org.freedesktop.ScreenSaver",
-            "/ScreenSaver",
-            "org.freedesktop.ScreenSaver",
-            "SimulateUserActivity",
-            NULL,
-            NULL,
-            G_DBUS_CALL_FLAGS_NONE,
-            1000,
-            NULL,
-            NULL,
-            NULL
-        );
-    }
-}
-
-static void trigger_power_menu(GDBusConnection *bus)
-{
-    g_message("Action: Triggering Power Menu (Long Press)");
-
-    const char *desktop = g_getenv("XDG_CURRENT_DESKTOP");
-    if (!desktop)
-        desktop = "";
-
-    if (g_strrstr(desktop, "KDE") || g_strrstr(desktop, "Plasma")) {
-        if (bus) {
-            g_dbus_connection_call(
-                bus,
-                "org.kde.LogoutPrompt",
-                "/LogoutPrompt",
-                "org.kde.LogoutPrompt",
-                "promptAll",
-                NULL,
-                NULL,
-                G_DBUS_CALL_FLAGS_NONE,
-                2000,
-                NULL,
-                NULL,
-                NULL
-            );
-        }
-    } else if (g_strrstr(desktop, "GNOME")) {
-        system("gnome-session-quit --power-off &");
-    } else {
-        system("wlogout &");
-    }
-}
+/* ── Timers ───────────────────────────────────────────────────────────────── */
 
 static gboolean on_long_press_timeout(gpointer user_data)
 {
@@ -316,11 +164,37 @@ static gboolean on_long_press_timeout(gpointer user_data)
     ctx->long_press_timer_id = 0;
 
     if (ctx->button_down && !ctx->long_press_handled) {
-        trigger_power_menu(ctx->session_bus);
+        call_logout_prompt(ctx->session_bus);
         ctx->long_press_handled = true;
     }
     return G_SOURCE_REMOVE;
 }
+
+static gboolean on_suspend_settle_timeout(gpointer user_data)
+{
+    DaemonContext *ctx = (DaemonContext *)user_data;
+    ctx->suspend_settle_timer_id = 0;
+
+    /* Only suspend if we haven't already entered sleep (e.g. logind beat us) */
+    if (!ctx->is_sleeping) {
+        call_suspend(ctx->system_bus);
+    }
+    return G_SOURCE_REMOVE;
+}
+
+static void cancel_all_timers(DaemonContext *ctx)
+{
+    if (ctx->long_press_timer_id > 0) {
+        g_source_remove(ctx->long_press_timer_id);
+        ctx->long_press_timer_id = 0;
+    }
+    if (ctx->suspend_settle_timer_id > 0) {
+        g_source_remove(ctx->suspend_settle_timer_id);
+        ctx->suspend_settle_timer_id = 0;
+    }
+}
+
+/* ── PrepareForSleep signal handler ──────────────────────────────────────── */
 
 static void on_prepare_for_sleep(GDBusConnection *connection,
                                  const gchar *sender_name,
@@ -332,47 +206,39 @@ static void on_prepare_for_sleep(GDBusConnection *connection,
 {
     (void)connection; (void)sender_name; (void)object_path;
     (void)interface_name; (void)signal_name;
+
     DaemonContext *ctx = (DaemonContext *)user_data;
 
     gboolean going_to_sleep = FALSE;
     g_variant_get(parameters, "(b)", &going_to_sleep);
 
     if (going_to_sleep) {
-        if (ctx) {
-            ctx->is_suspending = true;
-            if (ctx->long_press_timer_id > 0) {
-                g_source_remove(ctx->long_press_timer_id);
-                ctx->long_press_timer_id = 0;
-            }
-            ctx->button_down = false;
-            ctx->long_press_handled = false;
-        }
+        g_message("PrepareForSleep(true): entering sleep — cancelling pending timers");
+        cancel_all_timers(ctx);
+        ctx->is_sleeping       = true;
+        ctx->is_waking         = false;
+        ctx->button_down       = false;
+        ctx->long_press_handled = false;
     } else {
-        g_last_resume_time_ms = get_time_ms();
-        if (ctx) {
-            ctx->is_suspending = false;
-            ctx->wake_in_progress = false;
-            ctx->last_sleep_delta = get_boottime_ms() - get_time_ms();
-            if (ctx->long_press_timer_id > 0) {
-                g_source_remove(ctx->long_press_timer_id);
-                ctx->long_press_timer_id = 0;
-            }
-            ctx->button_down = false;
-            ctx->long_press_handled = false;
-            wake_screen(ctx->session_bus, ctx->uinput_fd);
-        }
-        g_message("System resumed from sleep (wake recorded at %llu ms)",
-                  (unsigned long long)g_last_resume_time_ms);
+        g_message("PrepareForSleep(false): system resumed — is_waking=true");
+        cancel_all_timers(ctx);
+        ctx->is_sleeping       = false;
+        ctx->is_waking         = true;
+        ctx->button_down       = false;
+        ctx->long_press_handled = false;
     }
 }
 
-static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition, gpointer user_data)
+/* ── Main evdev handler ───────────────────────────────────────────────────── */
+
+static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition,
+                                gpointer user_data)
 {
     (void)source;
     DaemonContext *ctx = (DaemonContext *)user_data;
 
     if (condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) {
-        g_warning("Power key device disconnected or error");
+        g_warning("Power key device disconnected or error — exiting event loop");
         g_main_loop_quit(ctx->loop);
         return G_SOURCE_REMOVE;
     }
@@ -387,115 +253,111 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition, gpoi
         return G_SOURCE_REMOVE;
     }
 
-    int count = bytes / sizeof(struct input_event);
+    int count = (int)(bytes / sizeof(struct input_event));
     for (int i = 0; i < count; i++) {
         if (ev[i].type != EV_KEY || ev[i].code != KEY_POWER)
             continue;
 
-        uint64_t current_sleep_delta = get_boottime_ms() - get_time_ms();
-        if (current_sleep_delta > ctx->last_sleep_delta + 250) {
-            uint64_t delta_diff = current_sleep_delta - ctx->last_sleep_delta;
-            ctx->last_sleep_delta = current_sleep_delta;
-            ctx->wake_in_progress = true;
-            ctx->is_suspending = false;
-            g_last_resume_time_ms = get_time_ms();
-            if (ctx->long_press_timer_id > 0) {
-                g_source_remove(ctx->long_press_timer_id);
-                ctx->long_press_timer_id = 0;
-            }
-            ctx->button_down = false;
-            ctx->long_press_handled = false;
-            wake_screen(ctx->session_bus, ctx->uinput_fd);
-            g_message("Wake detected via kernel clock delta (+%llu ms)",
-                      (unsigned long long)delta_diff);
-        }
-
-        if (ctx->is_suspending) {
-            g_message("Ignored power key event (val=%d): system is transitioning to suspend", ev[i].value);
-            continue;
-        }
-
-        uint64_t now = get_time_ms();
-        bool in_wake_protection = ctx->wake_in_progress ||
-            (g_last_resume_time_ms > 0 && (now - g_last_resume_time_ms < RESUME_DEBOUNCE_MS));
-
         if (ev[i].value == 1) {
-            if (in_wake_protection) {
-                g_message("Ignored power button press: in post-wake protection window (%llu ms remaining)",
-                          (unsigned long long)(RESUME_DEBOUNCE_MS - (now - g_last_resume_time_ms)));
-                wake_screen(ctx->session_bus, ctx->uinput_fd);
+            /* ── Button pressed ─────────────────────────────────────────── */
+
+            if (ctx->is_sleeping || ctx->is_waking) {
+                g_message("KEY_POWER press ignored: %s",
+                          ctx->is_sleeping ? "system is sleeping"
+                                           : "wake in progress");
                 continue;
             }
 
-            ctx->button_down = true;
-            ctx->press_start_ms = get_time_ms();
+            g_message("KEY_POWER press: starting long-press timer (%d ms)",
+                      LONG_PRESS_MS);
+            ctx->button_down       = true;
             ctx->long_press_handled = false;
 
-            if (ctx->long_press_timer_id > 0) {
+            if (ctx->long_press_timer_id > 0)
                 g_source_remove(ctx->long_press_timer_id);
-            }
-            ctx->long_press_timer_id = g_timeout_add(LONG_PRESS_MS, on_long_press_timeout, ctx);
+            ctx->long_press_timer_id =
+                g_timeout_add(LONG_PRESS_MS, on_long_press_timeout, ctx);
 
         } else if (ev[i].value == 0) {
+            /* ── Button released ────────────────────────────────────────── */
+
+            /* Cancel long-press timer regardless */
             if (ctx->long_press_timer_id > 0) {
                 g_source_remove(ctx->long_press_timer_id);
                 ctx->long_press_timer_id = 0;
             }
 
-            if (in_wake_protection) {
-                ctx->wake_in_progress = false;
-                ctx->button_down = false;
-                g_message("Ignored power button release: in post-wake protection window");
-                wake_screen(ctx->session_bus, ctx->uinput_fd);
+            if (ctx->is_sleeping) {
+                g_message("KEY_POWER release ignored: system is sleeping");
                 continue;
             }
 
-            if (ctx->button_down) {
+            if (ctx->is_waking) {
+                /* First release after wake → clear debounce, do nothing else */
+                g_message("KEY_POWER release: clearing post-wake debounce");
+                ctx->is_waking   = false;
                 ctx->button_down = false;
-                if (!ctx->long_press_handled) {
-                    if (is_screen_on()) {
-                        lock_and_suspend(ctx);
-                    } else {
-                        wake_screen(ctx->session_bus, ctx->uinput_fd);
-                    }
-                }
+                continue;
+            }
+
+            if (ctx->button_down && !ctx->long_press_handled) {
+                /* Short press: lock now, suspend after settle delay */
+                g_message("Short press: locking sessions, suspend in %d ms",
+                          LOCK_SETTLE_MS);
+                ctx->button_down = false;
+                call_lock_sessions(ctx->system_bus);
+
+                if (ctx->suspend_settle_timer_id > 0)
+                    g_source_remove(ctx->suspend_settle_timer_id);
+                ctx->suspend_settle_timer_id =
+                    g_timeout_add(LOCK_SETTLE_MS, on_suspend_settle_timeout, ctx);
+            } else {
+                ctx->button_down = false;
             }
         }
+        /* Ignore auto-repeat (value == 2) */
     }
 
     return G_SOURCE_CONTINUE;
 }
 
+/* ── Signal handling ──────────────────────────────────────────────────────── */
+
 static gboolean on_unix_signal(gpointer user_data)
 {
     GMainLoop *loop = (GMainLoop *)user_data;
-    g_message("Termination signal received, exiting main loop...");
+    g_message("Termination signal received — shutting down");
     g_main_loop_quit(loop);
     return G_SOURCE_REMOVE;
 }
+
+/* ── main ─────────────────────────────────────────────────────────────────── */
 
 int main(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
 
-    g_message("Starting ArchPad Power Key Daemon (archpad-pwrkey)...");
+    g_message("Starting ArchPad Power Key Daemon (archpad-pwrkey)");
 
     DaemonContext ctx;
     memset(&ctx, 0, sizeof(ctx));
     ctx.loop = g_main_loop_new(NULL, FALSE);
-    ctx.last_sleep_delta = get_boottime_ms() - get_time_ms();
 
     g_unix_signal_add(SIGTERM, on_unix_signal, ctx.loop);
-    g_unix_signal_add(SIGINT, on_unix_signal, ctx.loop);
+    g_unix_signal_add(SIGINT,  on_unix_signal, ctx.loop);
 
     GError *error = NULL;
+
+    /* Session bus — for KDE LogoutPrompt */
     ctx.session_bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
     if (!ctx.session_bus) {
-        g_warning("Failed to connect to session bus: %s", error ? error->message : "unknown");
+        g_warning("Failed to connect to session bus: %s",
+                  error ? error->message : "unknown");
         g_clear_error(&error);
     }
 
+    /* System bus — for logind LockSessions / Suspend / PrepareForSleep */
     ctx.system_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
     if (ctx.system_bus) {
         g_dbus_connection_signal_subscribe(
@@ -510,36 +372,34 @@ int main(int argc, char *argv[])
             &ctx,
             NULL
         );
-        g_message("Subscribed to systemd-logind PrepareForSleep signals");
+        g_message("Subscribed to logind PrepareForSleep signal");
     } else {
-        g_warning("Failed to connect to system bus: %s", error ? error->message : "unknown");
+        g_warning("Failed to connect to system bus: %s",
+                  error ? error->message : "unknown");
         g_clear_error(&error);
     }
 
-    ctx.uinput_fd = setup_uinput_device();
-
+    /* Open power key device (retry up to 10 s for late udev enumeration) */
     ctx.pwr_fd = -1;
     for (int attempt = 0; attempt < 10 && ctx.pwr_fd < 0; attempt++) {
         ctx.pwr_fd = open_pwrkey_device();
         if (ctx.pwr_fd < 0) {
-            g_warning("Power key not found, retrying in 1 second...");
+            g_warning("Power key not found, retrying in 1 second... (%d/10)",
+                      attempt + 1);
             sleep(1);
         }
     }
 
     if (ctx.pwr_fd < 0) {
-        g_error("Could not open power key device!");
-        if (ctx.uinput_fd >= 0) {
-            ioctl(ctx.uinput_fd, UI_DEV_DESTROY);
-            close(ctx.uinput_fd);
-        }
+        g_error("Could not open power key device — giving up");
         return 1;
     }
 
     if (ioctl(ctx.pwr_fd, EVIOCGRAB, 1) < 0) {
-        g_warning("Failed to grab power key device: %s", strerror(errno));
+        g_warning("EVIOCGRAB failed: %s — logind may also handle KEY_POWER",
+                  strerror(errno));
     } else {
-        g_message("Acquired exclusive grab on power key");
+        g_message("Acquired exclusive grab on power key (EVIOCGRAB)");
     }
 
     GIOChannel *channel = g_io_channel_unix_new(ctx.pwr_fd);
@@ -548,21 +408,16 @@ int main(int argc, char *argv[])
     g_io_add_watch(channel, G_IO_IN | G_IO_HUP | G_IO_ERR, on_pwrkey_event, &ctx);
     g_io_channel_unref(channel);
 
+    g_message("Ready — listening for power key events");
     g_main_loop_run(ctx.loop);
 
-    g_message("Shutting down archpad-pwrkey...");
+    g_message("Shutting down archpad-pwrkey");
 
-    if (ctx.long_press_timer_id > 0)
-        g_source_remove(ctx.long_press_timer_id);
+    cancel_all_timers(&ctx);
 
     if (ctx.pwr_fd >= 0) {
         ioctl(ctx.pwr_fd, EVIOCGRAB, 0);
         close(ctx.pwr_fd);
-    }
-
-    if (ctx.uinput_fd >= 0) {
-        ioctl(ctx.uinput_fd, UI_DEV_DESTROY);
-        close(ctx.uinput_fd);
     }
 
     if (ctx.session_bus)
