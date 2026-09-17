@@ -84,6 +84,10 @@ Item {
                     case "close":
                         // Clean X
                         return "M18 6 L6 18 M6 6 l12 12"
+                    case "gesture":
+                    case "swipe":
+                        // Smooth swipe wave / gesture path
+                        return "M3 15 C 6 6, 11 6, 14 13 C 16 18, 19 18, 21 10"
                     default:
                         return ""
                     }

@@ -17,6 +17,8 @@ ColumnLayout {
         return isLetterUpper ? letter.toUpperCase() : letter.toLowerCase()
     }
 
+    readonly property bool letterSwipeActive: km.swipeEnabled && !root.symbolMode
+
     // 1. Top Bar: Switch between Special Key Bar and Candidate Alternative Bar
     Item {
         Layout.fillWidth: true
@@ -91,9 +93,10 @@ ColumnLayout {
             id: gestureTrail
             anchors.fill: parent
             z: 20
-            trailColor: theme.keyAccentColor
-            strokeWidth: 8.0
-            decayDurationMs: 280
+            visible: km.swipeTrailEnabled
+            trailColor: km.swipeTrailColor
+            strokeWidth: km.swipeStrokeWidth
+            decayDurationMs: km.swipeDecayMs
         }
 
         Item {
@@ -107,6 +110,7 @@ ColumnLayout {
             }
 
             function startSwipe(startX, startY) {
+                if (!km.swipeEnabled) return
                 rawPoints = []
                 startTime = Date.now()
                 rawPoints.push({
@@ -186,7 +190,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("q") : "@"
                     secondaryText: !root.symbolMode ? "~" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("q") : "@")
                     onHeld: km.tapSymbol(!root.symbolMode ? "~" : "")
@@ -195,7 +199,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("w") : "#"
                     secondaryText: !root.symbolMode ? "|" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("w") : "#")
                     onHeld: km.tapSymbol(!root.symbolMode ? "|" : "")
@@ -204,7 +208,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("e") : "₹"
                     secondaryText: !root.symbolMode ? "\\" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("e") : "₹")
                     onHeld: km.tapSymbol(!root.symbolMode ? "\\" : "")
@@ -213,7 +217,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("r") : "$"
                     secondaryText: !root.symbolMode ? "/" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("r") : "$")
                     onHeld: km.tapSymbol(!root.symbolMode ? "/" : "")
@@ -222,7 +226,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("t") : "%"
                     secondaryText: !root.symbolMode ? "_" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("t") : "%")
                     onHeld: km.tapSymbol(!root.symbolMode ? "_" : "")
@@ -231,7 +235,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("y") : "&"
                     secondaryText: !root.symbolMode ? "<" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("y") : "&")
                     onHeld: km.tapSymbol(!root.symbolMode ? "<" : "")
@@ -240,7 +244,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("u") : "-"
                     secondaryText: !root.symbolMode ? ">" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("u") : "-")
                     onHeld: km.tapSymbol(!root.symbolMode ? ">" : "")
@@ -249,7 +253,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("i") : "+"
                     secondaryText: !root.symbolMode ? "[" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("i") : "+")
                     onHeld: km.tapSymbol(!root.symbolMode ? "[" : "")
@@ -258,7 +262,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("o") : "("
                     secondaryText: !root.symbolMode ? "]" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("o") : "(")
                     onHeld: km.tapSymbol(!root.symbolMode ? "]" : "")
@@ -267,7 +271,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("p") : ")"
                     secondaryText: !root.symbolMode ? "=" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("p") : ")")
                     onHeld: km.tapSymbol(!root.symbolMode ? "=" : "")
@@ -286,7 +290,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("a") : "*"
                     secondaryText: !root.symbolMode ? "!" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("a") : "*")
                     onHeld: km.tapSymbol(!root.symbolMode ? "!" : "")
@@ -295,7 +299,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("s") : "\""
                     secondaryText: !root.symbolMode ? "@" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("s") : "\"")
                     onHeld: km.tapSymbol(!root.symbolMode ? "@" : "")
@@ -304,7 +308,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("d") : "'"
                     secondaryText: !root.symbolMode ? "#" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("d") : "'")
                     onHeld: km.tapSymbol(!root.symbolMode ? "#" : "")
@@ -313,7 +317,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("f") : ":"
                     secondaryText: !root.symbolMode ? "$" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("f") : ":")
                     onHeld: km.tapSymbol(!root.symbolMode ? "$" : "")
@@ -322,7 +326,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("g") : ";"
                     secondaryText: !root.symbolMode ? "%" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("g") : ";")
                     onHeld: km.tapSymbol(!root.symbolMode ? "%" : "")
@@ -331,7 +335,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("h") : "!"
                     secondaryText: !root.symbolMode ? "^" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("h") : "!")
                     onHeld: km.tapSymbol(!root.symbolMode ? "^" : "")
@@ -340,7 +344,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("j") : "?"
                     secondaryText: !root.symbolMode ? "&" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("j") : "?")
                     onHeld: km.tapSymbol(!root.symbolMode ? "&" : "")
@@ -349,7 +353,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("k") : "/"
                     secondaryText: !root.symbolMode ? "*" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("k") : "/")
                     onHeld: km.tapSymbol(!root.symbolMode ? "*" : "")
@@ -358,7 +362,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("l") : "\\"
                     secondaryText: !root.symbolMode ? "?" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("l") : "\\")
                     onHeld: km.tapSymbol(!root.symbolMode ? "?" : "")
@@ -418,7 +422,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("z") : "<"
                     secondaryText: !root.symbolMode ? "`" : "`"
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("z") : "<")
                     onHeld: km.tapSymbol("`")
@@ -427,7 +431,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("x") : ">"
                     secondaryText: !root.symbolMode ? "+" : "|"
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("x") : ">")
                     onHeld: km.tapSymbol(!root.symbolMode ? "+" : "|")
@@ -436,7 +440,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("c") : "["
                     secondaryText: !root.symbolMode ? "-" : "{"
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("c") : "[")
                     onHeld: km.tapSymbol(!root.symbolMode ? "-" : "{")
@@ -445,7 +449,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("v") : "]"
                     secondaryText: !root.symbolMode ? "{" : "}"
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("v") : "]")
                     onHeld: km.tapSymbol(!root.symbolMode ? "{" : "}")
@@ -454,7 +458,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("b") : "{"
                     secondaryText: !root.symbolMode ? "}" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("b") : "{")
                     onHeld: km.tapSymbol(!root.symbolMode ? "}" : "")
@@ -463,7 +467,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("n") : "}"
                     secondaryText: !root.symbolMode ? ":" : ""
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("n") : "}")
                     onHeld: km.tapSymbol(!root.symbolMode ? ":" : "")
@@ -472,7 +476,7 @@ ColumnLayout {
                     text: !root.symbolMode ? l("m") : "="
                     secondaryText: !root.symbolMode ? ";" : "+"
                     weight: 1.0
-                    swipeEnabled: !root.symbolMode
+                    swipeEnabled: letterSwipeActive
                     gestureTracker: gestureCoordinator
                     onClicked: km.tapSymbol(!root.symbolMode ? l("m") : "=")
                     onHeld: km.tapSymbol(!root.symbolMode ? ";" : "+")

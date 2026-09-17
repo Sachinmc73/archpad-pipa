@@ -438,6 +438,19 @@ void KeyboardManager::loadSettings()
         s.value(QStringLiteral("slot3_meta"), false).toBool()
     };
     s.endGroup();
+
+    s.beginGroup(QStringLiteral("Swipe"));
+    m_swipeEnabled = s.value(QStringLiteral("enabled"), true).toBool();
+    m_swipeTrailEnabled = s.value(QStringLiteral("trailEnabled"), true).toBool();
+    m_swipeAutoInsert = s.value(QStringLiteral("autoInsert"), true).toBool();
+    m_swipeStrokeWidth = s.value(QStringLiteral("strokeWidth"), 8.0).toReal();
+    m_swipeDecayMs = s.value(QStringLiteral("decayDurationMs"), 280).toInt();
+    m_swipeTrailColor = s.value(QStringLiteral("trailColor"), QStringLiteral("#3399ff")).toString();
+    s.endGroup();
+
+    if (m_swipeStrokeWidth < 2.0) m_swipeStrokeWidth = 2.0;
+    if (m_swipeStrokeWidth > 24.0) m_swipeStrokeWidth = 24.0;
+    m_swipeDecayMs = qBound(100, m_swipeDecayMs, 1000);
 }
 
 void KeyboardManager::saveSettings()
@@ -474,6 +487,16 @@ void KeyboardManager::saveSettings()
         s.setValue(QStringLiteral("slot%1_meta").arg(i), m_quickPadSlots[i].meta);
     }
     s.endGroup();
+
+    s.beginGroup(QStringLiteral("Swipe"));
+    s.setValue(QStringLiteral("enabled"), m_swipeEnabled);
+    s.setValue(QStringLiteral("trailEnabled"), m_swipeTrailEnabled);
+    s.setValue(QStringLiteral("autoInsert"), m_swipeAutoInsert);
+    s.setValue(QStringLiteral("strokeWidth"), m_swipeStrokeWidth);
+    s.setValue(QStringLiteral("decayDurationMs"), m_swipeDecayMs);
+    s.setValue(QStringLiteral("trailColor"), m_swipeTrailColor);
+    s.endGroup();
+
     s.sync();
 }
 
@@ -656,6 +679,62 @@ void KeyboardManager::setSplitPinned(bool pinned)
         m_splitPinned = pinned;
         saveSettings();
         Q_EMIT splitPinnedChanged(m_splitPinned);
+    }
+}
+
+void KeyboardManager::setSwipeEnabled(bool enabled)
+{
+    if (m_swipeEnabled != enabled) {
+        m_swipeEnabled = enabled;
+        scheduleSaveSettings();
+        Q_EMIT swipeEnabledChanged(m_swipeEnabled);
+    }
+}
+
+void KeyboardManager::setSwipeTrailEnabled(bool enabled)
+{
+    if (m_swipeTrailEnabled != enabled) {
+        m_swipeTrailEnabled = enabled;
+        scheduleSaveSettings();
+        Q_EMIT swipeTrailEnabledChanged(m_swipeTrailEnabled);
+    }
+}
+
+void KeyboardManager::setSwipeAutoInsert(bool autoInsert)
+{
+    if (m_swipeAutoInsert != autoInsert) {
+        m_swipeAutoInsert = autoInsert;
+        scheduleSaveSettings();
+        Q_EMIT swipeAutoInsertChanged(m_swipeAutoInsert);
+    }
+}
+
+void KeyboardManager::setSwipeStrokeWidth(qreal width)
+{
+    width = qBound(2.0, width, 24.0);
+    if (qAbs(m_swipeStrokeWidth - width) > 0.01) {
+        m_swipeStrokeWidth = width;
+        scheduleSaveSettings();
+        Q_EMIT swipeStrokeWidthChanged(m_swipeStrokeWidth);
+    }
+}
+
+void KeyboardManager::setSwipeDecayMs(int ms)
+{
+    ms = qBound(100, ms, 1000);
+    if (m_swipeDecayMs != ms) {
+        m_swipeDecayMs = ms;
+        scheduleSaveSettings();
+        Q_EMIT swipeDecayMsChanged(m_swipeDecayMs);
+    }
+}
+
+void KeyboardManager::setSwipeTrailColor(const QString &color)
+{
+    if (m_swipeTrailColor != color && !color.isEmpty()) {
+        m_swipeTrailColor = color;
+        scheduleSaveSettings();
+        Q_EMIT swipeTrailColorChanged(m_swipeTrailColor);
     }
 }
 
@@ -1310,12 +1389,16 @@ void KeyboardManager::selectSwipeAlternative(int index)
     const QString newCommit = altWord + QLatin1Char(' ');
 
     bool replaced = false;
-    if (m_textCommitBackend && m_textCommitBackend->isActive() && m_lastCommittedBytes > 0) {
-        replaced = m_textCommitBackend->replacePrevious(m_lastCommittedBytes, newCommit);
+    if (m_textCommitBackend && m_textCommitBackend->isActive()) {
+        if (m_lastCommittedBytes > 0) {
+            replaced = m_textCommitBackend->replacePrevious(m_lastCommittedBytes, newCommit);
+        } else {
+            replaced = m_textCommitBackend->commitText(newCommit);
+        }
     }
 
     if (!replaced) {
-        qWarning() << "[KeyboardManager] ReplacePrevious failed or backend inactive";
+        tapText(newCommit);
     }
 
     m_lastCommittedWord = altWord;
@@ -1348,6 +1431,16 @@ void KeyboardManager::handleDecodeFinished(quint64 reqId, const QStringList &can
 
     if (candidates.isEmpty()) {
         dismissSwipeAlternatives();
+        return;
+    }
+
+    if (!m_swipeAutoInsert) {
+        // Manual insertion mode: show up to 4 candidates as selectable pills without auto-committing
+        m_lastCommittedWord.clear();
+        m_lastCommittedBytes = 0;
+        m_lastCommittedSerial = 0;
+        m_swipeAlternatives = candidates.mid(0, 4);
+        Q_EMIT swipeAlternativesChanged(m_swipeAlternatives);
         return;
     }
 

@@ -94,6 +94,7 @@ QQC2.ApplicationWindow {
                         { name: "Appearance & Sound", icon: "sun", desc: "Theme, height scale, audio click" },
                         { name: "Quick-Pad Macros", icon: "quickpad", desc: "Custom popup keys & macros" },
                         { name: "Typing & Layout", icon: "split", desc: "Split thumb mode, floating width" },
+                        { name: "Gesture & Swipe", icon: "gesture", desc: "FUTO neural swipe typing, trail & models" },
                         { name: "Top Bar Quick Pins", icon: "pin", desc: "Header bar tools & pins" },
                         { name: "Input Timing", icon: "height", desc: "Long-press hold delay" },
                         { name: "System & Info", icon: "settings", desc: "Subsystem diagnostics & reset" }
@@ -248,9 +249,10 @@ QQC2.ApplicationWindow {
                                     case 0: return "Appearance & Sound"
                                     case 1: return "Quick-Pad Macros"
                                     case 2: return "Typing & Layout"
-                                    case 3: return "Top Bar Quick Pins"
-                                    case 4: return "Input Timing"
-                                    case 5: return "System & Diagnostics"
+                                    case 3: return "Gesture & Swipe Typing"
+                                    case 4: return "Top Bar Quick Pins"
+                                    case 5: return "Input Timing"
+                                    case 6: return "System & Diagnostics"
                                     default: return "Settings"
                                     }
                                 }
@@ -264,14 +266,15 @@ QQC2.ApplicationWindow {
                             Text {
                                 text: {
                                     switch (controller.selectedCategory) {
-                                    case 0: return "Customize theme styles, height scaling, and keypress audio feedback"
-                                    case 1: return "Configure custom popup macro pad with up to 4 quick action keys"
-                                    case 2: return "Configure ergonomic split thumb typing and floating window dimensions"
-                                    case 3: return "Choose which tools and toggles appear on the keyboard's header bar"
-                                    case 4: return "Tune the hold delay used for secondary key actions"
-                                    case 5: return "Inspect daemon D-Bus connectivity, system paths, or restore defaults"
-                                    default: return ""
-                                    }
+                                     case 0: return "Customize theme styles, height scaling, and keypress audio feedback"
+                                     case 1: return "Configure custom popup macro pad with up to 4 quick action keys"
+                                     case 2: return "Configure ergonomic split thumb typing and floating window dimensions"
+                                     case 3: return "Configure FUTO neural gesture typing, GPU trail styling, and engine memory"
+                                     case 4: return "Choose which tools and toggles appear on the keyboard's header bar"
+                                     case 5: return "Tune the hold delay used for secondary key actions"
+                                     case 6: return "Inspect daemon D-Bus connectivity, system paths, or restore defaults"
+                                     default: return ""
+                                     }
                                 }
                                 font.family: theme.fontFamily
                                 font.pixelSize: 11
@@ -1672,7 +1675,478 @@ QQC2.ApplicationWindow {
                     }
 
                     // ==========================================
-                    // VIEW 3: TOP BAR QUICK PINS
+                    // VIEW 3: GESTURE & SWIPE TYPING
+                    // ==========================================
+                    Item {
+                        id: viewSwipe
+                        Flickable {
+                            anchors.fill: parent
+                            contentHeight: swipeCol.height + 32
+                            boundsBehavior: Flickable.StopAtBounds
+                            clip: true
+
+                            ColumnLayout {
+                                id: swipeCol
+                                width: parent.width - (root.narrowLayout ? 24 : 40)
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.top: parent.top
+                                anchors.topMargin: 16
+                                spacing: 16
+
+                                // Card 1: Master Enable Toggle
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: 72
+                                    radius: theme.cardRadius
+                                    color: theme.surfaceColor
+                                    border.color: theme.borderColor
+                                    border.width: 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 16
+                                        spacing: 12
+
+                                        VectorIcon {
+                                            name: "gesture"
+                                            implicitWidth: 22
+                                            implicitHeight: 22
+                                            color: controller.swipeEnabled ? theme.keyActiveColor : theme.textSecondaryColor
+                                            strokeWidth: 2.2
+                                        }
+
+                                        ColumnLayout {
+                                            spacing: 1
+                                            Text {
+                                                text: "Swipe Gesture Typing in Floating Layout"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 13
+                                                font.weight: Font.Bold
+                                                color: theme.textColor
+                                            }
+                                            Text {
+                                                text: "Glide finger across letter rows continuously to spell words via FUTO neural decoding"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 11
+                                                color: theme.textSecondaryColor
+                                            }
+                                        }
+
+                                        Item { Layout.fillWidth: true }
+
+                                        QQC2.Switch {
+                                            checked: controller.swipeEnabled
+                                            onToggled: controller.swipeEnabled = checked
+                                        }
+                                    }
+                                }
+
+                                // Card 2: Auto-Commit vs Manual Pill Tap
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: 72
+                                    radius: theme.cardRadius
+                                    color: theme.surfaceColor
+                                    border.color: theme.borderColor
+                                    border.width: 1
+                                    opacity: controller.swipeEnabled ? 1.0 : 0.5
+                                    enabled: controller.swipeEnabled
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 16
+                                        spacing: 12
+
+                                        VectorIcon {
+                                            name: "floating"
+                                            implicitWidth: 22
+                                            implicitHeight: 22
+                                            color: theme.textColor
+                                        }
+
+                                        ColumnLayout {
+                                            spacing: 1
+                                            Text {
+                                                text: "Auto-Insert Top Candidate Word"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 13
+                                                font.weight: Font.Bold
+                                                color: theme.textColor
+                                            }
+                                            Text {
+                                                text: controller.swipeAutoInsert
+                                                      ? "Automatically commits top candidate + space on lift; alternative pills remain in top bar"
+                                                      : "Shows candidate pills in top bar without auto-committing text until explicitly tapped"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 11
+                                                color: theme.textSecondaryColor
+                                            }
+                                        }
+
+                                        Item { Layout.fillWidth: true }
+
+                                        QQC2.Switch {
+                                            checked: controller.swipeAutoInsert
+                                            onToggled: controller.swipeAutoInsert = checked
+                                        }
+                                    }
+                                }
+
+                                // Card 3: GPU Gesture Trail Toggle
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: 72
+                                    radius: theme.cardRadius
+                                    color: theme.surfaceColor
+                                    border.color: theme.borderColor
+                                    border.width: 1
+                                    opacity: controller.swipeEnabled ? 1.0 : 0.5
+                                    enabled: controller.swipeEnabled
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 16
+                                        spacing: 12
+
+                                        VectorIcon {
+                                            name: "sun"
+                                            implicitWidth: 22
+                                            implicitHeight: 22
+                                            color: theme.textColor
+                                        }
+
+                                        ColumnLayout {
+                                            spacing: 1
+                                            Text {
+                                                text: "GPU Scene Graph Gesture Trail"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 13
+                                                font.weight: Font.Bold
+                                                color: theme.textColor
+                                            }
+                                            Text {
+                                                text: "Renders a smooth hardware-accelerated fading touch trail following your finger at 120Hz"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 11
+                                                color: theme.textSecondaryColor
+                                            }
+                                        }
+
+                                        Item { Layout.fillWidth: true }
+
+                                        QQC2.Switch {
+                                            checked: controller.swipeTrailEnabled
+                                            onToggled: controller.swipeTrailEnabled = checked
+                                        }
+                                    }
+                                }
+
+                                // Card 4: Trail Styling & Appearance (Sliders + Color presets)
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: trailStyleCol.implicitHeight + 28
+                                    radius: theme.cardRadius
+                                    color: theme.surfaceColor
+                                    border.color: theme.borderColor
+                                    border.width: 1
+                                    opacity: (controller.swipeEnabled && controller.swipeTrailEnabled) ? 1.0 : 0.4
+                                    enabled: controller.swipeEnabled && controller.swipeTrailEnabled
+
+                                    ColumnLayout {
+                                        id: trailStyleCol
+                                        anchors.fill: parent
+                                        anchors.margins: 16
+                                        spacing: 14
+
+                                        Text {
+                                            text: "Trail Appearance & Dynamics"
+                                            font.family: theme.fontFamily
+                                            font.pixelSize: 13
+                                            font.weight: Font.Bold
+                                            color: theme.textColor
+                                        }
+
+                                        // Stroke Width Slider
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 4
+
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                Text {
+                                                    text: "Trail Thickness"
+                                                    font.family: theme.fontFamily
+                                                    font.pixelSize: 12
+                                                    color: theme.textColor
+                                                }
+                                                Item { Layout.fillWidth: true }
+                                                Text {
+                                                    text: Math.round(controller.swipeStrokeWidth) + " px"
+                                                    font.family: theme.fontFamily
+                                                    font.pixelSize: 12
+                                                    font.weight: Font.Bold
+                                                    color: theme.keyActiveColor
+                                                }
+                                            }
+
+                                            QQC2.Slider {
+                                                Layout.fillWidth: true
+                                                from: 4.0
+                                                to: 18.0
+                                                stepSize: 1.0
+                                                value: controller.swipeStrokeWidth
+                                                onMoved: controller.swipeStrokeWidth = value
+                                            }
+                                        }
+
+                                        // Decay Duration Slider
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 4
+
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                Text {
+                                                    text: "Trail Fade Decay Duration"
+                                                    font.family: theme.fontFamily
+                                                    font.pixelSize: 12
+                                                    color: theme.textColor
+                                                }
+                                                Item { Layout.fillWidth: true }
+                                                Text {
+                                                    text: controller.swipeDecayMs + " ms"
+                                                    font.family: theme.fontFamily
+                                                    font.pixelSize: 12
+                                                    font.weight: Font.Bold
+                                                    color: theme.keyActiveColor
+                                                }
+                                            }
+
+                                            QQC2.Slider {
+                                                Layout.fillWidth: true
+                                                from: 150
+                                                to: 600
+                                                stepSize: 10
+                                                value: controller.swipeDecayMs
+                                                onMoved: controller.swipeDecayMs = value
+                                            }
+                                        }
+
+                                        // Color Presets
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 8
+
+                                            Text {
+                                                text: "Trail Accent Color"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 12
+                                                color: theme.textColor
+                                            }
+
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 8
+
+                                                Repeater {
+                                                    model: [
+                                                        { name: "Arch Blue", hex: "#3399ff" },
+                                                        { name: "Cyber Cyan", hex: "#00e5ff" },
+                                                        { name: "Plasma Purple", hex: "#a855f7" },
+                                                        { name: "Neon Green", hex: "#22c55e" },
+                                                        { name: "Sunset Orange", hex: "#f97316" }
+                                                    ]
+
+                                                    Rectangle {
+                                                        id: colorPill
+                                                        implicitHeight: 32
+                                                        Layout.fillWidth: true
+                                                        radius: 6
+                                                        color: modelData.hex
+                                                        border.color: controller.swipeTrailColor.toLowerCase() === modelData.hex.toLowerCase() ? theme.textColor : "transparent"
+                                                        border.width: controller.swipeTrailColor.toLowerCase() === modelData.hex.toLowerCase() ? 2 : 0
+
+                                                        Text {
+                                                            anchors.centerIn: parent
+                                                            text: modelData.name
+                                                            font.family: theme.fontFamily
+                                                            font.pixelSize: 11
+                                                            font.weight: Font.Bold
+                                                            color: "#ffffff"
+                                                            style: Text.Outline
+                                                            styleColor: "#40000000"
+                                                        }
+
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            onClicked: controller.swipeTrailColor = modelData.hex
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Card 5: Neural Engine Status & Memory Management
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: engineCol.implicitHeight + 28
+                                    radius: theme.cardRadius
+                                    color: theme.surfaceColor
+                                    border.color: theme.borderColor
+                                    border.width: 1
+
+                                    ColumnLayout {
+                                        id: engineCol
+                                        anchors.fill: parent
+                                        anchors.margins: 16
+                                        spacing: 12
+
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 12
+
+                                            VectorIcon {
+                                                name: "settings"
+                                                implicitWidth: 20
+                                                implicitHeight: 20
+                                                color: theme.textColor
+                                            }
+
+                                            ColumnLayout {
+                                                spacing: 1
+                                                Text {
+                                                    text: "FUTO Neural Engine Lifecycle & Memory"
+                                                    font.family: theme.fontFamily
+                                                    font.pixelSize: 13
+                                                    font.weight: Font.Bold
+                                                    color: theme.textColor
+                                                }
+                                                Text {
+                                                    text: "Honorable Sturgeon encoder + Magic Macaw decoder + Hungry Jellyfish LM"
+                                                    font.family: theme.fontFamily
+                                                    font.pixelSize: 11
+                                                    color: theme.textSecondaryColor
+                                                }
+                                            }
+
+                                            Item { Layout.fillWidth: true }
+
+                                            // Status Badge
+                                            Rectangle {
+                                                implicitWidth: stateText.implicitWidth + 16
+                                                implicitHeight: 26
+                                                radius: 13
+                                                color: controller.swipeEngineState === "Ready"
+                                                       ? (theme.isDark ? "#1B432C" : "#D4EDDA")
+                                                       : (controller.swipeEngineState === "Loading"
+                                                          ? (theme.isDark ? "#4B3D1B" : "#FFF3CD")
+                                                          : (theme.isDark ? "#2D3035" : "#E2E3E5"))
+                                                border.color: controller.swipeEngineState === "Ready"
+                                                              ? "#28A745"
+                                                              : (controller.swipeEngineState === "Loading" ? "#FFC107" : "#6C757D")
+                                                border.width: 1
+
+                                                Text {
+                                                    id: stateText
+                                                    anchors.centerIn: parent
+                                                    text: "● " + controller.swipeEngineState
+                                                    font.family: theme.fontFamily
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.Bold
+                                                    color: controller.swipeEngineState === "Ready"
+                                                           ? "#28A745"
+                                                           : (controller.swipeEngineState === "Loading" ? "#856404" : "#6C757D")
+                                                }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            implicitHeight: 1
+                                            color: theme.dividerColor
+                                        }
+
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 12
+
+                                            Text {
+                                                text: "Resident Memory (PSS):"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 12
+                                                color: theme.textColor
+                                            }
+
+                                            Text {
+                                                text: (controller.swipeMemoryPssKiB > 0)
+                                                      ? Math.round(controller.swipeMemoryPssKiB / 1024.0) + " MiB (" + controller.swipeMemoryPssKiB + " KiB)"
+                                                      : "0 MiB (Standby)"
+                                                font.family: theme.fontFamily
+                                                font.pixelSize: 12
+                                                font.weight: Font.Bold
+                                                color: theme.textColor
+                                            }
+
+                                            Item { Layout.fillWidth: true }
+
+                                            QQC2.Button {
+                                                text: "Unload Engine"
+                                                enabled: controller.swipeEngineState === "Ready"
+                                                onClicked: controller.unloadSwipeEngine()
+                                            }
+
+                                            QQC2.Button {
+                                                text: "Reload Engine"
+                                                enabled: controller.swipeEngineState !== "Ready"
+                                                onClicked: controller.loadSwipeEngine()
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Card 6: Compositor Protocol Diagnostic
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: diagCol.implicitHeight + 24
+                                    radius: theme.cardRadius
+                                    color: theme.surfaceColor
+                                    border.color: theme.borderColor
+                                    border.width: 1
+
+                                    ColumnLayout {
+                                        id: diagCol
+                                        anchors.fill: parent
+                                        anchors.margins: 16
+                                        spacing: 8
+
+                                        Text {
+                                            text: "Compositor Protocol Diagnostic"
+                                            font.family: theme.fontFamily
+                                            font.pixelSize: 13
+                                            font.weight: Font.Bold
+                                            color: theme.textColor
+                                        }
+
+                                        Text {
+                                            text: "• Wayland Protocol: zwp_input_method_v1 (Active on KWin Wayland)\n" +
+                                                  "• Text Commit: UTF-8 commit_string & delete_surrounding_text\n" +
+                                                  "• LayerShell Surface: KeyboardInteractivityNone (zero focus stealing)\n" +
+                                                  "• Security & Privacy: Automatic suppression in password/PIN/terminal fields"
+                                            font.family: theme.fontFamily
+                                            font.pixelSize: 11
+                                            color: theme.textSecondaryColor
+                                            lineHeight: 1.4
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ==========================================
+                    // VIEW 4: TOP BAR QUICK PINS
                     // ==========================================
                     Item {
                         id: viewPins
@@ -1801,7 +2275,7 @@ QQC2.ApplicationWindow {
                     }
 
                     // ==========================================
-                    // VIEW 4: INPUT TIMING
+                    // VIEW 5: INPUT TIMING
                     // ==========================================
                     Item {
                         id: viewInputTiming
@@ -1912,7 +2386,7 @@ QQC2.ApplicationWindow {
                     }
 
                     // ==========================================
-                    // VIEW 5: SYSTEM & DIAGNOSTICS
+                    // VIEW 6: SYSTEM & DIAGNOSTICS
                     // ==========================================
                     Item {
                         id: viewSystem

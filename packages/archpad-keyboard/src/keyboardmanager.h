@@ -62,6 +62,12 @@ class KeyboardManager : public QObject
     Q_PROPERTY(QString swipeState READ swipeState NOTIFY swipeStateChanged)
     Q_PROPERTY(QStringList swipeAlternatives READ swipeAlternatives NOTIFY swipeAlternativesChanged)
     Q_PROPERTY(bool hasSwipeAlternatives READ hasSwipeAlternatives NOTIFY swipeAlternativesChanged)
+    Q_PROPERTY(bool swipeEnabled READ swipeEnabled WRITE setSwipeEnabled NOTIFY swipeEnabledChanged)
+    Q_PROPERTY(bool swipeTrailEnabled READ swipeTrailEnabled WRITE setSwipeTrailEnabled NOTIFY swipeTrailEnabledChanged)
+    Q_PROPERTY(bool swipeAutoInsert READ swipeAutoInsert WRITE setSwipeAutoInsert NOTIFY swipeAutoInsertChanged)
+    Q_PROPERTY(qreal swipeStrokeWidth READ swipeStrokeWidth WRITE setSwipeStrokeWidth NOTIFY swipeStrokeWidthChanged)
+    Q_PROPERTY(int swipeDecayMs READ swipeDecayMs WRITE setSwipeDecayMs NOTIFY swipeDecayMsChanged)
+    Q_PROPERTY(QString swipeTrailColor READ swipeTrailColor WRITE setSwipeTrailColor NOTIFY swipeTrailColorChanged)
 
 public:
     struct QuickPadSlot {
@@ -184,6 +190,18 @@ public:
     QString swipeState() const;
     QStringList swipeAlternatives() const { return m_swipeAlternatives; }
     bool hasSwipeAlternatives() const { return !m_swipeAlternatives.isEmpty(); }
+    bool swipeEnabled() const { return m_swipeEnabled; }
+    void setSwipeEnabled(bool enabled);
+    bool swipeTrailEnabled() const { return m_swipeTrailEnabled; }
+    void setSwipeTrailEnabled(bool enabled);
+    bool swipeAutoInsert() const { return m_swipeAutoInsert; }
+    void setSwipeAutoInsert(bool autoInsert);
+    qreal swipeStrokeWidth() const { return m_swipeStrokeWidth; }
+    void setSwipeStrokeWidth(qreal width);
+    int swipeDecayMs() const { return m_swipeDecayMs; }
+    void setSwipeDecayMs(int ms);
+    QString swipeTrailColor() const { return m_swipeTrailColor; }
+    void setSwipeTrailColor(const QString &color);
 
     Q_INVOKABLE void requestSwipeDecode(quint64 requestId, const QVariantList &points, const QStringList &contextWords);
     Q_INVOKABLE void selectSwipeAlternative(int index);
@@ -205,6 +223,12 @@ public Q_SLOTS:
     void UnloadSwipeEngine() { unloadSwipeEngine(); }
     QString GetSwipeState() { return swipeState(); }
     qulonglong GetSwipeMemoryPssKiB() { return static_cast<qulonglong>(getSwipeMemoryPssKiB()); }
+    void SetSwipeEnabled(bool enabled) { setSwipeEnabled(enabled); }
+    void SetSwipeTrailEnabled(bool enabled) { setSwipeTrailEnabled(enabled); }
+    void SetSwipeAutoInsert(bool autoInsert) { setSwipeAutoInsert(autoInsert); }
+    void SetSwipeStrokeWidth(double width) { setSwipeStrokeWidth(width); }
+    void SetSwipeDecayMs(int ms) { setSwipeDecayMs(ms); }
+    void SetSwipeTrailColor(const QString &color) { setSwipeTrailColor(color); }
     void SetFloating(bool floating);
     void OpenSettingsApp();
     void CycleThemeMode();
@@ -278,6 +302,12 @@ Q_SIGNALS:
     void swipeCandidatesReady(quint64 requestId, const QStringList &candidates, const QVariantMap &timings);
     void swipeDecodeError(quint64 requestId, const QString &errorMessage);
     void swipeAlternativesChanged(const QStringList &alternatives);
+    void swipeEnabledChanged(bool enabled);
+    void swipeTrailEnabledChanged(bool enabled);
+    void swipeAutoInsertChanged(bool autoInsert);
+    void swipeStrokeWidthChanged(double width);
+    void swipeDecayMsChanged(int ms);
+    void swipeTrailColorChanged(const QString &color);
 
 private:
     bool initUInput();
@@ -344,4 +374,11 @@ private:
     QString m_lastCommittedWord;
     size_t m_lastCommittedBytes = 0;
     uint32_t m_lastCommittedSerial = 0;
+
+    bool m_swipeEnabled = true;
+    bool m_swipeTrailEnabled = true;
+    bool m_swipeAutoInsert = true;
+    qreal m_swipeStrokeWidth = 8.0;
+    int m_swipeDecayMs = 280;
+    QString m_swipeTrailColor = QStringLiteral("#3399ff");
 };

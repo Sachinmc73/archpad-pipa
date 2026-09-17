@@ -38,6 +38,14 @@ class SettingsController : public QObject
     Q_PROPERTY(int configRevision READ configRevision NOTIFY quickPadConfigChanged)
     Q_PROPERTY(int longPressDelay READ longPressDelay WRITE setLongPressDelay NOTIFY longPressDelayChanged)
     Q_PROPERTY(int selectedCategory READ selectedCategory WRITE setSelectedCategory NOTIFY selectedCategoryChanged)
+    Q_PROPERTY(bool swipeEnabled READ swipeEnabled WRITE setSwipeEnabled NOTIFY swipeEnabledChanged)
+    Q_PROPERTY(bool swipeTrailEnabled READ swipeTrailEnabled WRITE setSwipeTrailEnabled NOTIFY swipeTrailEnabledChanged)
+    Q_PROPERTY(bool swipeAutoInsert READ swipeAutoInsert WRITE setSwipeAutoInsert NOTIFY swipeAutoInsertChanged)
+    Q_PROPERTY(qreal swipeStrokeWidth READ swipeStrokeWidth WRITE setSwipeStrokeWidth NOTIFY swipeStrokeWidthChanged)
+    Q_PROPERTY(int swipeDecayMs READ swipeDecayMs WRITE setSwipeDecayMs NOTIFY swipeDecayMsChanged)
+    Q_PROPERTY(QString swipeTrailColor READ swipeTrailColor WRITE setSwipeTrailColor NOTIFY swipeTrailColorChanged)
+    Q_PROPERTY(QString swipeEngineState READ swipeEngineState NOTIFY swipeEngineStateChanged)
+    Q_PROPERTY(quint64 swipeMemoryPssKiB READ swipeMemoryPssKiB NOTIFY swipeMemoryPssKiBChanged)
 
 public:
     explicit SettingsController(QObject *parent = nullptr);
@@ -128,6 +136,25 @@ public:
     Q_INVOKABLE void selectSoundProfile(int profile);
     Q_INVOKABLE void resetToDefaults();
 
+    bool swipeEnabled() const { return m_swipeEnabled; }
+    void setSwipeEnabled(bool enabled);
+    bool swipeTrailEnabled() const { return m_swipeTrailEnabled; }
+    void setSwipeTrailEnabled(bool enabled);
+    bool swipeAutoInsert() const { return m_swipeAutoInsert; }
+    void setSwipeAutoInsert(bool autoInsert);
+    qreal swipeStrokeWidth() const { return m_swipeStrokeWidth; }
+    void setSwipeStrokeWidth(qreal width);
+    int swipeDecayMs() const { return m_swipeDecayMs; }
+    void setSwipeDecayMs(int ms);
+    QString swipeTrailColor() const { return m_swipeTrailColor; }
+    void setSwipeTrailColor(const QString &color);
+    QString swipeEngineState() const { return m_swipeEngineState; }
+    quint64 swipeMemoryPssKiB() const { return m_swipeMemoryPssKiB; }
+
+    Q_INVOKABLE void loadSwipeEngine();
+    Q_INVOKABLE void unloadSwipeEngine();
+    Q_INVOKABLE void refreshSwipeMetrics();
+
 public Q_SLOTS:
     void Activate();
     void SetCategory(int cat) { setSelectedCategory(cat); }
@@ -152,6 +179,14 @@ Q_SIGNALS:
     void quickPadConfigChanged();
     void longPressDelayChanged(int ms);
     void selectedCategoryChanged(int cat);
+    void swipeEnabledChanged(bool enabled);
+    void swipeTrailEnabledChanged(bool enabled);
+    void swipeAutoInsertChanged(bool autoInsert);
+    void swipeStrokeWidthChanged(double width);
+    void swipeDecayMsChanged(int ms);
+    void swipeTrailColorChanged(const QString &color);
+    void swipeEngineStateChanged(const QString &state);
+    void swipeMemoryPssKiBChanged(quint64 pssKiB);
 
 private Q_SLOTS:
     void onThemeModeChanged(int mode);
@@ -170,6 +205,13 @@ private Q_SLOTS:
     void onQuickPadKeyCountChanged(int count);
     void onQuickPadSizeChanged(double size);
     void onQuickPadConfigChanged();
+    void onSwipeEnabledChanged(bool enabled);
+    void onSwipeTrailEnabledChanged(bool enabled);
+    void onSwipeAutoInsertChanged(bool autoInsert);
+    void onSwipeStrokeWidthChanged(double width);
+    void onSwipeDecayMsChanged(int ms);
+    void onSwipeTrailColorChanged(const QString &color);
+    void onSwipeStateChanged(const QString &state);
 
 private:
     void loadSettings();
@@ -200,6 +242,15 @@ private:
     int m_configRevision = 0;
     int m_longPressDelay = 350;
     int m_selectedCategory = 0;
+
+    bool m_swipeEnabled = true;
+    bool m_swipeTrailEnabled = true;
+    bool m_swipeAutoInsert = true;
+    qreal m_swipeStrokeWidth = 8.0;
+    int m_swipeDecayMs = 280;
+    QString m_swipeTrailColor = QStringLiteral("#3399ff");
+    QString m_swipeEngineState = QStringLiteral("Unloaded");
+    quint64 m_swipeMemoryPssKiB = 0;
 
     QuickPadSlotConfig m_quickPadSlots[4];
 };

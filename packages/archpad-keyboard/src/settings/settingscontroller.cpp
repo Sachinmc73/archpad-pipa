@@ -26,6 +26,7 @@ SettingsController::SettingsController(QObject *parent)
         connect(watcher, &QDBusServiceWatcher::serviceRegistered, this, [this]() {
             m_daemonConnected = true;
             Q_EMIT daemonConnectedChanged(true);
+            refreshSwipeMetrics();
         });
         connect(watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this]() {
             m_daemonConnected = false;
@@ -33,6 +34,9 @@ SettingsController::SettingsController(QObject *parent)
         });
 
         connectDBusSignals();
+        if (m_daemonConnected) {
+            refreshSwipeMetrics();
+        }
     }
 }
 
@@ -67,6 +71,13 @@ void SettingsController::connectDBusSignals()
     bus.connect(service, path, iface, QStringLiteral("quickPadKeyCountChanged"), this, SLOT(onQuickPadKeyCountChanged(int)));
     bus.connect(service, path, iface, QStringLiteral("quickPadSizeChanged"), this, SLOT(onQuickPadSizeChanged(double)));
     bus.connect(service, path, iface, QStringLiteral("quickPadConfigChanged"), this, SLOT(onQuickPadConfigChanged()));
+    bus.connect(service, path, iface, QStringLiteral("swipeEnabledChanged"), this, SLOT(onSwipeEnabledChanged(bool)));
+    bus.connect(service, path, iface, QStringLiteral("swipeTrailEnabledChanged"), this, SLOT(onSwipeTrailEnabledChanged(bool)));
+    bus.connect(service, path, iface, QStringLiteral("swipeAutoInsertChanged"), this, SLOT(onSwipeAutoInsertChanged(bool)));
+    bus.connect(service, path, iface, QStringLiteral("swipeStrokeWidthChanged"), this, SLOT(onSwipeStrokeWidthChanged(double)));
+    bus.connect(service, path, iface, QStringLiteral("swipeDecayMsChanged"), this, SLOT(onSwipeDecayMsChanged(int)));
+    bus.connect(service, path, iface, QStringLiteral("swipeTrailColorChanged"), this, SLOT(onSwipeTrailColorChanged(QString)));
+    bus.connect(service, path, iface, QStringLiteral("swipeStateChanged"), this, SLOT(onSwipeStateChanged(QString)));
 }
 
 void SettingsController::onThemeModeChanged(int mode)
@@ -268,6 +279,19 @@ void SettingsController::loadSettings()
         s.value(QStringLiteral("slot3_meta"), false).toBool()
     };
     s.endGroup();
+
+    s.beginGroup(QStringLiteral("Swipe"));
+    m_swipeEnabled = s.value(QStringLiteral("enabled"), true).toBool();
+    m_swipeTrailEnabled = s.value(QStringLiteral("trailEnabled"), true).toBool();
+    m_swipeAutoInsert = s.value(QStringLiteral("autoInsert"), true).toBool();
+    m_swipeStrokeWidth = s.value(QStringLiteral("strokeWidth"), 8.0).toReal();
+    m_swipeDecayMs = s.value(QStringLiteral("decayDurationMs"), 280).toInt();
+    m_swipeTrailColor = s.value(QStringLiteral("trailColor"), QStringLiteral("#3399ff")).toString();
+    s.endGroup();
+
+    if (m_swipeStrokeWidth < 2.0) m_swipeStrokeWidth = 2.0;
+    if (m_swipeStrokeWidth > 24.0) m_swipeStrokeWidth = 24.0;
+    m_swipeDecayMs = qBound(100, m_swipeDecayMs, 1000);
 }
 
 void SettingsController::saveSettings()
@@ -304,6 +328,16 @@ void SettingsController::saveSettings()
         s.setValue(QStringLiteral("slot%1_meta").arg(i), m_quickPadSlots[i].meta);
     }
     s.endGroup();
+
+    s.beginGroup(QStringLiteral("Swipe"));
+    s.setValue(QStringLiteral("enabled"), m_swipeEnabled);
+    s.setValue(QStringLiteral("trailEnabled"), m_swipeTrailEnabled);
+    s.setValue(QStringLiteral("autoInsert"), m_swipeAutoInsert);
+    s.setValue(QStringLiteral("strokeWidth"), m_swipeStrokeWidth);
+    s.setValue(QStringLiteral("decayDurationMs"), m_swipeDecayMs);
+    s.setValue(QStringLiteral("trailColor"), m_swipeTrailColor);
+    s.endGroup();
+
     s.sync();
 }
 
@@ -735,9 +769,160 @@ void SettingsController::Activate()
 void SettingsController::setSelectedCategory(int cat)
 {
     if (cat < 0) cat = 0;
-    if (cat > 5) cat = 5;
+    if (cat > 6) cat = 6;
     if (m_selectedCategory != cat) {
         m_selectedCategory = cat;
         Q_EMIT selectedCategoryChanged(m_selectedCategory);
+    }
+}
+
+void SettingsController::onSwipeEnabledChanged(bool enabled)
+{
+    if (m_swipeEnabled != enabled) {
+        m_swipeEnabled = enabled;
+        Q_EMIT swipeEnabledChanged(enabled);
+    }
+}
+
+void SettingsController::onSwipeTrailEnabledChanged(bool enabled)
+{
+    if (m_swipeTrailEnabled != enabled) {
+        m_swipeTrailEnabled = enabled;
+        Q_EMIT swipeTrailEnabledChanged(enabled);
+    }
+}
+
+void SettingsController::onSwipeAutoInsertChanged(bool autoInsert)
+{
+    if (m_swipeAutoInsert != autoInsert) {
+        m_swipeAutoInsert = autoInsert;
+        Q_EMIT swipeAutoInsertChanged(autoInsert);
+    }
+}
+
+void SettingsController::onSwipeStrokeWidthChanged(double width)
+{
+    if (qAbs(m_swipeStrokeWidth - width) > 0.01) {
+        m_swipeStrokeWidth = width;
+        Q_EMIT swipeStrokeWidthChanged(m_swipeStrokeWidth);
+    }
+}
+
+void SettingsController::onSwipeDecayMsChanged(int ms)
+{
+    if (m_swipeDecayMs != ms) {
+        m_swipeDecayMs = ms;
+        Q_EMIT swipeDecayMsChanged(ms);
+    }
+}
+
+void SettingsController::onSwipeTrailColorChanged(const QString &color)
+{
+    if (m_swipeTrailColor != color && !color.isEmpty()) {
+        m_swipeTrailColor = color;
+        Q_EMIT swipeTrailColorChanged(color);
+    }
+}
+
+void SettingsController::onSwipeStateChanged(const QString &state)
+{
+    if (m_swipeEngineState != state) {
+        m_swipeEngineState = state;
+        Q_EMIT swipeEngineStateChanged(state);
+        refreshSwipeMetrics();
+    }
+}
+
+void SettingsController::setSwipeEnabled(bool enabled)
+{
+    if (m_swipeEnabled != enabled) {
+        m_swipeEnabled = enabled;
+        scheduleSaveSettings();
+        sendDBusAsync(QStringLiteral("SetSwipeEnabled"), { enabled });
+        Q_EMIT swipeEnabledChanged(enabled);
+    }
+}
+
+void SettingsController::setSwipeTrailEnabled(bool enabled)
+{
+    if (m_swipeTrailEnabled != enabled) {
+        m_swipeTrailEnabled = enabled;
+        scheduleSaveSettings();
+        sendDBusAsync(QStringLiteral("SetSwipeTrailEnabled"), { enabled });
+        Q_EMIT swipeTrailEnabledChanged(enabled);
+    }
+}
+
+void SettingsController::setSwipeAutoInsert(bool autoInsert)
+{
+    if (m_swipeAutoInsert != autoInsert) {
+        m_swipeAutoInsert = autoInsert;
+        scheduleSaveSettings();
+        sendDBusAsync(QStringLiteral("SetSwipeAutoInsert"), { autoInsert });
+        Q_EMIT swipeAutoInsertChanged(autoInsert);
+    }
+}
+
+void SettingsController::setSwipeStrokeWidth(qreal width)
+{
+    width = qBound(2.0, width, 24.0);
+    if (qAbs(m_swipeStrokeWidth - width) > 0.01) {
+        m_swipeStrokeWidth = width;
+        scheduleSaveSettings();
+        sendDBusAsync(QStringLiteral("SetSwipeStrokeWidth"), { (double)width });
+        Q_EMIT swipeStrokeWidthChanged(m_swipeStrokeWidth);
+    }
+}
+
+void SettingsController::setSwipeDecayMs(int ms)
+{
+    ms = qBound(100, ms, 1000);
+    if (m_swipeDecayMs != ms) {
+        m_swipeDecayMs = ms;
+        scheduleSaveSettings();
+        sendDBusAsync(QStringLiteral("SetSwipeDecayMs"), { ms });
+        Q_EMIT swipeDecayMsChanged(ms);
+    }
+}
+
+void SettingsController::setSwipeTrailColor(const QString &color)
+{
+    if (m_swipeTrailColor != color && !color.isEmpty()) {
+        m_swipeTrailColor = color;
+        scheduleSaveSettings();
+        sendDBusAsync(QStringLiteral("SetSwipeTrailColor"), { color });
+        Q_EMIT swipeTrailColorChanged(color);
+    }
+}
+
+void SettingsController::loadSwipeEngine()
+{
+    sendDBusAsync(QStringLiteral("LoadSwipeEngine"), {});
+    QTimer::singleShot(600, this, &SettingsController::refreshSwipeMetrics);
+}
+
+void SettingsController::unloadSwipeEngine()
+{
+    sendDBusAsync(QStringLiteral("UnloadSwipeEngine"), {});
+    QTimer::singleShot(300, this, &SettingsController::refreshSwipeMetrics);
+}
+
+void SettingsController::refreshSwipeMetrics()
+{
+    QDBusInterface iface(QStringLiteral("org.archpad.Keyboard"),
+                         QStringLiteral("/org/archpad/Keyboard"),
+                         QStringLiteral("org.archpad.Keyboard"),
+                         QDBusConnection::sessionBus());
+    if (iface.isValid()) {
+        QDBusReply<QString> stateReply = iface.call(QStringLiteral("GetSwipeState"));
+        if (stateReply.isValid()) {
+            m_swipeEngineState = stateReply.value();
+            Q_EMIT swipeEngineStateChanged(m_swipeEngineState);
+        }
+        QDBusReply<qulonglong> memReply = iface.call(QStringLiteral("GetSwipeMemoryPssKiB"));
+        if (memReply.isValid()) {
+            m_swipeMemoryPssKiB = memReply.value();
+            Q_EMIT swipeMemoryPssKiBChanged(m_swipeMemoryPssKiB);
+        }
     }
 }
