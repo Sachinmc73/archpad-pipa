@@ -216,6 +216,8 @@ public Q_SLOTS:
     void Hide();
     void Toggle();
     void ToggleFloating();
+    bool IsFloating() const { return m_isFloating; }
+    bool IsVisible() const { return m_isVisible; }
     void SelectSwipeAlternative(int index) { selectSwipeAlternative(index); }
     void DismissSwipeAlternatives() { dismissSwipeAlternatives(); }
     void SimulateSwipeCandidates(const QStringList &candidates);

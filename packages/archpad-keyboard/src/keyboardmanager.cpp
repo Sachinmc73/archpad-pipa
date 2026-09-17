@@ -36,7 +36,10 @@ KeyboardManager::KeyboardManager(QObject *parent)
     // Register DBus interface
     QDBusConnection connection = QDBusConnection::sessionBus();
     if (connection.isConnected()) {
-        if (!connection.registerObject(QStringLiteral("/org/archpad/Keyboard"), this, QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals)) {
+        if (!connection.registerObject(QStringLiteral("/org/archpad/Keyboard"), this,
+                                       QDBusConnection::ExportAllSlots |
+                                       QDBusConnection::ExportAllSignals |
+                                       QDBusConnection::ExportAllProperties)) {
             qWarning() << "Could not register DBus object /org/archpad/Keyboard:" << connection.lastError().message();
         }
 
@@ -171,6 +174,8 @@ KeyboardManager::~KeyboardManager()
     if (m_swipeThread) {
         m_swipeThread->quit();
         m_swipeThread->wait(1000);
+        delete m_swipeWorker;
+        m_swipeWorker = nullptr;
     }
     if (m_saveSettingsTimer && m_saveSettingsTimer->isActive()) {
         m_saveSettingsTimer->stop();
@@ -557,6 +562,7 @@ void KeyboardManager::setIsFloating(bool floating)
 {
     if (m_isFloating != floating) {
         m_isFloating = floating;
+        dismissSwipeAlternatives();
         scheduleSaveSettings();
         Q_EMIT isFloatingChanged(m_isFloating);
     }
@@ -566,6 +572,9 @@ void KeyboardManager::setIsVisible(bool visible)
 {
     if (m_isVisible != visible) {
         m_isVisible = visible;
+        if (!visible) {
+            clearTransientState();
+        }
         Q_EMIT isVisibleChanged(m_isVisible);
     }
 }
@@ -642,6 +651,7 @@ void KeyboardManager::setSplitMode(bool split)
 {
     if (m_splitMode != split) {
         m_splitMode = split;
+        dismissSwipeAlternatives();
         saveSettings();
         Q_EMIT splitModeChanged(m_splitMode);
     }
@@ -745,6 +755,7 @@ void KeyboardManager::setIsQuickPad(bool active)
 {
     if (m_isQuickPad != active) {
         m_isQuickPad = active;
+        dismissSwipeAlternatives();
         Q_EMIT isQuickPadChanged(m_isQuickPad);
     }
 }
@@ -1401,6 +1412,11 @@ void KeyboardManager::selectSwipeAlternative(int index)
     }
 
     if (!replaced) {
+        if (!m_lastCommittedWord.isEmpty()) {
+            for (int i = 0; i < m_lastCommittedWord.length() + 1; ++i) {
+                emitKeyPressAndRelease(KEY_BACKSPACE);
+            }
+        }
         tapText(newCommit);
     }
 
@@ -1441,6 +1457,7 @@ void KeyboardManager::handleDecodeFinished(quint64 reqId, const QStringList &can
     // Privacy/Terminal guard: never auto-commit in passwords, PINs, or terminals
     if (m_textCommitBackend && (m_textCommitBackend->isSensitiveField() || m_textCommitBackend->isTerminalField())) {
         qInfo() << "[KeyboardManager] Suppressed swipe commit in sensitive/terminal field";
+        dismissSwipeAlternatives();
         return;
     }
 
