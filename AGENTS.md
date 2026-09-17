@@ -163,3 +163,17 @@ This file is the authoritative guide and persistent memory for all AI agents wor
     each performance qualification.
   - When closed, the companion application consumes **0 MB RAM and 0% CPU**.
   - Real-time two-way IPC over D-Bus (`org.archpad.Keyboard` <-> `org.archpad.KeyboardSettings`) and INI configuration (`~/.config/archpad/keyboard.conf`) keeps keyboard parameters synchronized instantaneously.
+
+### J. Mobile MIPI DSI Video-Mode Panel Sequencing & The DSI FIFO Collision
+- **The Dual-DSI / DSC Command-During-Video Pitfall**:
+  - In Qualcomm SM8250 bonded dual-DSI video mode, active pixel streaming is driven by continuous hardware timing engines (`msm_dsi_bridge_enable()`).
+  - Mobile panels with Display Stream Compression (DSC) like Novatek NT36532 MUST receive panel initialization, DSC Picture Parameter Set (PPS), and compression enabling commands strictly during `.prepare = nt36532_prepare` while the DSI host is in Low-Power Command Mode (LPM).
+  - **CRITICAL TRAP**: If the panel driver also defines `.enable = nt36532_enable` and transmits DSC PPS or display-on commands there, DRM modeset will start the active video stream *before* `.enable` executes. Firing command DMA packets into an active video stream starves the DSI DMA hardware FIFO, logging `dsi_err_worker: status=5` ($0\text{x}1 \; \text{TIMEOUT} \;|\; 0\text{x}4 \; \text{FIFO}$).
+  - In KWin Wayland, missed pageflips hit `s_pageflipTimeout = 1000ms`, causing KWin to trigger emergency connector crash recovery (`DPMS OFF` $\rightarrow$ `DPMS ON`), manifesting to the user as a violent double-flash on wake (Flash 1 $\rightarrow$ Dark $\rightarrow$ Flash 2).
+  - **The Resolution**: Omit `.enable` and `.disable` completely from `drm_panel_funcs`, exactly as validated upstream in `drm-misc-next`. All DCS setup and PPS transmission belong strictly in `.prepare`, and power supply shutdown belongs in `.unprepare`.
+- **Novatek Charge Pump Stabilization**:
+  - Always give at least 120 ms delay (`msleep(120);`) after `mipi_dsi_dcs_exit_sleep_mode()` before calling `mipi_dsi_dcs_set_display_on()` to allow the panel's internal charge pumps and gate driver clock oscillator to reach steady state.
+- **Sleep Delay Inhibitor Synchronization**:
+  - Never use arbitrary sleeps (`LOCK_SETTLE_MS`) before calling logind `Suspend()`.
+  - Let KWin's built-in sleep delay inhibitor (`compositor ... sleep Ensuring that the screen gets locked before going to sleep delay`) handle session locking and display blanking deterministically before s2idle kernel freeze.
+
