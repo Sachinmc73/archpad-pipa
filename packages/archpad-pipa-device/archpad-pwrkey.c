@@ -21,19 +21,18 @@
  * Grabs pm8941_pwrkey exclusively (EVIOCGRAB) so that systemd-logind and
  * PowerDevil never see KEY_POWER.  All decisions are made here:
  *
- *   Short press (while awake) → LockSessions() + 250 ms settle + Suspend()
- *   Short press (while waking) → ignored; is_waking cleared on release
- *   Long press  (≥ 750 ms)    → org.kde.LogoutPrompt.promptAll
+ *   Short press (while awake)  → Suspend() via logind (KWin delay inhibitor locks session cleanly)
+ *   Short press (while waking) → ignored; is_waking cleared immediately on release
+ *   Long press  (≥ 750 ms)     → org.kde.LogoutPrompt.promptAll
  *
  * State machine driven entirely by the PrepareForSleep logind signal:
  *   PrepareForSleep(true)  → is_sleeping = true,  is_waking = false
  *   PrepareForSleep(false) → is_sleeping = false,  is_waking = true
- *   KEY_POWER release while is_waking → is_waking = false  (debounce cleared)
+ *   KEY_POWER release while is_waking → is_waking = false  (debounce cleared immediately)
  */
 
 #define LONG_PRESS_MS    750
-#define LOCK_SETTLE_MS   250
-#define WAKE_DEBOUNCE_MS 1000
+#define WAKE_DEBOUNCE_MS 500
 #define PWRKEY_DEV_NAME  "pm8941_pwrkey"
 
 typedef struct {
@@ -42,7 +41,6 @@ typedef struct {
     GDBusConnection  *system_bus;
     int               pwr_fd;
     guint             long_press_timer_id;
-    guint             suspend_settle_timer_id;
     guint             wake_timer_id;
     bool              button_down;
     bool              long_press_handled;
@@ -90,27 +88,6 @@ static int open_pwrkey_device(void)
 
 /* ── Actions ──────────────────────────────────────────────────────────────── */
 
-static void call_lock_sessions(GDBusConnection *system_bus)
-{
-    if (!system_bus)
-        return;
-
-    g_message("Action: Locking all sessions via logind LockSessions()");
-    g_dbus_connection_call(
-        system_bus,
-        "org.freedesktop.login1",
-        "/org/freedesktop/login1",
-        "org.freedesktop.login1.Manager",
-        "LockSessions",
-        NULL,
-        NULL,
-        G_DBUS_CALL_FLAGS_NONE,
-        1000,
-        NULL,
-        NULL,
-        NULL
-    );
-}
 
 static void call_suspend(GDBusConnection *system_bus)
 {
@@ -172,18 +149,6 @@ static gboolean on_long_press_timeout(gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
-static gboolean on_suspend_settle_timeout(gpointer user_data)
-{
-    DaemonContext *ctx = (DaemonContext *)user_data;
-    ctx->suspend_settle_timer_id = 0;
-
-    /* Only suspend if we haven't already entered sleep (e.g. logind beat us) */
-    if (!ctx->is_sleeping) {
-        call_suspend(ctx->system_bus);
-    }
-    return G_SOURCE_REMOVE;
-}
-
 static gboolean on_wake_timeout(gpointer user_data)
 {
     DaemonContext *ctx = (DaemonContext *)user_data;
@@ -198,10 +163,6 @@ static void cancel_all_timers(DaemonContext *ctx)
     if (ctx->long_press_timer_id > 0) {
         g_source_remove(ctx->long_press_timer_id);
         ctx->long_press_timer_id = 0;
-    }
-    if (ctx->suspend_settle_timer_id > 0) {
-        g_source_remove(ctx->suspend_settle_timer_id);
-        ctx->suspend_settle_timer_id = 0;
     }
     if (ctx->wake_timer_id > 0) {
         g_source_remove(ctx->wake_timer_id);
@@ -310,22 +271,21 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition,
             }
 
             if (ctx->is_waking) {
-                g_message("KEY_POWER release ignored: in wake protection window");
+                g_message("KEY_POWER release during wake — clearing wake debounce");
                 ctx->button_down = false;
+                ctx->is_waking = false;
+                if (ctx->wake_timer_id > 0) {
+                    g_source_remove(ctx->wake_timer_id);
+                    ctx->wake_timer_id = 0;
+                }
                 continue;
             }
 
             if (ctx->button_down && !ctx->long_press_handled) {
-                /* Short press: lock now, suspend after settle delay */
-                g_message("Short press: locking sessions, suspend in %d ms",
-                          LOCK_SETTLE_MS);
+                /* Short press: suspend system via logind Suspend() */
+                g_message("Short press: requesting system suspend via logind Suspend()");
                 ctx->button_down = false;
-                call_lock_sessions(ctx->system_bus);
-
-                if (ctx->suspend_settle_timer_id > 0)
-                    g_source_remove(ctx->suspend_settle_timer_id);
-                ctx->suspend_settle_timer_id =
-                    g_timeout_add(LOCK_SETTLE_MS, on_suspend_settle_timeout, ctx);
+                call_suspend(ctx->system_bus);
             } else {
                 ctx->button_down = false;
             }
