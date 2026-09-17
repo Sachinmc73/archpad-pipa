@@ -389,6 +389,7 @@ void KeyboardManager::loadSettings()
     m_themePinned = s.value(QStringLiteral("themePinned"), false).toBool();
     m_soundPinned = s.value(QStringLiteral("soundPinned"), false).toBool();
     m_splitPinned = s.value(QStringLiteral("splitPinned"), false).toBool();
+    m_isFloating = s.value(QStringLiteral("isFloating"), false).toBool();
     m_floatingWidth = s.value(QStringLiteral("floatingWidth"), 420.0).toReal();
     m_longPressDelay = s.value(QStringLiteral("longPressDelay"), 350).toInt();
     s.endGroup();
@@ -467,6 +468,7 @@ void KeyboardManager::saveSettings()
     s.setValue(QStringLiteral("soundProfile"), m_soundProfile);
     s.setValue(QStringLiteral("soundVolume"), m_soundVolume);
     s.setValue(QStringLiteral("splitMode"), m_splitMode);
+    s.setValue(QStringLiteral("isFloating"), m_isFloating);
     s.setValue(QStringLiteral("themePinned"), m_themePinned);
     s.setValue(QStringLiteral("soundPinned"), m_soundPinned);
     s.setValue(QStringLiteral("splitPinned"), m_splitPinned);
@@ -555,6 +557,7 @@ void KeyboardManager::setIsFloating(bool floating)
 {
     if (m_isFloating != floating) {
         m_isFloating = floating;
+        scheduleSaveSettings();
         Q_EMIT isFloatingChanged(m_isFloating);
     }
 }
@@ -1418,10 +1421,22 @@ void KeyboardManager::dismissSwipeAlternatives()
 
 void KeyboardManager::handleDecodeFinished(quint64 reqId, const QStringList &candidates, const QVariantMap &timings)
 {
+    const double inferenceUs = timings.value(QStringLiteral("inference_us"),
+        timings.value(QStringLiteral("encoder_us"), 0.0).toDouble() +
+        timings.value(QStringLiteral("decoder_us"), 0.0).toDouble()).toDouble();
+
     qInfo() << "Swipe decode finished for req" << reqId
             << "candidates:" << candidates
-            << "inference:" << timings.value(QStringLiteral("inference_us")).toDouble() / 1000.0 << "ms";
-    Q_EMIT swipeCandidatesReady(reqId, candidates, timings);
+            << "inference:" << inferenceUs / 1000.0 << "ms";
+
+    QVariantMap safeTimings;
+    for (auto it = timings.cbegin(); it != timings.cend(); ++it) {
+        safeTimings.insert(it.key(), it.value().toDouble());
+    }
+    if (!safeTimings.contains(QStringLiteral("inference_us"))) {
+        safeTimings.insert(QStringLiteral("inference_us"), inferenceUs);
+    }
+    Q_EMIT swipeCandidatesReady(reqId, candidates, safeTimings);
 
     // Privacy/Terminal guard: never auto-commit in passwords, PINs, or terminals
     if (m_textCommitBackend && (m_textCommitBackend->isSensitiveField() || m_textCommitBackend->isTerminalField())) {

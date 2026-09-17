@@ -277,12 +277,13 @@ void SwipeEngineWorker::requestDecode(quint64 requestId,
 
     const auto &timing = m_impl->engine->last_timing();
     QVariantMap timingMap;
-    timingMap.insert(QStringLiteral("resample_us"), timing.resample_us);
-    timingMap.insert(QStringLiteral("encoder_us"), timing.encoder_us);
-    timingMap.insert(QStringLiteral("decoder_us"), timing.decoder_us);
-    timingMap.insert(QStringLiteral("beam_us"), timing.beam_us);
-    timingMap.insert(QStringLiteral("lm_us"), timing.lm_us);
-    timingMap.insert(QStringLiteral("total_us"), timing.total_us);
+    timingMap.insert(QStringLiteral("resample_us"), static_cast<double>(timing.resample_us));
+    timingMap.insert(QStringLiteral("encoder_us"), static_cast<double>(timing.encoder_us));
+    timingMap.insert(QStringLiteral("decoder_us"), static_cast<double>(timing.decoder_us));
+    timingMap.insert(QStringLiteral("beam_us"), static_cast<double>(timing.beam_us));
+    timingMap.insert(QStringLiteral("lm_us"), static_cast<double>(timing.lm_us));
+    timingMap.insert(QStringLiteral("total_us"), static_cast<double>(timing.total_us));
+    timingMap.insert(QStringLiteral("inference_us"), static_cast<double>(timing.encoder_us + timing.decoder_us));
 
     Q_EMIT decodeFinished(requestId, candidates, timingMap);
 }
