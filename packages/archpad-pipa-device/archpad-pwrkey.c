@@ -31,9 +31,10 @@
  *   KEY_POWER release while is_waking → is_waking = false  (debounce cleared)
  */
 
-#define LONG_PRESS_MS  750
-#define LOCK_SETTLE_MS 250
-#define PWRKEY_DEV_NAME "pm8941_pwrkey"
+#define LONG_PRESS_MS    750
+#define LOCK_SETTLE_MS   250
+#define WAKE_DEBOUNCE_MS 1000
+#define PWRKEY_DEV_NAME  "pm8941_pwrkey"
 
 typedef struct {
     GMainLoop        *loop;
@@ -42,6 +43,7 @@ typedef struct {
     int               pwr_fd;
     guint             long_press_timer_id;
     guint             suspend_settle_timer_id;
+    guint             wake_timer_id;
     bool              button_down;
     bool              long_press_handled;
     bool              is_sleeping;
@@ -182,6 +184,15 @@ static gboolean on_suspend_settle_timeout(gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
+static gboolean on_wake_timeout(gpointer user_data)
+{
+    DaemonContext *ctx = (DaemonContext *)user_data;
+    ctx->wake_timer_id = 0;
+    ctx->is_waking = false;
+    g_message("Wake settle complete (%d ms) — power button fully active", WAKE_DEBOUNCE_MS);
+    return G_SOURCE_REMOVE;
+}
+
 static void cancel_all_timers(DaemonContext *ctx)
 {
     if (ctx->long_press_timer_id > 0) {
@@ -191,6 +202,10 @@ static void cancel_all_timers(DaemonContext *ctx)
     if (ctx->suspend_settle_timer_id > 0) {
         g_source_remove(ctx->suspend_settle_timer_id);
         ctx->suspend_settle_timer_id = 0;
+    }
+    if (ctx->wake_timer_id > 0) {
+        g_source_remove(ctx->wake_timer_id);
+        ctx->wake_timer_id = 0;
     }
 }
 
@@ -220,12 +235,14 @@ static void on_prepare_for_sleep(GDBusConnection *connection,
         ctx->button_down       = false;
         ctx->long_press_handled = false;
     } else {
-        g_message("PrepareForSleep(false): system resumed — is_waking=true");
+        g_message("PrepareForSleep(false): system resumed — starting %d ms wake settle timer",
+                  WAKE_DEBOUNCE_MS);
         cancel_all_timers(ctx);
         ctx->is_sleeping       = false;
         ctx->is_waking         = true;
         ctx->button_down       = false;
         ctx->long_press_handled = false;
+        ctx->wake_timer_id     = g_timeout_add(WAKE_DEBOUNCE_MS, on_wake_timeout, ctx);
     }
 }
 
@@ -293,9 +310,7 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition,
             }
 
             if (ctx->is_waking) {
-                /* First release after wake → clear debounce, do nothing else */
-                g_message("KEY_POWER release: clearing post-wake debounce");
-                ctx->is_waking   = false;
+                g_message("KEY_POWER release ignored: in wake protection window");
                 ctx->button_down = false;
                 continue;
             }
