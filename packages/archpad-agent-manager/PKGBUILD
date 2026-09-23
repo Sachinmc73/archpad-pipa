@@ -1,7 +1,7 @@
 # Maintainer: ArchPad project
 pkgname=archpad-agent-manager
 pkgver=1.0.0
-pkgrel=1
+pkgrel=3
 pkgdesc='AGY / Claude / Codex agent session monitor Plasma plasmoid for ArchPad'
 arch=('any')
 url='https://github.com/Sachinmc73/archpad-pipa'

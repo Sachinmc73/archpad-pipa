@@ -55,10 +55,22 @@ archpad/
 │   ├── archpad-boot/             # Boot hooks, systemd-boot generation manager, mkinitcpio config
 │   ├── plasma-camera-pipa/       # KDE Camera with pipa focus and orientation patches
 │   └── wvkbd-mobintl/            # Touch-friendly on-screen keyboard
+├── docs/                         # Canonical system architecture specifications & interactive inventory
+│   ├── ARCHPAD-SYSTEM-BUILD-INVENTORY.html # Interactive multi-lens atomic build inventory
+│   └── ARCHPAD-SYSTEM-ARCHITECTURE.md      # Comprehensive storage, bootflow, and driver topology
 ├── artwork/                      # Official wallpapers, logos, and icon assets
 ├── tools/                        # Release assembly scripts and hardware validation diagnostics
 └── ROADMAP.md                    # Detailed roadmap and technical architecture history
 ```
+
+---
+
+## System Architecture & Build Inventory
+
+ArchPad maintains a full, living catalog of every atomic unit (files, patches, packages, firmware, partitions) required to build and operate the tablet:
+
+* **[Interactive System Build Inventory (HTML)](file:///home/sachin/projects/personal/archpad/docs/ARCHPAD-SYSTEM-BUILD-INVENTORY.html)**: Multi-lens interactive catalog of all 80+ building blocks with inline expandable technical dossiers (physical location, build recipe, origin, package owner, and architectural rationale).
+* **[In-Depth Architecture Reference (Markdown)](file:///home/sachin/projects/personal/archpad/docs/ARCHPAD-SYSTEM-ARCHITECTURE.md)**: Hardware storage breakdown (UFS LUNs vs. nested GPT), master boot sequence diagram, kernel patch breakdown, and subsystem wiring.
 
 ---
 

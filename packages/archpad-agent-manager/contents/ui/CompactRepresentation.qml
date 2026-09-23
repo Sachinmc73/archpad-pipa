@@ -44,11 +44,11 @@ Item {
 
         property bool wasExpanded: false
 
-        onPressed: mouse => {
+        onPressed: {
             wasExpanded = compactRoot.plasmoidItem ? compactRoot.plasmoidItem.expanded : false;
         }
 
-        onClicked: mouse => {
+        onClicked: {
             if (compactRoot.plasmoidItem) {
                 compactRoot.plasmoidItem.expanded = !wasExpanded;
             }

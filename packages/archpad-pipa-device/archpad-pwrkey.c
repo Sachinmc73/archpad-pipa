@@ -25,10 +25,11 @@
  *   Short press (while waking) → ignored; is_waking cleared immediately on release
  *   Long press  (≥ 750 ms)     → org.kde.LogoutPrompt.promptAll
  *
- * State machine driven entirely by the PrepareForSleep logind signal:
+ * State machine driven by PrepareForSleep logind signal and physical wake events:
  *   PrepareForSleep(true)  → is_sleeping = true,  is_waking = false
- *   PrepareForSleep(false) → is_sleeping = false,  is_waking = true
- *   KEY_POWER release while is_waking → is_waking = false  (debounce cleared immediately)
+ *   KEY_POWER press while sleeping → physical wake! is_sleeping = false, is_waking = true
+ *   KEY_POWER release while waking → is_waking = false (debounce cleared immediately)
+ *   PrepareForSleep(false) → system resumed (idempotent, arms timer only if still waking or woke by other source)
  */
 
 #define LONG_PRESS_MS    750
@@ -196,14 +197,23 @@ static void on_prepare_for_sleep(GDBusConnection *connection,
         ctx->button_down       = false;
         ctx->long_press_handled = false;
     } else {
-        g_message("PrepareForSleep(false): system resumed — starting %d ms wake settle timer",
-                  WAKE_DEBOUNCE_MS);
+        g_message("PrepareForSleep(false): system resumed");
         cancel_all_timers(ctx);
-        ctx->is_sleeping       = false;
-        ctx->is_waking         = true;
-        ctx->button_down       = false;
+        ctx->button_down        = false;
         ctx->long_press_handled = false;
-        ctx->wake_timer_id     = g_timeout_add(WAKE_DEBOUNCE_MS, on_wake_timeout, ctx);
+
+        /*
+         * If KEY_POWER press already woke us from sleep (is_sleeping was cleared in evdev),
+         * and the button was already released (is_waking == false), then the wake press cycle
+         * is already complete. Only arm the settle timer if still waking or if woke by
+         * another source (e.g. SW_LID / RTC).
+         */
+        if (ctx->is_sleeping || ctx->is_waking) {
+            ctx->is_waking     = true;
+            ctx->wake_timer_id = g_timeout_add(WAKE_DEBOUNCE_MS, on_wake_timeout, ctx);
+            g_message("Starting %d ms wake settle timer", WAKE_DEBOUNCE_MS);
+        }
+        ctx->is_sleeping = false;
     }
 }
 
@@ -239,10 +249,16 @@ static gboolean on_pwrkey_event(GIOChannel *source, GIOCondition condition,
         if (ev[i].value == 1) {
             /* ── Button pressed ─────────────────────────────────────────── */
 
-            if (ctx->is_sleeping || ctx->is_waking) {
-                g_message("KEY_POWER press ignored: %s",
-                          ctx->is_sleeping ? "system is sleeping"
-                                           : "wake in progress");
+            if (ctx->is_sleeping) {
+                g_message("KEY_POWER press during sleep: physical wake event — transitioning to waking state");
+                ctx->is_sleeping = false;
+                ctx->is_waking   = true;
+                ctx->button_down = false;
+                continue;
+            }
+
+            if (ctx->is_waking) {
+                g_message("KEY_POWER press ignored: wake in progress");
                 continue;
             }
 

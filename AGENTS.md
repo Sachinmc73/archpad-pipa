@@ -177,3 +177,14 @@ This file is the authoritative guide and persistent memory for all AI agents wor
   - Never use arbitrary sleeps (`LOCK_SETTLE_MS`) before calling logind `Suspend()`.
   - Let KWin's built-in sleep delay inhibitor (`compositor ... sleep Ensuring that the screen gets locked before going to sleep delay`) handle session locking and display blanking deterministically before s2idle kernel freeze.
 
+### K. Canonical System Architecture & Atomic Build Inventory
+- **Living Document Mandate**:
+  - The canonical architectural documentation lives in:
+    - **Interactive Atomic Build Inventory**: [`docs/ARCHPAD-SYSTEM-BUILD-INVENTORY.html`](file:///home/sachin/projects/personal/archpad/docs/ARCHPAD-SYSTEM-BUILD-INVENTORY.html)
+    - **In-Depth Architecture Reference**: [`docs/ARCHPAD-SYSTEM-ARCHITECTURE.md`](file:///home/sachin/projects/personal/archpad/docs/ARCHPAD-SYSTEM-ARCHITECTURE.md)
+  - **Every agent working on this codebase MUST update both documents** whenever:
+    1. A new package, kernel module, patch, firmware blob, daemon, or udev/polkit rule is added, updated, or removed.
+    2. The partition layout, bootloader chain, or storage architecture changes.
+    3. Hardware workarounds, D-Bus policies, or desktop shell overrides are altered.
+  - The inventory tracks all atomic building blocks spanning Silicon (Layer 0), Bootloader (Layer 1), Kernel (Layer 2), Platform (Layer 3), and Desktop (Layer 4), including their physical disk locations, build recipes, provenance, and architectural rationale.
+

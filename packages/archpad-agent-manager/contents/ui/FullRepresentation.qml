@@ -21,10 +21,18 @@ PlasmaExtras.Representation {
     Layout.minimumWidth: Kirigami.Units.gridUnit * 18
     Layout.minimumHeight: Kirigami.Units.gridUnit * 20
 
-    // ── Local State ───────────────────────────────────────────────────────────
-    property var  providers:          []
-    property bool refreshing:         false
-    property string selectedProviderId: "agy"
+    // ── Plasmoid Link & Model State ──────────────────────────────────────────
+    property PlasmoidItem plasmoidItem: null
+
+    property var  providers:          (plasmoidItem && plasmoidItem.providers) ? plasmoidItem.providers : []
+    property bool refreshing:         plasmoidItem ? plasmoidItem.refreshing : false
+    property string selectedProviderId: (plasmoidItem && plasmoidItem.selectedProviderId) ? plasmoidItem.selectedProviderId : "agy"
+
+    onSelectedProviderIdChanged: {
+        if (plasmoidItem && plasmoidItem.selectedProviderId !== selectedProviderId) {
+            plasmoidItem.selectedProviderId = selectedProviderId;
+        }
+    }
 
     readonly property var currentProvider: {
         if (!providers || providers.length === 0) return null;
@@ -43,67 +51,41 @@ PlasmaExtras.Representation {
         return total;
     }
 
-    // ── Data Engine ───────────────────────────────────────────────────────────
-    Plasma5Support.DataSource {
-        id: execEngine
-        engine: "executable"
-        connectedSources: []
-
-        onNewData: function(source, data) {
-            var stdout = data["stdout"] ? data["stdout"].trim() : "";
-            disconnectSource(source);
-            fullRoot.refreshing = false;
-
-            var sIdx = stdout.indexOf("{");
-            var eIdx = stdout.lastIndexOf("}");
-            if (sIdx === -1 || eIdx <= sIdx) return;
-
-            try {
-                var parsed = JSON.parse(stdout.substring(sIdx, eIdx + 1));
-                fullRoot.providers = parsed.providers || [];
-            } catch (e) {
-                console.warn("[AgentManager] JSON parse error in FullRep:", e);
-            }
+    function fetchData(forceRefresh) {
+        if (plasmoidItem) {
+            plasmoidItem.fetchData(forceRefresh);
         }
     }
 
-    readonly property string dataProviderScript:
-        "/usr/bin/archpad-agent-manager-provider"
-
-    function fetchData(forceRefresh) {
-        if (fullRoot.refreshing) return;
-        fullRoot.refreshing = true;
-        var cmd = fullRoot.dataProviderScript + (forceRefresh ? " --force-refresh" : "");
-        execEngine.connectSource(cmd);
+    function openSession(workdir, conversationId, isActive) {
+        if (plasmoidItem) {
+            plasmoidItem.openSession(workdir, conversationId, isActive);
+        }
     }
 
-    function launchSession(workdir, conversationId) {
-        var dir = workdir || "/home/archpad/Work";
-        var cmd = "systemd-run --user /usr/bin/konsole --workdir '" + dir + "' -e /home/archpad/.local/bin/agy" + (conversationId ? (" --conversation " + conversationId) : "");
-        execEngine.connectSource(cmd);
-        if (typeof Plasmoid !== "undefined") {
-            Plasmoid.expanded = false;
+    function newSession(workdir) {
+        if (plasmoidItem) {
+            plasmoidItem.newSession(workdir);
         }
     }
 
     function resumeLastSession() {
-        var p = fullRoot.currentProvider;
-        if (!p || !p.sessions || p.sessions.length === 0) {
-            launchSession("/home/archpad/Work", "");
-            return;
-        }
-        var active = null;
-        for (var i = 0; i < p.sessions.length; i++) {
-            if (p.sessions[i].is_active) { active = p.sessions[i]; break; }
-        }
-        if (active) {
-            launchSession(active.workspace || "/home/archpad/Work", active.id);
-        } else {
-            launchSession(p.sessions[0].workspace || "/home/archpad/Work", p.sessions[0].id);
+        if (plasmoidItem) {
+            plasmoidItem.resumeLastSession();
         }
     }
 
-    Component.onCompleted: fullRoot.fetchData(false)
+    onVisibleChanged: {
+        if (visible && plasmoidItem) {
+            plasmoidItem.fetchData(false);
+        }
+    }
+
+    Component.onCompleted: {
+        if (plasmoidItem) {
+            plasmoidItem.fetchData(false);
+        }
+    }
 
     // ── Header ────────────────────────────────────────────────────────────────
     header: PlasmaExtras.PlasmoidHeading {
@@ -177,7 +159,7 @@ PlasmaExtras.Representation {
         // Loading State
         ColumnLayout {
             anchors.centerIn: parent
-            visible: !fullRoot.currentProvider && fullRoot.refreshing
+            visible: !fullRoot.currentProvider || fullRoot.providers.length === 0
             spacing: Kirigami.Units.largeSpacing
 
             PlasmaComponents3.BusyIndicator {
@@ -196,7 +178,7 @@ PlasmaExtras.Representation {
         PlasmaComponents3.ScrollView {
             anchors.fill: parent
             contentWidth: availableWidth
-            visible: !!fullRoot.currentProvider
+            visible: !!fullRoot.currentProvider && fullRoot.providers.length > 0
             QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
 
             ColumnLayout {
@@ -207,7 +189,7 @@ PlasmaExtras.Representation {
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: providerTabBar.implicitHeight
-                    visible: fullRoot.providers && fullRoot.providers.length > 1
+                    visible: !!(fullRoot.providers && fullRoot.providers.length > 1)
 
                     PlasmaComponents3.TabBar {
                         id: providerTabBar
@@ -241,7 +223,7 @@ PlasmaExtras.Representation {
                         text: i18n("New Session")
                         icon.name: "list-add"
                         highlighted: true
-                        onClicked: fullRoot.launchSession("/home/archpad/Work", "")
+                        onClicked: fullRoot.newSession("")
                     }
 
                     PlasmaComponents3.Button {
@@ -407,7 +389,7 @@ PlasmaExtras.Representation {
                                 text: modelData.is_active ? i18n("Focus") : i18n("Resume")
                                 icon.name: modelData.is_active ? "window-focus" : "media-playback-start"
                                 font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
-                                onClicked: fullRoot.launchSession(modelData.workspace || "/home/archpad/Work", modelData.id)
+                                onClicked: fullRoot.openSession(modelData.workspace, modelData.id, modelData.is_active)
                             }
                         }
 
@@ -417,7 +399,7 @@ PlasmaExtras.Representation {
                             hoverEnabled: true
                             preventStealing: false
                             z: -1
-                            onClicked: fullRoot.launchSession(modelData.workspace || "/home/archpad/Work", modelData.id)
+                            onClicked: fullRoot.openSession(modelData.workspace, modelData.id, modelData.is_active)
                         }
                     }
                 }
@@ -441,7 +423,7 @@ PlasmaExtras.Representation {
                             text: modelData.name || ""
                             icon.name: "folder"
                             font.pointSize: Math.max(7, Kirigami.Theme.defaultFont.pointSize - 2)
-                            onClicked: fullRoot.launchSession(modelData.path || "/home/archpad/Work", "")
+                            onClicked: fullRoot.newSession(modelData.path)
                         }
                     }
                 }

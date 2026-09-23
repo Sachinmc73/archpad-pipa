@@ -7,14 +7,18 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasma5support as Plasma5Support
 
 PlasmoidItem {
-    id: root
+    id: mainPlasmoid
 
     Plasmoid.title: "Agent Manager"
     Plasmoid.icon: "utilities-terminal-symbolic"
     Plasmoid.status: PlasmaCore.Types.ActiveStatus
 
-    compactRepresentation: CompactRepresentation { plasmoidItem: root }
-    fullRepresentation: FullRepresentation {}
+    compactRepresentation: CompactRepresentation { plasmoidItem: mainPlasmoid }
+    fullRepresentation: FullRepresentation {
+        plasmoidItem: mainPlasmoid
+        providers: mainPlasmoid.providers
+        refreshing: mainPlasmoid.refreshing
+    }
 
     // ── Data Properties ───────────────────────────────────────────────────────
     property var  providers:       []
@@ -33,7 +37,7 @@ PlasmoidItem {
     ]
     readonly property url idleIcon: Qt.resolvedUrl("icons/bot-idle.svg")
     property int danceFrameIdx: 0
-    readonly property url currentBotIcon: activeCount > 0
+    readonly property url currentBotIcon: mainPlasmoid.activeCount > 0
         ? danceFrames[danceFrameIdx]
         : idleIcon
 
@@ -41,9 +45,9 @@ PlasmoidItem {
         id: danceTimer
         interval: 420
         repeat: true
-        running: root.activeCount > 0
-        onTriggered: root.danceFrameIdx = (root.danceFrameIdx + 1) % root.danceFrames.length
-        onRunningChanged: if (!running) root.danceFrameIdx = 0
+        running: mainPlasmoid.activeCount > 0
+        onTriggered: mainPlasmoid.danceFrameIdx = (mainPlasmoid.danceFrameIdx + 1) % mainPlasmoid.danceFrames.length
+        onRunningChanged: if (!running) mainPlasmoid.danceFrameIdx = 0
     }
 
     // ── Executable DataEngine ─────────────────────────────────────────────────
@@ -55,7 +59,7 @@ PlasmoidItem {
         onNewData: function(source, data) {
             var stdout = data["stdout"] ? data["stdout"].trim() : "";
             disconnectSource(source);
-            root.refreshing = false;
+            mainPlasmoid.refreshing = false;
 
             var sIdx = stdout.indexOf("{");
             var eIdx = stdout.lastIndexOf("}");
@@ -63,15 +67,27 @@ PlasmoidItem {
 
             try {
                 var parsed = JSON.parse(stdout.substring(sIdx, eIdx + 1));
-                root.providers = parsed.providers || [];
+                mainPlasmoid.providers = parsed.providers || [];
                 var total = 0;
-                for (var i = 0; i < root.providers.length; i++) {
-                    total += root.providers[i].active_count || 0;
+                for (var i = 0; i < mainPlasmoid.providers.length; i++) {
+                    total += mainPlasmoid.providers[i].active_count || 0;
                 }
-                root.activeCount = total;
+                mainPlasmoid.activeCount = total;
             } catch (e) {
                 console.warn("[AgentManager] JSON parse error:", e);
             }
+        }
+    }
+
+    // ── Actions DataEngine ───────────────────────────────────────────────────
+    Plasma5Support.DataSource {
+        id: actionEngine
+        engine: "executable"
+        connectedSources: []
+
+        onNewData: function(source, data) {
+            disconnectSource(source);
+            mainPlasmoid.fetchData(false);
         }
     }
 
@@ -79,10 +95,39 @@ PlasmoidItem {
         "/usr/bin/archpad-agent-manager-provider"
 
     function fetchData(forceRefresh) {
-        if (root.refreshing) return;
-        root.refreshing = true;
-        var cmd = root.dataProviderScript + (forceRefresh ? " --force-refresh" : "");
+        if (mainPlasmoid.refreshing) return;
+        mainPlasmoid.refreshing = true;
+        var cmd = mainPlasmoid.dataProviderScript + (forceRefresh ? " --force-refresh" : "") + " #t=" + Date.now();
         execEngine.connectSource(cmd);
+    }
+
+    function openSession(workdir, conversationId, isActive) {
+        var cmd = mainPlasmoid.dataProviderScript + " --action " + (isActive ? "focus" : "open");
+        if (conversationId) {
+            cmd += " --cid " + conversationId;
+        }
+        if (workdir) {
+            cmd += " --workdir '" + workdir + "'";
+        }
+        cmd += " #t=" + Date.now();
+        actionEngine.connectSource(cmd);
+        mainPlasmoid.expanded = false;
+    }
+
+    function newSession(workdir) {
+        var cmd = mainPlasmoid.dataProviderScript + " --action new";
+        if (workdir) {
+            cmd += " --workdir '" + workdir + "'";
+        }
+        cmd += " #t=" + Date.now();
+        actionEngine.connectSource(cmd);
+        mainPlasmoid.expanded = false;
+    }
+
+    function resumeLastSession() {
+        var cmd = mainPlasmoid.dataProviderScript + " --action resume #t=" + Date.now();
+        actionEngine.connectSource(cmd);
+        mainPlasmoid.expanded = false;
     }
 
     // ── Background Poll every 15s ─────────────────────────────────────────────
@@ -92,13 +137,13 @@ PlasmoidItem {
         repeat: true
         running: true
         triggeredOnStart: true
-        onTriggered: root.fetchData(false)
+        onTriggered: mainPlasmoid.fetchData(false)
     }
 
     // ── Fetch immediately on open ─────────────────────────────────────────────
     onExpandedChanged: {
-        if (root.expanded) root.fetchData(false);
+        if (mainPlasmoid.expanded) mainPlasmoid.fetchData(false);
     }
 
-    Component.onCompleted: root.fetchData(false)
+    Component.onCompleted: mainPlasmoid.fetchData(false)
 }
